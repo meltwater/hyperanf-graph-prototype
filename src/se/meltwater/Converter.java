@@ -15,7 +15,7 @@ public class Converter {
     }
 
     public void convert() {
-        String[] argz = {"-g", "ArcListASCIIGraph", "files/graph.arcs", "bvgraph"};
+        String[] argz = {"-g", "ArcListASCIIGraph", "graphs/testGraph.txt", "bvgraph"};
 
         try {
             BVGraph.main(argz);
