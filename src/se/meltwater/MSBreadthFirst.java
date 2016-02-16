@@ -85,8 +85,12 @@ public class MSBreadthFirst {
         while (visit.cardinality() > 0){
             BitSet visitNext = new BitSet(numOfBits);
 
-            for(int i = 0; i<processors ; i++)
-                pool.execute(bfsIteration(i*numOfBits/processors,(i+1)*numOfBits/processors,visitNext,seen,visit));
+            int bitsPerProcessor = numOfBits / processors;
+            for(int i = 0; i<processors ; i++) {
+                int startAt = i * bitsPerProcessor;
+                int endAt = i < processors-1 ? startAt + bitsPerProcessor : numOfBits;
+                pool.execute(bfsIteration(startAt, endAt, visitNext, seen, visit));
+            }
 
             pool.shutdown();
             pool.awaitTermination(2, TimeUnit.HOURS);
@@ -100,8 +104,12 @@ public class MSBreadthFirst {
             int startAt = from,node;
             while((node = visit.nextSetBit(startAt++)) != -1 && node < to) {
 
-                LazyIntIterator neighbors = graph.successors(node);
-                int degree = graph.outdegree(node);
+                LazyIntIterator neighbors;
+                int degree;
+                synchronized (this) {
+                    neighbors = graph.successors(node);
+                    degree = graph.outdegree(node);
+                }
                 int neighbor;
                 seen.set(node);
                 for (int d = 0; d < degree; d++) {
