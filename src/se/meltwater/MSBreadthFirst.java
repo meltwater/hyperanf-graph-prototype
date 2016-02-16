@@ -26,12 +26,11 @@ public class MSBreadthFirst {
 
     public static void main(String[] args) throws IOException, InterruptedException {
 
-        BVGraph graph = BVGraph.load("bvgraph");
-        /*int[] bfsSources = new int[1000];
+        BVGraph graph = BVGraph.load("graphs/uk-2007-05@100000");
+        int[] bfsSources = new int[1000];
         Random rand = new Random();
         for(int i=0; i<1000 ; i++)
-            bfsSources[i] = rand.nextInt(graph.numNodes());*/
-        int[] bfsSources = {4};
+            bfsSources[i] = rand.nextInt(graph.numNodes());
         new MSBreadthFirst(bfsSources,graph).ownBreadthFirstSearch(bfsSources);
 
     }
@@ -97,6 +96,7 @@ public class MSBreadthFirst {
             pool.awaitTermination(2, TimeUnit.HOURS);
             pool = Executors.newFixedThreadPool(processors);
             visit = visitNext;
+            System.out.println("Iteration finished");
         }
         return seen;
     }
