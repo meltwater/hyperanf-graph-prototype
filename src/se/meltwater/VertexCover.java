@@ -14,18 +14,20 @@ import java.util.*;
  */
 
 public class VertexCover {
-    long numberOfNodes = 0;
 
-    HashSet<Long> maximalMatching = new HashSet<>();
+    private NodeIterator nodeIterator;
+    private long numberOfNodes = 0;
+    private BitSet maximalMatching = new BitSet();
 
-    public void fetchEdgesFromFile(String graphFileName) throws Exception {
-
+    public VertexCover(String graphFileName) throws IOException {
         final ProgressLogger pl = new ProgressLogger();
         final ImmutableGraph graph = ImmutableGraph.load( graphFileName, pl );
         numberOfNodes = graph.numNodes();
 
-        NodeIterator nodeIterator = graph.nodeIterator(0);
+        nodeIterator = graph.nodeIterator(0);
+    }
 
+    public void fetchEdgesFromFile() throws Exception {
         for( int currentNode = 0; currentNode < numberOfNodes; currentNode++ ) {
             nodeIterator.nextLong();
             LazyLongIterator successors;
@@ -37,11 +39,7 @@ public class VertexCover {
     }
 
     private void addEdges(long from, LazyLongIterator successors, long numberOfSuccessors) {
-        if(numberOfSuccessors == 0) {
-            return;
-        }
-
-        if(maximalMatching.contains(from)) {
+        if(numberOfSuccessors == 0 || maximalMatching.get((int)from)) {
             return;
         }
 
@@ -49,9 +47,9 @@ public class VertexCover {
 
         while( successorsLeft != 0 ) {
             long successorOfCurrentNode = successors.nextLong();
-            if(!maximalMatching.contains(successorOfCurrentNode)) {
-                maximalMatching.add(from);
-                maximalMatching.add(successorOfCurrentNode);
+            if(!maximalMatching.get((int)successorOfCurrentNode)) {
+                maximalMatching.set((int)from);
+                maximalMatching.set((int)successorOfCurrentNode);
             }
             successorsLeft--;
         }
@@ -59,18 +57,20 @@ public class VertexCover {
 
 
     public static void main(String[] args) throws Exception {
-        String graphFileName = "/home/johan/programming/master/it/unimi/dsi/webgraph/graphs/indochina-2004";
+        String graphFileName = "/home/johan/programming/master/it/unimi/dsi/webgraph/graphs/twitter-2010";
 
-        VertexCover vertexCover = new VertexCover();
-        vertexCover.fetchEdgesFromFile(graphFileName);
+        VertexCover vertexCover = new VertexCover(graphFileName);
 
-        int matchingSize = vertexCover.maximalMatching.size();
+        long start = System.currentTimeMillis();
+        vertexCover.fetchEdgesFromFile();
+        long end = System.currentTimeMillis();
+
+        int matchingSize = vertexCover.maximalMatching.cardinality();
         long nodesInGraph = vertexCover.numberOfNodes;
-
 
         System.out.println("Vertex cover of size: " + matchingSize
                 + " and originally was: " + nodesInGraph + " giving a efficiency rate of " +
                 (double)matchingSize / nodesInGraph) ;
-
+        System.out.println("Elapsed time: " + (float)(end - start)/1000);
     }
 }
