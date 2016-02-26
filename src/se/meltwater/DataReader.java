@@ -23,6 +23,7 @@ public class DataReader {
     private static final String translationFile       = translationFileFolder + "/translation.txt";
 
     private int progress = 0;
+    private int progressUpdateInterval = 1000;
 
     private JsonQuiddityObjectSerializer serializer = new JsonQuiddityObjectSerializer();
     private QuiddityObjectFactory qof = new DefaultQuiddityObjectFactory();
@@ -31,16 +32,7 @@ public class DataReader {
 
     public DataReader(){
         try {
-            File folder = new File(translationFileFolder);
-            File file = new File(translationFile);
-
-            if(!folder.exists()) {
-                folder.mkdirs();
-            }
-
-            if(!file.exists()) {
-                file.createNewFile();
-            }
+            File file = createOrGetTranslationFile();
 
             translationFileWriter = new PrintWriter(file);
             translationFileWriter.flush();
@@ -48,6 +40,23 @@ public class DataReader {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private File createOrGetTranslationFile() throws IOException {
+        File folder = new File(translationFileFolder);
+        File file = new File(translationFile);
+
+        if(!folder.exists()) {
+            System.out.println("Missing folder, creating it for you");
+            folder.mkdirs();
+        }
+
+        if(!file.exists()) {
+            System.out.println("Missing translation file, creating it for you");
+            file.createNewFile();
+        }
+
+        return file;
     }
 
     public void run(String articlesFolder) throws InterruptedException, IOException {
@@ -88,7 +97,7 @@ public class DataReader {
     }
 
     public synchronized void progress() {
-        if(progress++ % 1000 == 0 ) {
+        if(progress++ % progressUpdateInterval == 0 ) {
             System.out.println("DataReader progress " + progress);
         }
     }
