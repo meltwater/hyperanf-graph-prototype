@@ -76,8 +76,7 @@ public class GraphChanger extends BVGraph{
         long node = 0;
         try {
             for (node = 0; node < nodes; node++) {
-                if(node == 2324)
-                    System.out.println("h");
+
                 int out1 = node < n1 ? graph1Stream.readGamma() : 0;
                 int out2 = node < n2 ? graph2Stream.readGamma() : 0;
                 offsetsOut.writeLongGamma(graphOut.writtenBits() - prevWrittenBits);
