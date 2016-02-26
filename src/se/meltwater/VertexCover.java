@@ -7,6 +7,9 @@ import it.unimi.dsi.big.webgraph.LazyIntIterator;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.logging.ProgressLogger;
+import se.meltwater.graph.Edge;
+import se.meltwater.graph.Node;
+import se.meltwater.vertexcover.DynamicVertexCover;
 
 import java.io.IOException;
 import java.util.*;
@@ -18,24 +21,25 @@ import java.util.*;
 
 public class VertexCover {
 
+    private DynamicVertexCover dvc;
+
     private NodeIterator nodeIterator;
     private long numberOfNodes = 0;
 
-    private HashMap<Integer, Integer> maximalMatching = new HashMap<>();
-    private BitSet vertexCover = new BitSet();
+    final ImmutableGraph graph;
     private final ProgressLogger pl;
-
     private int progress = 0;
-
-    private static int updateInterval = 1000000;
+    private static int updateInterval = 1000000 - 1;
 
     public VertexCover(String graphFileName) throws IOException {
         pl = new ProgressLogger();
-        final ImmutableGraph graph = ImmutableGraph.loadMapped( graphFileName, pl );
+        graph = ImmutableGraph.loadMapped( graphFileName, pl );
         numberOfNodes = graph.numNodes();
         nodeIterator = graph.nodeIterator(0);
 
         pl.expectedUpdates = numberOfNodes;
+
+        dvc = new DynamicVertexCover(graph);
     }
 
     public void fetchEdgesFromFileAndCalculateVC() throws Exception {
@@ -54,14 +58,13 @@ public class VertexCover {
     }
 
     private void addEdges(long from, LazyLongIterator successors, long numberOfSuccessors) {
-        if(progress > updateInterval) {
+        if(++progress > updateInterval) {
             pl.updateAndDisplay(progress);
             progress = 0;
         }
-        progress++;
 
 
-        if(numberOfSuccessors == 0 || vertexCover.get((int)from)) {
+        if(numberOfSuccessors == 0 || dvc.isInVertexCover(new Node((int)from))){
             return;
         }
 
@@ -69,18 +72,38 @@ public class VertexCover {
 
         while( successorsLeft != 0 ) {
             long successorOfCurrentNode = successors.nextLong();
-            if(!vertexCover.get((int)successorOfCurrentNode)) {
-                maximalMatching.put((int)from, (int)successorOfCurrentNode);
-
-                vertexCover.set((int)from);
-                vertexCover.set((int)successorOfCurrentNode);
-
+            if(!dvc.isInVertexCover(new Node((int)successorOfCurrentNode))){
+                dvc.insertEdge(new Edge(new Node((int)from), new Node((int)successorOfCurrentNode)));
                 break;
             }
             successorsLeft--;
         }
+    }
 
 
+    public boolean isVertexCover() {
+        nodeIterator = graph.nodeIterator(0);
+
+        for( int currentNode = 0; currentNode < numberOfNodes; currentNode++ ) {
+            nodeIterator.nextLong();
+            LazyLongIterator successors;
+            successors = nodeIterator.successors();
+            long degree = nodeIterator.outdegree();
+
+            if(degree == 0 || dvc.isInVertexCover(new Node((currentNode)))){
+                continue;
+            }
+
+            while( degree != 0 ) {
+                long successorOfCurrentNode = successors.nextLong();
+                if(!dvc.isInVertexCover(new Node((int)successorOfCurrentNode))){
+                    return false;
+                }
+                degree--;
+            }
+        }
+
+        return true;
     }
 
 
@@ -104,14 +127,20 @@ public class VertexCover {
         vertexCover.fetchEdgesFromFileAndCalculateVC();
         long end = System.currentTimeMillis();
 
-        int maximalMatchingSize = vertexCover.maximalMatching.size();
-        int vertexCoverSize = vertexCover.vertexCover.cardinality();
+        int maximalMatchingSize = vertexCover.dvc.getMaximalMatchingSize();
+        int vertexCoverSize = vertexCover.dvc.getVertexCoverSize();
         long nodesInGraph = vertexCover.numberOfNodes;
 
         System.out.println("Maximal matching of size: " + maximalMatchingSize);
         System.out.println("Vertex cover of size: " + vertexCoverSize + " : " + nodesInGraph);
         System.out.println("Efficiency rate of " + (double)vertexCoverSize / nodesInGraph) ;
         System.out.println("Elapsed time: " + (float)(end - start)/1000 + "s");
+
+        System.out.println("Checking that solution really is a vertex cover.");
+        System.out.println("The calculated VC is a vertex cover: " + vertexCover.isVertexCover());
+
+        System.out.println("Completed!");
+
     }
 }
 
