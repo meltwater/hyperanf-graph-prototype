@@ -1,7 +1,13 @@
 package se.meltwater;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.meltwater.quiddity.factory.QuiddityObjectDeserializer;
+import com.meltwater.quiddity.factory.QuiddityObjectFactory;
+import com.meltwater.quiddity.generated.document.Document;
+import com.meltwater.quiddity.generated.enrichments.NamedEntity;
+import com.meltwater.quiddity.impl.DefaultQuiddityObjectFactory;
+import com.meltwater.quiddity.impl.JsonQuiddityObjectSerializer;
+import com.meltwater.quiddity.support.QuiddityObject;
+
 
 import java.io.*;
 import java.util.*;
@@ -13,17 +19,33 @@ public class DataReader {
     private HashMap<String,Integer> entities = new HashMap<>();
     private int nextId = 0;
     private PrintWriter translationFileWriter;
-    private static final String translationFile = "files/translation.txt";
+    private static final String translationFileFolder = "files";
+    private static final String translationFile       = translationFileFolder + "/translation.txt";
+
     private int progress = 0;
+
+    private JsonQuiddityObjectSerializer serializer = new JsonQuiddityObjectSerializer();
+    private QuiddityObjectFactory qof = new DefaultQuiddityObjectFactory();
 
     enum SyncStates {WritingToTransFile, PuttingNextEntity};
 
     public DataReader(){
         try {
-            translationFileWriter = new PrintWriter(new File(translationFile));
+            File folder = new File(translationFileFolder);
+            File file = new File(translationFile);
+
+            if(!folder.exists()) {
+                folder.mkdirs();
+            }
+
+            if(!file.exists()) {
+                file.createNewFile();
+            }
+
+            translationFileWriter = new PrintWriter(file);
             translationFileWriter.flush();
 
-        } catch (FileNotFoundException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -35,7 +57,7 @@ public class DataReader {
 
         System.out.println("DataReader adding threads to pool");
         for(File file : allArticles.listFiles()){
-             threadPool.submit(() -> {
+            threadPool.submit(() -> {
                 try {
                     readFile(file);
                     progress();
@@ -53,11 +75,13 @@ public class DataReader {
     }
 
 
-    public Document parseGson(String fileName) throws IOException {
+    public Document parseJson(String fileName) throws IOException {
         Document document;
-        try(Reader reader = new InputStreamReader(new FileInputStream(fileName))){
-            Gson gson = new GsonBuilder().create();
-            document = gson.fromJson(reader, Document.class);
+
+        try(InputStream instream = new FileInputStream(fileName)){
+            QuiddityObject object = serializer.read(instream, qof );
+
+            document = (Document)object;
         }
 
         return document;
@@ -79,52 +103,28 @@ public class DataReader {
     }
 
     private void readFile(File file) throws IOException {
-        Document document = parseGson(file.getAbsolutePath());
-
-        if(!document.containsNecessaryData()) {
-            return;
-        }
-
+        Document document = parseJson(file.getAbsolutePath());
         int articleId = getNextId();
         HashMap<String, Integer> entityNamesToId = new HashMap<>();
 
-        for(NamedEntities namedEntity : document.enrichments.namedEntities){
-            if(namedEntity.name == null){
+        for(NamedEntity namedEntity : document.createOrGetEnrichments().createOrGetNamedEntities()){
+            if(namedEntity.getName() == null){
                 continue;
             }
 
             int entityId;
             synchronized (SyncStates.PuttingNextEntity) {
-                Integer existed = entities.putIfAbsent(namedEntity.name, nextId);
+                Integer existed = entities.putIfAbsent(namedEntity.getName(), nextId);
                 entityId = existed == null ? getNextId() : existed;
             }
-            entityNamesToId.put(namedEntity.name, entityId);
+            entityNamesToId.put(namedEntity.getName(), entityId);
         }
 
         synchronized (SyncStates.WritingToTransFile) {
-            translationFileWriter.println(articleId + " file: " + file.getName() + " article: " + document.id);
+            translationFileWriter.println(articleId + " file: " + file.getName() + " article: " + document.getId());
             for (Map.Entry<String, Integer> mapEntry : entityNamesToId.entrySet()) {
                 translationFileWriter.println("\t" + mapEntry.getValue() + " " + mapEntry.getKey());
             }
         }
-    }
-
-
-    /* GSON Parsing classes */
-    public class Document {
-        String id;
-        Enrichments enrichments;
-
-        public boolean containsNecessaryData( ){
-            return id != null && enrichments != null && enrichments.namedEntities != null;
-        }
-    }
-
-    public class Enrichments{
-        public NamedEntities[] namedEntities;
-    }
-
-    public class NamedEntities{
-        String name;
     }
 }
