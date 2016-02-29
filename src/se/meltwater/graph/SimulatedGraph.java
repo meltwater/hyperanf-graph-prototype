@@ -12,18 +12,25 @@ public class SimulatedGraph implements IGraph {
     private Iterator<Integer> successors;
     private TreeMap<Integer, HashSet<Integer>> iteratorNeighbors = new TreeMap<>();
 
+    public ArrayList<Node> nodes = new ArrayList<>();
+    public ArrayList<Edge> edges = new ArrayList<>();
+
     public void addNode(Node node) {
         iteratorNeighbors.put(node.id, new HashSet<>());
+        nodes.add(node);
     }
 
     public void addEdge(Edge edge){
         HashSet neighbors = iteratorNeighbors.get(edge.from.id);
         neighbors.add(edge.to.id);
+        edges.add(edge);
     }
 
     public void removeEdge(Edge edge) {
         HashSet neighbors = iteratorNeighbors.get(edge.from.id);
         neighbors.remove(edge.to.id);
+        edges.remove(edge);
+
     }
 
     @Override
