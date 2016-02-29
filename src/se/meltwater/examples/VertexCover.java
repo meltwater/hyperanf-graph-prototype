@@ -1,5 +1,6 @@
-package se.meltwater;
+package se.meltwater.examples;
 
+import com.martiansoftware.jsap.*;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
@@ -79,8 +80,8 @@ public class VertexCover {
 
     public static void main(String[] args) throws Exception {
 
-        String graphFileName = "/home/johan/programming/master/it/unimi/dsi/webgraph/graphs/uk-2002";
-        /*SimpleJSAP jsap = new SimpleJSAP( VertexCover.class.getName(), "Compresses differentially a graph. Source and destination are basenames from which suitable filenames will be stemmed; alternatively, if the suitable option was specified, source is a spec (see below). For more information about the compression techniques, see the Javadoc documentation.",
+        //String graphFileName = "/home/johan/programming/master/it/unimi/dsi/webgraph/graphs/uk-2002";
+        SimpleJSAP jsap = new SimpleJSAP( VertexCover.class.getName(), "Calculates a vertex cover from a basefile of a graph",
                 new Parameter[] {
                         new FlaggedOption( "path", JSAP.STRING_PARSER, null, JSAP.NOT_REQUIRED, 'p', "path", "" ),
                 }
@@ -89,7 +90,7 @@ public class VertexCover {
         JSAPResult jsapResult = jsap.parse( args );
         if ( jsap.messagePrinted() ) System.exit( 1 );
 
-        String graphFileName = jsapResult.getString( "path" );*/
+        String graphFileName = jsapResult.getString( "path" );
 
         VertexCover vertexCover = new VertexCover(graphFileName);
 
