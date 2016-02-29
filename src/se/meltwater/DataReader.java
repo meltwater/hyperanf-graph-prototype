@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class DataReader {
     private HashMap<String,Integer> entities = new HashMap<>();
@@ -90,8 +91,7 @@ public class DataReader {
         return nextId++;
     }
 
-
-    private void readDocumentFiles(String documentsPath) throws InterruptedException {
+    private void readFiles(FileParser fileReader, String documentsPath) throws InterruptedException {
         progress = 0;
         File allArticles = new File(documentsPath);
 
@@ -101,7 +101,7 @@ public class DataReader {
         for(File file : allArticles.listFiles()){
             threadPool.submit(() -> {
                 try {
-                    readDocumentFile(file);
+                    fileReader.apply(file);
                     progress();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -112,7 +112,11 @@ public class DataReader {
         threadPool.shutdown();
         System.out.println("DataReader awaiting threads to finish");
         threadPool.awaitTermination(20, TimeUnit.HOURS);
+    }
 
+    private void readDocumentFiles(String documentsPath) throws InterruptedException {
+
+        readFiles((File f) -> readDocumentFile(f),documentsPath);
         translationFileWriter.close();
     }
 
@@ -143,27 +147,7 @@ public class DataReader {
     }
 
     private void readSourcesFiles(String sourcesPath) throws InterruptedException {
-        progress = 0;
-
-        File allArticles = new File(sourcesPath);
-
-        ExecutorService threadPool = Executors.newFixedThreadPool(8);
-
-        System.out.println("DataReader adding threads to pool");
-        for(File file : allArticles.listFiles()){
-            threadPool.submit(() -> {
-                try {
-                    readSourceFile(file);
-                    progress();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
-        }
-
-        threadPool.shutdown();
-        System.out.println("DataReader awaiting threads to finish");
-        threadPool.awaitTermination(20, TimeUnit.HOURS);
+        readFiles((File f) -> readSourceFile(f),sourcesPath);
     }
 
 
@@ -176,5 +160,9 @@ public class DataReader {
     public static void main(String[] args) throws IOException, InterruptedException {
         DataReader reader = new DataReader();
         reader.run();
+    }
+
+    interface FileParser{
+        void apply(File file) throws IOException;
     }
 }
