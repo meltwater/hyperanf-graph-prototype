@@ -1,6 +1,5 @@
 package se.meltwater;
 
-import com.meltwater.quiddity.factory.QuiddityObjectDeserializer;
 import com.meltwater.quiddity.factory.QuiddityObjectFactory;
 import com.meltwater.quiddity.generated.document.Document;
 import com.meltwater.quiddity.generated.enrichments.NamedEntity;

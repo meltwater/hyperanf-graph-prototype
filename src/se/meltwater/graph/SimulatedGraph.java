@@ -1,9 +1,6 @@
 package se.meltwater.graph;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * Created by johan on 2016-02-29.
@@ -13,7 +10,7 @@ public class SimulatedGraph implements IGraph {
 
     private int nodeIterator = 0;
     private Iterator<Integer> successors;
-    private HashMap<Integer, HashSet<Integer>> iteratorNeighbors = new HashMap<>();
+    private TreeMap<Integer, HashSet<Integer>> iteratorNeighbors = new TreeMap<>();
 
     public void addNode(Node node) {
         iteratorNeighbors.put(node.id, new HashSet<>());
@@ -37,7 +34,9 @@ public class SimulatedGraph implements IGraph {
 
     @Override
     public int getNextNode() {
-        return 0;
+        int nextNode = iteratorNeighbors.higherKey(nodeIterator);
+        setNodeIterator(nextNode);
+        return nextNode;
     }
 
     @Override
