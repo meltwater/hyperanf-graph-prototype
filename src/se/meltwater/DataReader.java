@@ -4,6 +4,7 @@ import com.meltwater.quiddity.factory.QuiddityObjectDeserializer;
 import com.meltwater.quiddity.factory.QuiddityObjectFactory;
 import com.meltwater.quiddity.generated.document.Document;
 import com.meltwater.quiddity.generated.enrichments.NamedEntity;
+import com.meltwater.quiddity.generated.source.Source;
 import com.meltwater.quiddity.impl.DefaultQuiddityObjectFactory;
 import com.meltwater.quiddity.impl.JsonQuiddityObjectSerializer;
 import com.meltwater.quiddity.support.QuiddityObject;
@@ -22,8 +23,12 @@ public class DataReader {
     private static final String translationFileFolder = "files";
     private static final String translationFile       = translationFileFolder + "/translation.txt";
 
+    private static final String documentsPath         = "/home/johan/programming/meltwater/data/documents/";
+    private static final String contactsPath          = "/home/johan/programming/meltwater/data/contacts/";
+    private static final String sourcesPath           = "/home/johan/programming/meltwater/data/sources/";
+
     private int progress = 0;
-    private int progressUpdateInterval = 1000;
+    private int progressUpdateInterval = 100;
 
     private JsonQuiddityObjectSerializer serializer = new JsonQuiddityObjectSerializer();
     private QuiddityObjectFactory qof = new DefaultQuiddityObjectFactory();
@@ -59,8 +64,36 @@ public class DataReader {
         return file;
     }
 
-    public void run(String articlesFolder) throws InterruptedException, IOException {
-        File allArticles = new File(articlesFolder);
+    public void run() throws InterruptedException, IOException {
+        readDocumentFiles(documentsPath);
+        readSourcesFiles(sourcesPath);
+    }
+
+
+    public QuiddityObject parseJson(String fileName) throws IOException {
+        QuiddityObject object;
+
+        try(InputStream instream = new FileInputStream(fileName)){
+            object = serializer.read(instream, qof );
+        }
+
+        return object;
+    }
+
+    public synchronized void progress() {
+        if(progress++ % progressUpdateInterval == 0 ) {
+            System.out.println("DataReader progress " + progress);
+        }
+    }
+
+    public synchronized int getNextId() {
+        return nextId++;
+    }
+
+
+    private void readDocumentFiles(String documentsPath) throws InterruptedException {
+        progress = 0;
+        File allArticles = new File(documentsPath);
 
         ExecutorService threadPool = Executors.newFixedThreadPool(8);
 
@@ -68,7 +101,7 @@ public class DataReader {
         for(File file : allArticles.listFiles()){
             threadPool.submit(() -> {
                 try {
-                    readFile(file);
+                    readDocumentFile(file);
                     progress();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -83,36 +116,8 @@ public class DataReader {
         translationFileWriter.close();
     }
 
-
-    public Document parseJson(String fileName) throws IOException {
-        Document document;
-
-        try(InputStream instream = new FileInputStream(fileName)){
-            QuiddityObject object = serializer.read(instream, qof );
-
-            document = (Document)object;
-        }
-
-        return document;
-    }
-
-    public synchronized void progress() {
-        if(progress++ % progressUpdateInterval == 0 ) {
-            System.out.println("DataReader progress " + progress);
-        }
-    }
-
-    public static void main(String[] args) throws IOException, InterruptedException {
-        DataReader reader = new DataReader();
-        reader.run("/media/johan/Data/meltwater/20160110-bite/output");
-    }
-
-    public synchronized int getNextId() {
-        return nextId++;
-    }
-
-    private void readFile(File file) throws IOException {
-        Document document = parseJson(file.getAbsolutePath());
+    private void readDocumentFile(File file) throws IOException {
+        Document document = (Document)parseJson(file.getAbsolutePath());
         int articleId = getNextId();
         HashMap<String, Integer> entityNamesToId = new HashMap<>();
 
@@ -135,5 +140,41 @@ public class DataReader {
                 translationFileWriter.println("\t" + mapEntry.getValue() + " " + mapEntry.getKey());
             }
         }
+    }
+
+    private void readSourcesFiles(String sourcesPath) throws InterruptedException {
+        progress = 0;
+
+        File allArticles = new File(sourcesPath);
+
+        ExecutorService threadPool = Executors.newFixedThreadPool(8);
+
+        System.out.println("DataReader adding threads to pool");
+        for(File file : allArticles.listFiles()){
+            threadPool.submit(() -> {
+                try {
+                    readSourceFile(file);
+                    progress();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+
+        threadPool.shutdown();
+        System.out.println("DataReader awaiting threads to finish");
+        threadPool.awaitTermination(20, TimeUnit.HOURS);
+    }
+
+
+    private void readSourceFile(File file) throws IOException {
+        Source source = (Source)parseJson(file.getAbsolutePath());
+        source.createOrGetBeats();
+    }
+
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+        DataReader reader = new DataReader();
+        reader.run();
     }
 }

@@ -10,7 +10,7 @@ public class JsonToGraphPipeline {
 
     public static void main(String[] args) throws InterruptedException, IOException {
         DataReader dataReader = new DataReader();
-        dataReader.run("/media/johan/Data/meltwater/20160110-bite/output");
+        dataReader.run();
 
         TranslationHandler translationHandler = new TranslationHandler();
         translationHandler.run();
