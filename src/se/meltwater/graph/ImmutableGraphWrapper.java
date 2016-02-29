@@ -18,26 +18,25 @@ public class ImmutableGraphWrapper implements IGraph{
         this.graph = graph;
     }
 
-
     @Override
-    public void setNodeIterator(int node) {
+    public void setNodeIterator(long node) {
         nodeIterator = graph.nodeIterator(node);
         nodeIterator.nextLong();
         successors = nodeIterator.successors();
     }
 
     @Override
-    public int getNextNode() {
-        return (int)nodeIterator.nextLong();
+    public long getNextNode() {
+        return nodeIterator.nextLong();
     }
 
     @Override
-    public int getNextNeighbor() {
-        return (int)successors.nextLong();
+    public long getNextNeighbor() {
+        return successors.nextLong();
     }
 
     @Override
-    public int getOutdegree() {
-        return (int)nodeIterator.outdegree();
+    public long getOutdegree() {
+        return nodeIterator.outdegree();
     }
 }

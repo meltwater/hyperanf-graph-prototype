@@ -5,11 +5,11 @@ package se.meltwater.graph;
  */
 public class Edge {
 
-    public Edge(Node from, Node to) {
+    public Edge(long from, long to) {
         this.from = from;
         this.to = to;
     }
 
-    public Node from;
-    public Node to;
+    public long from;
+    public long to;
 }

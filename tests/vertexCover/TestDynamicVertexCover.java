@@ -3,7 +3,6 @@ package vertexCover;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import se.meltwater.graph.Edge;
-import se.meltwater.graph.Node;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.vertexcover.DynamicVertexCover;
 
@@ -16,7 +15,7 @@ public class TestDynamicVertexCover {
 
     @Test
     public void testInsertions() {
-        Node[] nodes = {new Node(0), new Node(1), new Node(2)};
+        long[] nodes = {0, 1, 2};
         Edge[] edges = {new Edge(nodes[0], nodes[1]),
                 new Edge(nodes[1], nodes[2]),
                 new Edge(nodes[2], nodes[0])};
@@ -29,7 +28,7 @@ public class TestDynamicVertexCover {
 
     @Test
     public void testDeletionsInMaximal() {
-        Node[] nodes = {new Node(0), new Node(1), new Node(2)};
+        long[] nodes = {0, 1, 2};
         Edge[] edges = {new Edge(nodes[0], nodes[1]),
                 new Edge(nodes[1], nodes[2]),
                 new Edge(nodes[2], nodes[0])};
@@ -45,7 +44,7 @@ public class TestDynamicVertexCover {
 
     @Test
     public void testDeletionsOutsideMaximal() {
-        Node[] nodes = {new Node(0), new Node(1), new Node(2)};
+        long[] nodes = {0, 1, 2};
         Edge[] edges = {new Edge(nodes[0], nodes[1]),
                 new Edge(nodes[1], nodes[2]),
                 new Edge(nodes[2], nodes[0])};
@@ -61,7 +60,7 @@ public class TestDynamicVertexCover {
 
     @Test
     public void testDeleteAllEdges() {
-        Node[] nodes = {new Node(0), new Node(1), new Node(2)};
+        long[] nodes = {0, 1, 2};
         Edge[] edges = {new Edge(nodes[0], nodes[1]),
                 new Edge(nodes[1], nodes[2]),
                 new Edge(nodes[2], nodes[0])};
@@ -79,10 +78,10 @@ public class TestDynamicVertexCover {
         assertTrue(dvc.getMaximalMatchingSize() == 0);
     }
 
-    public SimulatedGraph setupSGraph(Node[] nodes, Edge[] edges) {
+    public SimulatedGraph setupSGraph(long[] nodes, Edge[] edges) {
         SimulatedGraph graph = new SimulatedGraph();
 
-        for(Node node : nodes) {
+        for(long node : nodes) {
             graph.addNode(node);
         }
 

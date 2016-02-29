@@ -6,7 +6,6 @@ import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.logging.ProgressLogger;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.ImmutableGraphWrapper;
-import se.meltwater.graph.Node;
 import se.meltwater.vertexcover.DynamicVertexCover;
 
 import java.io.IOException;
@@ -61,7 +60,7 @@ public class VertexCover {
         }
 
 
-        if(numberOfSuccessors == 0 || dvc.isInVertexCover(new Node((int)from))){
+        if(numberOfSuccessors == 0 || dvc.isInVertexCover(from)){
             return;
         }
 
@@ -69,8 +68,8 @@ public class VertexCover {
 
         while( successorsLeft != 0 ) {
             long successorOfCurrentNode = successors.nextLong();
-            if(!dvc.isInVertexCover(new Node((int)successorOfCurrentNode))){
-                dvc.insertEdge(new Edge(new Node((int)from), new Node((int)successorOfCurrentNode)));
+            if(!dvc.isInVertexCover(successorOfCurrentNode)){
+                dvc.insertEdge(new Edge(from, successorOfCurrentNode));
                 break;
             }
             successorsLeft--;

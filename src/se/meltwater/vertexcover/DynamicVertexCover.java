@@ -1,11 +1,7 @@
 package se.meltwater.vertexcover;
 
-import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
-import se.meltwater.graph.Node;
 
 import java.util.BitSet;
 import java.util.HashMap;
@@ -15,7 +11,7 @@ import java.util.HashMap;
  */
 public class DynamicVertexCover implements IDynamicVertexCover {
 
-    private HashMap<Integer, Integer> maximalMatching = new HashMap<>();
+    private HashMap<Long, Long> maximalMatching = new HashMap<>();
     private BitSet vertexCover = new BitSet();
     private IGraph graph;
 
@@ -29,10 +25,10 @@ public class DynamicVertexCover implements IDynamicVertexCover {
             return;
         }
 
-        maximalMatching.put(edge.from.id, edge.to.id);
+        maximalMatching.put(edge.from, edge.to);
 
-        vertexCover.set(edge.from.id);
-        vertexCover.set(edge.to.id);
+        vertexCover.set((int)edge.from);
+        vertexCover.set((int)edge.to);
     }
 
     @Override
@@ -48,17 +44,17 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         checkEndpointOfDeletion(edge.to);
     }
 
-    public void checkEndpointOfDeletion(Node node) {
-        graph.setNodeIterator(node.id);
+    public void checkEndpointOfDeletion(long node) {
+        graph.setNodeIterator(node);
         long degree = graph.getOutdegree();
 
         while( degree != 0 ) {
-            int successorOfCurrentNode = graph.getNextNeighbor();
+            long successorOfCurrentNode = graph.getNextNeighbor();
 
-            if(!isInVertexCover(new Node(successorOfCurrentNode))){
-                maximalMatching.put(node.id, successorOfCurrentNode);
-                vertexCover.set(node.id);
-                vertexCover.set(successorOfCurrentNode);
+            if(!isInVertexCover(successorOfCurrentNode)){
+                maximalMatching.put(node, successorOfCurrentNode);
+                vertexCover.set((int)node);
+                vertexCover.set((int)successorOfCurrentNode);
 
                 break;
             }
@@ -68,17 +64,17 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     @Override
-    public boolean isInVertexCover(Node node) {
-        return vertexCover.get(node.id);
+    public boolean isInVertexCover(long node) {
+        return vertexCover.get((int)node);
     }
 
     public boolean isInMaximalMatching(Edge edge) {
-        Integer value = maximalMatching.get(edge.from.id);
+        Long value = maximalMatching.get(edge.from);
         if(value == null) {
             return false;
         }
 
-        if(value != edge.to.id) {
+        if(value != edge.to) {
             return false;
         }
 
@@ -90,12 +86,12 @@ public class DynamicVertexCover implements IDynamicVertexCover {
             return;
         }
 
-        maximalMatching.remove(edge.from.id);
+        maximalMatching.remove(edge.from);
     }
 
     private void removeEdgeFromVertexCover(Edge edge) {
-        vertexCover.set(edge.from.id, false);
-        vertexCover.set(edge.to.id,   false);
+        vertexCover.set((int)edge.from, false);
+        vertexCover.set((int)edge.to,   false);
     }
 
     public int getVertexCoverSize() {

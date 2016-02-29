@@ -7,10 +7,10 @@ import java.util.*;
  */
 public interface IGraph {
 
-    public void setNodeIterator(int node);
-    public int getNextNode();
+    public void setNodeIterator(long node);
+    public long  getNextNode();
 
-    public int getNextNeighbor();
-    public int getOutdegree();
+    public long getNextNeighbor();
+    public long getOutdegree();
 
 }
