@@ -151,6 +151,7 @@ public class GraphChanger extends BVGraph{
     }
 
     // The fst contains the next node, the second contains the new nodesRead
+    // If there are no next nodes, fst will be Long.MAX_VALUE
     private static Pair<Long,Integer> readNextUnused(InputBitStream g, int nodesLeft, int nodesRead, long node,
                                                      long[][] intervalizedNodes, long prevNode) throws IOException {
         long nextUnused = prevNode;
