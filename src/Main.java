@@ -1,46 +1,153 @@
 
-import com.sun.org.apache.xpath.internal.SourceTree;
+import com.martiansoftware.jsap.*;
 import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
-import it.unimi.dsi.webgraph.LazyIntIterator;
 import se.meltwater.Converter;
 import se.meltwater.GraphChanger;
 import se.meltwater.GraphReader;
+import se.meltwater.examples.VertexCover;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Created by simon on 2016-02-17.
  */
 public class Main {
 
+    private static String jarName = "jarname";
+    private static String jarDescription  = "Provides a cli for running and testing individual parts of our dynamic-anf implementation.";
+
+    private static String pathDescription = "The path to the basename file";
+
     private final static String[] DEFAULT_FLAGS = {"-u"};
 
     public static void main(String[] args) throws Exception {
-        if(args.length == 0)
-            args = DEFAULT_FLAGS;
+        String[] argsWithoutFirstFlag = Arrays.copyOfRange(args, 1, args.length);
 
-        if(args[0].equals("-u") && args.length == 5 && args[1].equals("-w") )
-            new Converter().union(args[2],args[3],args[4]);
-        else if(args[0].equals("-u") && args.length == 4 && !args[1].equals("-w")) {
-            System.out.println("Starting internal merge");
-            long time = System.currentTimeMillis();
-            GraphChanger.merge(args[1], args[2], args[3]);
-            System.out.println("Finished internal merge in " + (System.currentTimeMillis() - time) + "ms.");
-        }else if(args[0].equals("-g") && args.length == 2){
-            String[] genArgs = {"-o","-O","-L", args[1]};
-            BVGraph.main(genArgs);
-        }else if(args[0].equals("-rb") && args.length == 3) {
-            BVGraph graph = BVGraph.loadMapped(args[1]);
-            BVGraph.store(graph, args[2], 0, 0, -1, -1, 0);
-        }else if(args[0].startsWith("-r") && args.length == 3){
-            boolean print = !args[0].equals("-rnp");
-            GraphReader.readGraph(args[1],Integer.parseInt(args[2]),print);
-        }else {
-            printUsages();
+        switch (args[0]) {
+            case "-u":
+                doUnion(argsWithoutFirstFlag);
+                break;
+            case "-vc":
+                doVertexCover(argsWithoutFirstFlag);
+                break;
+            case "-g":
+                doGenerateBvGraph(argsWithoutFirstFlag);
+                break;
+            case "-rb":
+                doRemoveBlocks(argsWithoutFirstFlag);
+                break;
+            case "-r":
+                doReadGraph(argsWithoutFirstFlag);
+                break;
+            default:
+                printUsages();
+                System.exit(0);
         }
     }
+
+    private static void doUnion(String[] args) throws Exception {
+        SimpleJSAP jsap = new SimpleJSAP(jarName, jarDescription,
+                new Parameter[] {
+                        new Switch("webgraph", 'w', "webgraph", "Specify to use webgraphs original union"),
+                        new UnflaggedOption("filenames", JSAP.STRING_PARSER, true,
+                                        "The filepaths to the graphs to be unioned. " +
+                                        "Format ingraph1 ingraph2 outgraph").setGreedy(true)
+                }
+        );
+
+        JSAPResult result = jsap.parse(args);
+        checkErrorFlags(jsap, result);
+
+        boolean useWebgraph = result.getBoolean("webgraph");
+        String[] filepaths = result.getStringArray("filenames");
+
+        if(useWebgraph){
+            new Converter().union(filepaths[0], filepaths[1], filepaths[2]);
+        } else {
+            long time = System.currentTimeMillis();
+            GraphChanger.merge(filepaths[0], filepaths[1], filepaths[2]);
+            System.out.println("Finished internal merge in " + (System.currentTimeMillis() - time) + "ms.");
+        }
+    }
+
+    private static void doVertexCover(String[] args) throws Exception {
+        SimpleJSAP jsap = new SimpleJSAP(jarName, jarDescription,
+                new Parameter[] {
+                        new FlaggedOption( "path", JSAP.STRING_PARSER, null, JSAP.REQUIRED, 'p', "path", pathDescription)
+                }
+        );
+
+        JSAPResult result = jsap.parse(args);
+        checkErrorFlags(jsap, result);
+
+        String path = result.getString("path");
+
+        VertexCover vertexCover = new VertexCover(path);
+        vertexCover.run();
+    }
+
+    private static  void doGenerateBvGraph(String[] args) throws Exception {
+        SimpleJSAP jsap = new SimpleJSAP(jarName, jarDescription,
+                new Parameter[] {
+                        new FlaggedOption( "path", JSAP.STRING_PARSER, null, JSAP.REQUIRED, 'p', "path", pathDescription)
+                }
+        );
+
+        JSAPResult result = jsap.parse(args);
+        checkErrorFlags(jsap, result);
+
+        String path = result.getString("path");
+
+        String[] genArgs = {"-o","-O","-L", path};
+        BVGraph.main(genArgs);
+    }
+
+    private static void doRemoveBlocks(String[] args) throws Exception {
+        SimpleJSAP jsap = new SimpleJSAP(jarName, jarDescription,
+                new Parameter[] {
+                        new FlaggedOption( "inpath",  JSAP.STRING_PARSER, null, JSAP.REQUIRED, 'i', "inpath",  pathDescription),
+                        new FlaggedOption( "outpath", JSAP.STRING_PARSER, null, JSAP.REQUIRED, 'o', "outpath", pathDescription)
+                }
+        );
+
+        JSAPResult result = jsap.parse(args);
+        checkErrorFlags(jsap, result);
+
+        String inpath  = result.getString("inpath");
+        String outpath = result.getString("outpath");
+
+        BVGraph graph = BVGraph.loadMapped(inpath);
+        BVGraph.store(graph, outpath, 0, 0, -1, -1, 0);
+    }
+
+    private static void doReadGraph(String[] args) throws  Exception {
+        SimpleJSAP jsap = new SimpleJSAP(jarName, jarDescription,
+                new Parameter[] {
+                        new Switch("print", 'e', "print", "Prints graph if set"),
+                        new FlaggedOption("path",  JSAP.STRING_PARSER, null, JSAP.REQUIRED, 'p', "path",  pathDescription),
+                        new FlaggedOption("numnodes", JSAP.INTEGER_PARSER, null, JSAP.REQUIRED, 'n', "numnodes", "The number of nodes to read"),
+                }
+        );
+
+        JSAPResult result = jsap.parse(args);
+        checkErrorFlags(jsap, result);
+
+        boolean print = result.getBoolean("print");
+        String path = result.getString("path");
+        int numNodes = result.getInt("numnodes");
+
+        GraphReader.readGraph(path, numNodes ,print);
+
+    }
+
+    private static void checkErrorFlags(JSAP jsap, JSAPResult result) {
+        if(!result.success()) {
+            System.err.println("Usage: java " + jarName);
+            System.err.println("                " + jsap.getUsage());
+            System.exit(1);
+        }
+    }
+
 
     private static void printIntervals(long[][] intervals){
         for(long[] interval : intervals)
@@ -49,11 +156,11 @@ public class Main {
     }
 
     private static void printUsages(){
-        System.out.println("Join two graphs to one: -u [-w] <graph1basename> <graph2basename> <newBasename>");
-        System.out.println("The flag -w says that webgraphs method will be used.");
-        System.out.println("Generate BVGraph from .graph: -g <graphBasename>");
-        System.out.println("Remove blocks from graph: -rb <graphBasename> <newBasename>");
-        System.out.println("Read graph: -r <basename> <nodes>");
+        System.out.println("-g  : Generate BVGraph from .graph");
+        System.out.println("-r  : Read graph");
+        System.out.println("-rb : Remove blocks from graph");
+        System.out.println("-u  : Join two graphs to one");
+        System.out.println("-vc : Calculate a 2-approximate vertex cover in graph");
     }
 
 }
