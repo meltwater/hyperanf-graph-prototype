@@ -77,30 +77,14 @@ public class VertexCover {
         }
     }
 
-
-    public static void main(String[] args) throws Exception {
-
-        //String graphFileName = "/home/johan/programming/master/it/unimi/dsi/webgraph/graphs/uk-2002";
-        SimpleJSAP jsap = new SimpleJSAP( VertexCover.class.getName(), "Calculates a vertex cover from a basefile of a graph",
-                new Parameter[] {
-                        new FlaggedOption( "path", JSAP.STRING_PARSER, null, JSAP.NOT_REQUIRED, 'p', "path", "" ),
-                }
-        );
-
-        JSAPResult jsapResult = jsap.parse( args );
-        if ( jsap.messagePrinted() ) System.exit( 1 );
-
-        String graphFileName = jsapResult.getString( "path" );
-
-        VertexCover vertexCover = new VertexCover(graphFileName);
-
+    public void run () throws Exception {
         long start = System.currentTimeMillis();
-        vertexCover.fetchEdgesFromFileAndCalculateVC();
+        fetchEdgesFromFileAndCalculateVC();
         long end = System.currentTimeMillis();
 
-        int maximalMatchingSize = vertexCover.dvc.getMaximalMatchingSize();
-        int vertexCoverSize = vertexCover.dvc.getVertexCoverSize();
-        long nodesInGraph = vertexCover.numberOfNodes;
+        int maximalMatchingSize = dvc.getMaximalMatchingSize();
+        int vertexCoverSize = dvc.getVertexCoverSize();
+        long nodesInGraph = numberOfNodes;
 
         System.out.println("Maximal matching of size: " + maximalMatchingSize);
         System.out.println("Vertex cover of size: " + vertexCoverSize + " : " + nodesInGraph);
