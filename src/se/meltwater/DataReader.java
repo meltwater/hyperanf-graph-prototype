@@ -1,6 +1,6 @@
 package se.meltwater;
 
-import com.meltwater.quiddity.factory.QuiddityObjectDeserializer;
+
 import com.meltwater.quiddity.factory.QuiddityObjectFactory;
 import com.meltwater.quiddity.generated.document.Document;
 import com.meltwater.quiddity.generated.enrichments.NamedEntity;
@@ -8,7 +8,6 @@ import com.meltwater.quiddity.generated.source.Source;
 import com.meltwater.quiddity.impl.DefaultQuiddityObjectFactory;
 import com.meltwater.quiddity.impl.JsonQuiddityObjectSerializer;
 import com.meltwater.quiddity.support.QuiddityObject;
-
 
 import java.io.*;
 import java.util.*;
@@ -38,6 +37,7 @@ public class DataReader {
 
     public DataReader(){
         try {
+
             File file = createOrGetTranslationFile();
 
             translationFileWriter = new PrintWriter(file);
@@ -76,6 +76,7 @@ public class DataReader {
 
         try(InputStream instream = new FileInputStream(fileName)){
             object = serializer.read(instream, qof );
+
         }
 
         return object;
@@ -92,6 +93,7 @@ public class DataReader {
     }
 
     private void readFiles(FileParser fileReader, String documentsPath) throws InterruptedException {
+
         progress = 0;
         File allArticles = new File(documentsPath);
 
@@ -122,6 +124,7 @@ public class DataReader {
 
     private void readDocumentFile(File file) throws IOException {
         Document document = (Document)parseJson(file.getAbsolutePath());
+
         int articleId = getNextId();
         HashMap<String, Integer> entityNamesToId = new HashMap<>();
 
@@ -145,6 +148,7 @@ public class DataReader {
             }
         }
     }
+
 
     private void readSourcesFiles(String sourcesPath) throws InterruptedException {
         readFiles((File f) -> readSourceFile(f),sourcesPath);
