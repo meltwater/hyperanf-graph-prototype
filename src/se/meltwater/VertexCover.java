@@ -8,7 +8,9 @@ import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.logging.ProgressLogger;
 import se.meltwater.graph.Edge;
+import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graph.Node;
+import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.vertexcover.DynamicVertexCover;
 
 import java.io.IOException;
@@ -39,7 +41,7 @@ public class VertexCover {
 
         pl.expectedUpdates = numberOfNodes;
 
-        dvc = new DynamicVertexCover(graph);
+        dvc = new DynamicVertexCover(new ImmutableGraphWrapper(graph));
     }
 
     public void fetchEdgesFromFileAndCalculateVC() throws Exception {
@@ -121,7 +123,7 @@ public class VertexCover {
 
         String graphFileName = jsapResult.getString( "path" );*/
 
-        VertexCover vertexCover = new VertexCover(graphFileName);
+        /*VertexCover vertexCover = new VertexCover(graphFileName);
 
         long start = System.currentTimeMillis();
         vertexCover.fetchEdgesFromFileAndCalculateVC();
@@ -139,7 +141,28 @@ public class VertexCover {
         System.out.println("Checking that solution really is a vertex cover.");
         System.out.println("The calculated VC is a vertex cover: " + vertexCover.isVertexCover());
 
-        System.out.println("Completed!");
+        System.out.println("Completed!");*/
+
+
+        Node[] nodes = {new Node(0), new Node(1), new Node(2)};
+        Edge[] edges = {new Edge(nodes[0], nodes[1]),
+                        new Edge(nodes[1], nodes[2]),
+                        new Edge(nodes[2], nodes[0])};
+
+        SimulatedGraph graph = new SimulatedGraph();
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+        for(Node node : nodes) {
+            graph.addNode(node);
+        }
+
+        for(Edge edge : edges) {
+            graph.addEdge(edge);
+            dvc.insertEdge(edge);
+        }
+
+        graph.removeEdge(edges[0]);
+        dvc.deleteEdge(edges[0]);
 
     }
 }

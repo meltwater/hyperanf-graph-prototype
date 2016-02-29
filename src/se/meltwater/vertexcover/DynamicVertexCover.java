@@ -4,6 +4,7 @@ import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import se.meltwater.graph.Edge;
+import se.meltwater.graph.IGraph;
 import se.meltwater.graph.Node;
 
 import java.util.BitSet;
@@ -16,9 +17,9 @@ public class DynamicVertexCover implements IDynamicVertexCover {
 
     private HashMap<Integer, Integer> maximalMatching = new HashMap<>();
     private BitSet vertexCover = new BitSet();
-    private ImmutableGraph graph;
+    private IGraph graph;
 
-    public  DynamicVertexCover(ImmutableGraph graph) {
+    public  DynamicVertexCover(IGraph graph) {
         this.graph = graph;
     }
 
@@ -48,20 +49,16 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     public void checkEndpointOfDeletion(Node node) {
-        NodeIterator nodeIterator = graph.nodeIterator(node.id);
-
-        nodeIterator.nextLong();
-        LazyLongIterator successors;
-        successors = nodeIterator.successors();
-        long degree = nodeIterator.outdegree();
+        graph.setNodeIterator(node.id);
+        long degree = graph.getOutdegree();
 
         while( degree != 0 ) {
-            long successorOfCurrentNode = successors.nextLong();
+            int successorOfCurrentNode = graph.getNextNeighbor();
 
-            if(!isInVertexCover(new Node((int)successorOfCurrentNode))){
-                maximalMatching.put(node.id, (int)successorOfCurrentNode);
+            if(!isInVertexCover(new Node(successorOfCurrentNode))){
+                maximalMatching.put(node.id, successorOfCurrentNode);
                 vertexCover.set(node.id);
-                vertexCover.set((int)successorOfCurrentNode);
+                vertexCover.set(successorOfCurrentNode);
 
                 break;
             }
