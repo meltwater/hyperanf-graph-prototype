@@ -78,32 +78,6 @@ public class VertexCover {
     }
 
 
-    public boolean isVertexCover() {
-        nodeIterator = graph.nodeIterator(0);
-
-        for( int currentNode = 0; currentNode < numberOfNodes; currentNode++ ) {
-            nodeIterator.nextLong();
-            LazyLongIterator successors;
-            successors = nodeIterator.successors();
-            long degree = nodeIterator.outdegree();
-
-            if(degree == 0 || dvc.isInVertexCover(new Node((currentNode)))){
-                continue;
-            }
-
-            while( degree != 0 ) {
-                long successorOfCurrentNode = successors.nextLong();
-                if(!dvc.isInVertexCover(new Node((int)successorOfCurrentNode))){
-                    return false;
-                }
-                degree--;
-            }
-        }
-
-        return true;
-    }
-
-
     public static void main(String[] args) throws Exception {
 
         String graphFileName = "/home/johan/programming/master/it/unimi/dsi/webgraph/graphs/uk-2002";
@@ -132,11 +106,6 @@ public class VertexCover {
         System.out.println("Vertex cover of size: " + vertexCoverSize + " : " + nodesInGraph);
         System.out.println("Efficiency rate of " + (double)vertexCoverSize / nodesInGraph) ;
         System.out.println("Elapsed time: " + (float)(end - start)/1000 + "s");
-
-        System.out.println("Checking that solution really is a vertex cover.");
-        System.out.println("The calculated VC is a vertex cover: " + vertexCover.isVertexCover());
-
-        System.out.println("Completed!");
     }
 }
 
