@@ -16,6 +16,6 @@ public class JsonToGraphPipeline {
         translationHandler.run();
 
         Converter converter = new Converter();
-        converter.convert();
+        //converter.convert();
     }
 }
