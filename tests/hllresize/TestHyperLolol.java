@@ -18,32 +18,81 @@ public class TestHyperLolol {
 
     final int nrTestIterations = 100;
 
+    private int arraySize;
+    private int n;
+    private int log2m;
+    private Random rand;
+    private int increaseSize;
+    private HyperLolLolCounterArray counter;
+
     @Test
-    public void testResize() throws IOException {
+    public void testNewPartsCanBeUsedOfResize() {
         int iteration = 0;
         while(iteration++ < nrTestIterations) {
-            Random rand = new Random();
-            int arraySize = rand.nextInt(maxCounters);
-            int n = maxCounters * 2;
-            int log2m = rand.nextInt(10) + log2mMinSize;
+            setupParameters();
 
-            HyperLolLolCounterArray counter = new HyperLolLolCounterArray(arraySize, n, log2m);
-
-            randomlyAddHashesToCounters(counter, arraySize);
-
-            double[] prevCounts = getCurrentCountersAsList(counter, arraySize);
-
-            final int increaseSize = rand.nextInt(maxCounters);
             counter.increaseCounterSize(increaseSize);
+            randomlyAddHashesToCounters(arraySize + increaseSize);
 
-            assertPreviousValuesAreIntact(counter, arraySize, prevCounts);
-            assertNewValuesAreZero(counter, arraySize, increaseSize);
+            assertAllCountersLargerThanZero(arraySize + increaseSize);
         }
     }
 
-    private void randomlyAddHashesToCounters(HyperLolLolCounterArray counter, int arraySize) {
-        Random rand = new Random();
-        for (int i = 0; i < arraySize; i++) {
+    @Test
+    public void testResizeKeepsPreviousValues() throws IOException {
+        int iteration = 0;
+        while(iteration++ < nrTestIterations) {
+            setupParameters();
+
+            randomlyAddHashesToCounters(arraySize);
+
+            double[] prevCounts = getCurrentCountersAsList(arraySize);
+
+            counter.increaseCounterSize(increaseSize);
+
+            assertPreviousValuesAreIntact(arraySize, prevCounts);
+            assertNewValuesAreZero(arraySize + increaseSize, increaseSize);
+        }
+    }
+
+    @Test
+    public void testManyIncreases() {
+        int iteration = 0;
+        while(iteration++ < nrTestIterations) {
+            setupParameters();
+
+            randomlyAddHashesToCounters(arraySize);
+
+            double[] prevCounts = getCurrentCountersAsList(arraySize);
+
+            for(int i = 0; i < increaseSize - 1; ) {
+                int currentIncreaseSize = rand.nextInt(increaseSize - i) + 1;
+                counter.increaseCounterSize(currentIncreaseSize);
+
+                assertPreviousValuesAreIntact(arraySize, prevCounts);
+
+                i += currentIncreaseSize;
+            }
+        }
+    }
+
+    private void setupParameters() {
+        rand = new Random();
+        arraySize = rand.nextInt(maxCounters);
+        n = maxCounters * 2;
+        log2m = rand.nextInt(10) + log2mMinSize;
+        increaseSize = rand.nextInt(maxCounters);
+        counter = new HyperLolLolCounterArray(arraySize, n, log2m);
+    }
+
+    private void assertAllCountersLargerThanZero(int arraySize) {
+        for(int i = 0; i < arraySize ; i++) {
+            assertTrue(counter.count(i) > 0);
+        }
+    }
+
+    private void randomlyAddHashesToCounters(int numberOfCounters) {
+        for (int i = 0; i < numberOfCounters; i++) {
             int maxAddedValues = 100;
             for(int j = 0; j < maxAddedValues; j++) {
                 int addedValue = rand.nextInt();
@@ -52,23 +101,23 @@ public class TestHyperLolol {
         }
     }
 
-    private double[] getCurrentCountersAsList(HyperLolLolCounterArray counter, int arraySize) {
-        double prevCounts[] = new double[arraySize];
-        for (int i = 0; i < arraySize; i++) {
+    private double[] getCurrentCountersAsList(int numberOfCounters) {
+        double prevCounts[] = new double[numberOfCounters];
+        for (int i = 0; i < numberOfCounters; i++) {
             prevCounts[i] = counter.count(i);
         }
 
         return prevCounts;
     }
 
-    private void assertPreviousValuesAreIntact(HyperLolLolCounterArray counter, int arraySize, double[] prevCounts) {
-        for (int i = 0; i < arraySize; i++) {
+    private void assertPreviousValuesAreIntact(int numberOfCounters, double[] prevCounts) {
+        for (int i = 0; i < numberOfCounters; i++) {
             assertTrue(prevCounts[i] == counter.count(i));
         }
     }
 
-    private void assertNewValuesAreZero(HyperLolLolCounterArray counter, int arraySize, int increaseSize) {
-        for(int i = arraySize; i < arraySize + increaseSize; i++) {
+    private void assertNewValuesAreZero(int numberOfCounters, int increaseSize) {
+        for(int i = numberOfCounters - increaseSize; i < numberOfCounters; i++) {
             assertTrue(counter.count(i) == 0);
         }
     }
