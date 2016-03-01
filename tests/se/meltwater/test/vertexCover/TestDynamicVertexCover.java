@@ -50,14 +50,9 @@ public class TestDynamicVertexCover {
         }
 
         for(int i = 0; i < edges.length; i++) {
-            graph.removeEdge(edges[i]);
+            graph.deleteEdge(edges[i]);
             dvc.deleteEdge(edges[i]);
-            boolean isVC = isVertexCover(graph,dvc);
-            if(!isVC) {
-                System.out.println("here");
-            }
-
-            assertTrue(isVC);
+            assertTrue(isVertexCover(graph,dvc));
         }
     }
 
@@ -70,7 +65,7 @@ public class TestDynamicVertexCover {
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
         DynamicVertexCover dvc = setupDVC(graph);
 
-        graph.removeEdge(edges[0]);
+        graph.deleteEdge(edges[0]);
         dvc.deleteEdge(edges[0]);
 
         assertTrue(isVertexCover(graph, dvc));
@@ -86,7 +81,7 @@ public class TestDynamicVertexCover {
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
         DynamicVertexCover dvc = setupDVC(graph);
 
-        graph.removeEdge(edges[1]);
+        graph.deleteEdge(edges[1]);
         dvc.deleteEdge(edges[1]);
 
         assertTrue(isVertexCover(graph, dvc));
@@ -103,7 +98,7 @@ public class TestDynamicVertexCover {
         DynamicVertexCover dvc = setupDVC(graph);
 
         for(Edge edge : edges ) {
-            graph.removeEdge(edge);
+            graph.deleteEdge(edge);
             dvc.deleteEdge(edge);
         }
 
@@ -115,19 +110,39 @@ public class TestDynamicVertexCover {
     public DynamicVertexCover setupDVC(SimulatedGraph graph) {
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        for(Edge edge : graph.edges) {
-            dvc.insertEdge(edge);
+        long n = graph.getNumberOfNodes();
+
+        for(int i = 0; i < n; i++) {
+            graph.setNodeIterator(i);
+            long outdegree = graph.getOutdegree();
+
+            while(outdegree != 0) {
+                long neighbor = graph.getNextNeighbor();
+                dvc.insertEdge(new Edge(i, neighbor));
+                outdegree--;
+            }
         }
+
 
         return dvc;
     }
 
     public boolean isVertexCover(SimulatedGraph graph, DynamicVertexCover dvc) {
-        for(Edge edge : graph.edges) {
-            if(!(dvc.isInVertexCover(edge.from) || dvc.isInVertexCover(edge.to))) {
-                return false;
+        long n = graph.getNumberOfNodes();
+
+        for(int i = 0; i < n; i++) {
+            graph.setNodeIterator(i);
+            long outdegree = graph.getOutdegree();
+
+            while(outdegree != 0) {
+                long neighbor = graph.getNextNeighbor();
+                if(!(dvc.isInVertexCover(i) || dvc.isInVertexCover(neighbor))) {
+                    return false;
+                }
+                outdegree--;
             }
         }
+
 
         return true;
     }

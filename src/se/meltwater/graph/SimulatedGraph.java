@@ -7,7 +7,11 @@ import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import java.util.*;
 
 /**
- * Created by johan on 2016-02-29.
+ * Instead of loading a physical graph file
+ * this class can be used to simulate a graph.
+ * Mainly used for testing purposes when it's
+ * not feasable to create a physical file for
+ * each test case.
  */
 public class SimulatedGraph implements IGraph {
 
@@ -16,25 +20,19 @@ public class SimulatedGraph implements IGraph {
     private Iterator<Long> successors;
     private TreeMap<Long, HashSet<Long>> iteratorNeighbors = new TreeMap<>();
 
-    public ArrayList<Long> nodes = new ArrayList<>();
-    public ArrayList<Edge> edges = new ArrayList<>();
 
     public void addNode(long node) {
         iteratorNeighbors.put(node, new HashSet<>());
-        nodes.add(node);
     }
 
     public void addEdge(Edge edge){
         HashSet neighbors = iteratorNeighbors.get(edge.from);
         neighbors.add(edge.to);
-        edges.add(edge);
     }
 
-    public void removeEdge(Edge edge) {
+    public void deleteEdge(Edge edge) {
         HashSet neighbors = iteratorNeighbors.get(edge.from);
         neighbors.remove(edge.to);
-        edges.remove(edge);
-
     }
 
     @Override
@@ -51,8 +49,7 @@ public class SimulatedGraph implements IGraph {
     }
 
     @Override
-    public long getNextNeighbor() {
-        nodeIterator++;
+    public long getNextNeighbor() throws NoSuchElementException{
         return successors.next();
     }
 
@@ -63,7 +60,7 @@ public class SimulatedGraph implements IGraph {
 
     @Override
     public long getNumberOfNodes() {
-        return nodes.size();
+        return iteratorNeighbors.size();
     }
 
     @Override

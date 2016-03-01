@@ -5,7 +5,10 @@ import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 
 /**
- * Created by johan on 2016-02-29.
+ * Wraps an Immutable graph to be able to use it
+ * with the IGraph interface. The IGraph interface
+ * is useful in testing as the type of the graph is now
+ * abstracted away from the test cases.
  */
 public class ImmutableGraphWrapper implements IGraph{
 

@@ -13,7 +13,8 @@ import java.io.IOException;
 
 
 /**
- * Created by johan on 2016-02-23.
+ * Example for calculating a Vertex Cover on
+ * a physical graph file.
  */
 
 public class VertexCover {
@@ -39,7 +40,7 @@ public class VertexCover {
         dvc = new DynamicVertexCover(new ImmutableGraphWrapper(graph));
     }
 
-    public void fetchEdgesFromFileAndCalculateVC() throws Exception {
+    private void fetchEdgesFromFileAndCalculateVC() throws Exception {
         pl.start();
 
         for( int currentNode = 0; currentNode < numberOfNodes; currentNode++ ) {
