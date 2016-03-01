@@ -39,8 +39,15 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
     public void increaseCounterSize(long increaseSize) {
         if(size + increaseSize >= limit) {
             resizeCounterArray(size + increaseSize);
+
+            size = size + increaseSize;
+            limit = size;
         }
+        //TODO set limit
     }
+
+
+
 
     private void resizeCounterArray(long arraySize) throws IllegalArgumentException {
         if(size > arraySize) {
