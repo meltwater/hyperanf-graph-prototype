@@ -27,8 +27,11 @@ public class TestHyperLolol {
             HyperLolLolCounterArray counter = new HyperLolLolCounterArray(arraySize, n, log2m);
 
             for (int i = 0; i < arraySize; i++) {
-                int addedValue = rand.nextInt();
-                counter.add(i, addedValue);
+                int maxAddedValues = 100;
+                for(int j = 0; j < maxAddedValues; j++) {
+                    int addedValue = rand.nextInt();
+                    counter.add(i, addedValue);
+                }
             }
 
             double prevCounts[] = new double[arraySize];
