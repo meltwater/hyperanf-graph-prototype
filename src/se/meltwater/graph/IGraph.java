@@ -1,9 +1,10 @@
 package se.meltwater.graph;
 
-import java.util.*;
-
 /**
- * Created by johan on 2016-02-29.
+ *  IGraphs purpose is to abstract what type of
+ *  graph the test suite is testing. In some cases
+ *  it is appropriate to use a physical file and in
+ *  other cases its not.
  */
 public interface IGraph {
 
