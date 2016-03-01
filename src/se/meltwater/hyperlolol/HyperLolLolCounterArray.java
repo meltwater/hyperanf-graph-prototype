@@ -22,25 +22,21 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
     private long sentinelMask;
 
     public HyperLolLolCounterArray(long arraySize, long n, int log2m) {
-        super(0, 0, log2m);
+        super(0, n, log2m);
         size = arraySize;
         limit = arraySize;
         sentinelMask = 1L << ( 1 << registerSize ) - 2;
 
         final long sizeInRegisters = arraySize * m;
-        final int numVectors = (int)( ( sizeInRegisters + CHUNK_MASK ) >>> CHUNK_SHIFT );
+        final int numVectors = getNumVectors(sizeInRegisters);
 
         bits = new long[ numVectors ][];
         registers = new LongBigList[ numVectors ];
 
-        for( int i = 0; i < numVectors; i++ ) {
-            final LongArrayBitVector bitVector = LongArrayBitVector.ofLength( registerSize * Math.min( CHUNK_SIZE, sizeInRegisters - ( (long)i << CHUNK_SHIFT ) ) );
-            bits[ i ] = bitVector.bits();
-            registers[ i ] = bitVector.asLongBigList( registerSize );
-        }
+        initBitArrays(bits, registers, numVectors, sizeInRegisters);
     }
 
-    public void addCounters(long increaseSize) {
+    public void increaseCounterSize(long increaseSize) {
         if(size + increaseSize >= limit) {
             resizeCounterArray(size + increaseSize);
         }
@@ -52,21 +48,28 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
         }
 
         final long sizeInRegisters = arraySize * m;
-        final int numVectors = (int)( ( sizeInRegisters + CHUNK_MASK ) >>> CHUNK_SHIFT );
+        final int numVectors = getNumVectors(sizeInRegisters);
 
         long newbits[][] = new long[ numVectors ][];
         LongBigList newregisters[] = new LongBigList[ numVectors ];
 
-        for( int i = 0 ; i < numVectors; i++ ) {
-            final LongArrayBitVector bitVector = LongArrayBitVector.ofLength( registerSize * Math.min( CHUNK_SIZE, sizeInRegisters - ( (long)i << CHUNK_SHIFT ) ) );
-            newbits[ i ] = bitVector.bits();
-            newregisters[ i ] = bitVector.asLongBigList( registerSize );
-        }
-
+        initBitArrays(newbits, newregisters, numVectors, sizeInRegisters);
         copyOldArraysIntoNew(newbits);
 
         bits = newbits;
         registers = newregisters;
+    }
+
+    private int getNumVectors(long sizeInRegisters) {
+        return  (int)( ( sizeInRegisters + CHUNK_MASK ) >>> CHUNK_SHIFT );
+    }
+
+    private void initBitArrays(long[][] bits, LongBigList[] registers, int numVectors, long sizeInRegisters) {
+        for( int i = 0; i < numVectors; i++ ) {
+            final LongArrayBitVector bitVector = LongArrayBitVector.ofLength( registerSize * Math.min( CHUNK_SIZE, sizeInRegisters - ( (long)i << CHUNK_SHIFT ) ) );
+            bits[ i ] = bitVector.bits();
+            registers[ i ] = bitVector.asLongBigList( registerSize );
+        }
     }
 
     private void copyOldArraysIntoNew(long[][] newBits) {

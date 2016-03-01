@@ -37,10 +37,16 @@ public class TestHyperLolol {
             }
 
             final int increaseSize = rand.nextInt(maxSize);
-            counter.addCounters(increaseSize);
+            counter.increaseCounterSize(increaseSize);
 
+            //All previous values are still present
             for (int i = 0; i < arraySize; i++) {
                 assertTrue(prevCounts[i] == counter.count(i));
+            }
+
+            //All new values are 0
+            for(int i = arraySize; i < arraySize + increaseSize; i++) {
+                assertTrue(counter.count(i) == 0);
             }
         }
     }
