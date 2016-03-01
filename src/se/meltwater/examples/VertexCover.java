@@ -1,6 +1,5 @@
 package se.meltwater.examples;
 
-import com.martiansoftware.jsap.*;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
