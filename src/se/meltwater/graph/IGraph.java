@@ -13,4 +13,6 @@ public interface IGraph {
     public long getNextNeighbor();
     public long getOutdegree();
 
+    public long getNumberOfNodes();
+
 }

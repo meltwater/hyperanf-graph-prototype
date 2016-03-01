@@ -39,4 +39,9 @@ public class ImmutableGraphWrapper implements IGraph{
     public long getOutdegree() {
         return nodeIterator.outdegree();
     }
+
+    @Override
+    public long getNumberOfNodes() {
+        return graph.numNodes();
+    }
 }

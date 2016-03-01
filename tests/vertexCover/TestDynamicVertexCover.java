@@ -6,6 +6,12 @@ import se.meltwater.graph.Edge;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.vertexcover.DynamicVertexCover;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.LongStream;
+
 /**
  * Created by johan on 2016-02-29.
  */
@@ -26,12 +32,63 @@ public class TestDynamicVertexCover {
         assertTrue(isVertexCover(graph, dvc));
     }
 
+    @Test //OPA QUICKCHECK STYLE
+    public void testRandomInsertions() {
+        final int maxNumNodes = 500;
+        Random rand = new Random();
+        int n = rand.nextInt(maxNumNodes);
+        int m = rand.nextInt((int)Math.pow(n, 2));
+
+        long[] nodes = LongStream.rangeClosed(0, n).toArray();
+        Edge[] edges = generateEdges(n, m);
+
+        SimulatedGraph graph = setupSGraph(nodes, new Edge[0]);
+        DynamicVertexCover dvc = setupDVC(graph);
+
+        for(int i = 0; i < edges.length; i++) {
+            graph.addEdge(edges[i]);
+            dvc.insertEdge(edges[i]);
+            assertTrue(isVertexCover(graph,dvc));
+        }
+
+        for(int i = 0; i < edges.length; i++) {
+            graph.removeEdge(edges[i]);
+            dvc.deleteEdge(edges[i]);
+            boolean isVC = isVertexCover(graph,dvc);
+            if(!isVC) {
+                System.out.println("here");
+            }
+
+            assertTrue(isVC);
+        }
+    }
+
+    private Edge[] generateEdges(int n, int m) {
+        HashMap<Long, Long> edgesMap = new HashMap<>();
+        ArrayList<Edge> edges = new ArrayList<>();
+
+        for(int i = 0; i < m; i++) {
+            Random rand = new Random();
+            long to   = rand.nextInt(n);
+            long from = rand.nextInt(n);
+            if(to != from) {
+                edgesMap.put(to, from);
+            }
+        }
+
+        for(Map.Entry<Long, Long> edge : edgesMap.entrySet()) {
+            edges.add(new Edge(edge.getKey(), edge.getValue()));
+        }
+
+        Edge[] edgeArray = new Edge[edges.size()];
+        return edges.toArray(edgeArray);
+    }
+
     @Test
     public void testDeletionsInMaximal() {
-        long[] nodes = {0, 1, 2};
-        Edge[] edges = {new Edge(nodes[0], nodes[1]),
-                new Edge(nodes[1], nodes[2]),
-                new Edge(nodes[2], nodes[0])};
+        long[] nodes = {0, 1, 2, 3};
+        Edge[] edges = {new Edge(nodes[0], nodes[2]),
+                new Edge(nodes[1], nodes[2])};
 
         SimulatedGraph graph = setupSGraph(nodes, edges);
         DynamicVertexCover dvc = setupDVC(graph);

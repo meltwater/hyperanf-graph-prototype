@@ -42,7 +42,36 @@ public class DynamicVertexCover implements IDynamicVertexCover {
 
         checkEndpointOfDeletion(edge.from);
         checkEndpointOfDeletion(edge.to);
+        checkEndpointsOfDeletion(edge);
     }
+
+    public void checkEndpointsOfDeletion(Edge edge) {
+        for(int i = 0; i < graph.getNumberOfNodes(); i++) {
+            if(isInVertexCover((long)i)) {
+                continue;
+            }
+
+            graph.setNodeIterator(i);
+            long degree = graph.getOutdegree();
+            while( degree != 0 ) {
+                long successorOfCurrentNode = graph.getNextNeighbor();
+
+                if(successorOfCurrentNode == edge.from || successorOfCurrentNode == edge.to) {
+
+                    if(!isInVertexCover(successorOfCurrentNode)){
+                        maximalMatching.put((long)i, successorOfCurrentNode);
+                        vertexCover.set(i);
+                        vertexCover.set((int)successorOfCurrentNode);
+
+                        break;
+                    }
+                }
+
+                degree--;
+            }
+        }
+    }
+
 
     public void checkEndpointOfDeletion(long node) {
         graph.setNodeIterator(node);

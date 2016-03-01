@@ -21,6 +21,10 @@ public class Main {
     private final static String[] DEFAULT_FLAGS = {"-u"};
 
     public static void main(String[] args) throws Exception {
+        if(args.length == 0) {
+            printUsages();
+        }
+
         String[] argsWithoutFirstFlag = Arrays.copyOfRange(args, 1, args.length);
 
         switch (args[0]) {

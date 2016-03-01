@@ -56,4 +56,9 @@ public class SimulatedGraph implements IGraph {
     public long getOutdegree() {
         return iteratorNeighbors.get(nodeIterator).size();
     }
+
+    @Override
+    public long getNumberOfNodes() {
+        return nodes.size();
+    }
 }
