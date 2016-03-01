@@ -2,7 +2,7 @@
 import com.martiansoftware.jsap.*;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import se.meltwater.Converter;
-import se.meltwater.GraphChanger;
+import se.meltwater.graphEditing.GraphMerger;
 import se.meltwater.GraphReader;
 import se.meltwater.examples.VertexCover;
 
@@ -65,7 +65,7 @@ public class Main {
             new Converter().union(filepaths[0], filepaths[1], filepaths[2]);
         } else {
             long time = System.currentTimeMillis();
-            GraphChanger.merge(filepaths[0], filepaths[1], filepaths[2]);
+            GraphMerger.mergeGraphs(filepaths[0], filepaths[1], filepaths[2]);
             System.out.println("Finished internal merge in " + (System.currentTimeMillis() - time) + "ms.");
         }
     }
