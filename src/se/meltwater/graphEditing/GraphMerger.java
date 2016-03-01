@@ -69,10 +69,11 @@ public class GraphMerger{
 
         for (long node = 0; node < nodes; node++) {
 
-            int out1 = node < gp1.getNumNodes() ? graph1Stream.readOutdegree() : 0;
-            int out2 = node < gp2.getNumNodes() ? graph2Stream.readOutdegree() : 0;
             offsetsOut.writeLongGamma(graphOut.writtenBits() - prevWrittenBits);
             prevWrittenBits = graphOut.writtenBits();
+
+            int out1 = node < gp1.getNumNodes() ? graph1Stream.readOutdegree() : 0;
+            int out2 = node < gp2.getNumNodes() ? graph2Stream.readOutdegree() : 0;
             if (out1 == 0 && out2 == 0) {
                 graphOut.writeGamma(0);
                 continue;
