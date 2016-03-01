@@ -4,9 +4,11 @@ import it.unimi.dsi.webgraph.BVGraph;
 import it.unimi.dsi.webgraph.ImmutableGraph;
 import it.unimi.dsi.webgraph.LazyIntIterator;
 import it.unimi.dsi.webgraph.NodeIterator;
+import it.unimi.dsi.webgraph.examples.BreadthFirst;
 import sun.nio.ch.ThreadPool;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
@@ -26,12 +28,12 @@ public class MSBreadthFirst {
 
     public static void main(String[] args) throws IOException, InterruptedException {
 
-        BVGraph graph = BVGraph.load("graphs/uk-2007-05@100000");
+        BVGraph graph = BVGraph.load("files/uk-2007-05@100000");
         int[] bfsSources = new int[1000];
         Random rand = new Random();
         for(int i=0; i<1000 ; i++)
             bfsSources[i] = rand.nextInt(graph.numNodes());
-        new MSBreadthFirst(bfsSources,graph).ownBreadthFirstSearch(bfsSources);
+        new MSBreadthFirst(bfsSources,graph).breadthFirstSearch();
 
     }
 
@@ -43,14 +45,20 @@ public class MSBreadthFirst {
 
     }
 
-    public void breadthFirstSearch(){
+    private BitSet[] createBitsets(){
+        BitSet[] list = new BitSet[graph.numNodes()];
+        for(int node = 0; node < graph.numNodes() ; node++)
+            list[node] = new BitSet(bfsSources.length);
+        return list;
+    }
 
-        BitSet visit = new BitSet(numSources*graph.numNodes()), seen = new BitSet(numSources*graph.numNodes());
+    public void breadthFirstSearch() throws InterruptedException {
+
+        BitSet[] visit = createBitsets(), seen = createBitsets();
 
         for(int bfs = 0; bfs < numSources; bfs++){
-            int bfsBit = bfs+bfsSources[bfs]*numSources;
-            seen.set(bfsBit);
-            visit.set(bfsBit);
+            visit[bfsSources[bfs]].set(bfs);
+            seen[bfsSources[bfs]].set(bfs);
         }
 
         System.out.println("Starting Breadth first");
@@ -61,18 +69,22 @@ public class MSBreadthFirst {
 
     }
 
-    public void ownBreadthFirstSearch(int[] bfsSources) throws InterruptedException {
+    public void ownBreadthFirstSearch() throws InterruptedException {
 
         BitSet visit = new BitSet(graph.numNodes());
-
-        for(int node : bfsSources){
-            visit.set(node);
-        }
-
         System.out.println("Starting Breadth first");
         long time = System.currentTimeMillis();
+        try {
+            for (int node : bfsSources) {
+                //visit.set(node);
+                BreadthFirst.main(new String[]{"-s", node + "", "files/uk-2007-05@100000"});
+            }
+        }catch (Exception e ){
+            e.printStackTrace();
+        }
 
-        BitSet seen = ownBFS(visit);
+
+        //BitSet seen = ownBFS(visit);
         System.out.println("Finished Breadth first in: " + (System.currentTimeMillis() - time) + "ms");
 
     }
@@ -124,43 +136,116 @@ public class MSBreadthFirst {
         };
     }
 
-    private void MSBFS(BitSet visit, BitSet seen){
+    private void MSBFS(BitSet[] visit, BitSet[] seen) throws InterruptedException {
 
-        int numOfBits = numSources*graph.numNodes();
-        BitSet visitNext = new BitSet(numOfBits);
-        while(visit.cardinality() > 0){
-            int startAt = 0,firstOne;
-            while(startAt < (numOfBits-numSources) && (firstOne = visit.nextSetBit(startAt)) != -1) {
+        BitSet[] visitNext = createBitsets();
+        BoolWrapper visitHadContent = new BoolWrapper(true);
+        int processors = Runtime.getRuntime().availableProcessors();
+        ExecutorService pool = Executors.newFixedThreadPool(processors);
+        int nodesPerProcessor = graph.numNodes() / processors;
+        while(visitHadContent.theBool){
+            visitHadContent.theBool = false;
 
-                int node = firstOne / numSources;
-                int startBit = node * numSources, endBit = startBit + numSources;
-                startAt = endBit;
-                BitSet nodeVisits = visit.get(startBit, endBit);
+            for(int i = 0; i < processors; i++) {
+                int start = i*nodesPerProcessor;
+                int end = i == processors-1 ? graph.numNodes() : start + nodesPerProcessor;
+                pool.submit(firstPhaseIterator(start,end,visit,visitNext,visitHadContent));
+            }
+            pool.shutdown();
+            pool.awaitTermination(1,TimeUnit.MINUTES);
+            pool = Executors.newFixedThreadPool(processors);
 
+            if(visitHadContent.theBool) {
+
+                for(int i = 0; i < processors; i++) {
+                    int start = i*nodesPerProcessor;
+                    int end = i == processors-1 ? graph.numNodes() : start + nodesPerProcessor;
+                    pool.submit(secondPhaseIterator(start,end,visitNext,seen));
+                }
+                pool.shutdown();
+                pool.awaitTermination(1,TimeUnit.MINUTES);
+                pool = Executors.newFixedThreadPool(processors);
+
+                visit = visitNext;
+                visitNext = createBitsets();
+            }
+            System.out.println("Finished iteration.");
+        }
+
+    }
+
+    private Runnable firstPhaseIterator(int startNode, int endNode, BitSet[] visit, BitSet[] visitNext, BoolWrapper visitHadContent){
+        return () -> {
+            NodeIterator nodeIt = graph.nodeIterator(startNode);
+            for(int node = startNode; node < endNode ; node++) {
+                nodeIt.nextInt();
+                if (visit[node].cardinality() == 0) continue;
+
+                visitHadContent.theBool = true;
+                LazyIntIterator neighbors = nodeIt.successors();
+                int degree = nodeIt.outdegree();
+                int neighbor;
+                for (int d = 0; d < degree; d++) {
+                    neighbor = neighbors.nextInt();
+                    visitNext[neighbor].or(visit[node]);
+
+                }
+
+            }
+
+        };
+    }
+
+    private Runnable secondPhaseIterator(int startNode, int endNode, BitSet[] visitNext, BitSet[] seen){
+        return () -> {
+            for(int node = startNode; node < endNode ; node++) {
+                if(visitNext[node].cardinality() == 0) continue;
+
+                visitNext[node].andNot(seen[node]);
+                seen[node].or(visitNext[node]);
+            }
+        };
+    }
+
+    /*private void MSBFS(BitSet[] visit, BitSet[] seen){
+
+        BitSet[] visitNext = createBitsets();
+        boolean visitHadContent = true;
+        while(visitHadContent){
+            visitHadContent = false;
+            for(int node = 0; node < visit.length ; node++) {
+                if (visit[node].cardinality() == 0) continue;
+
+                visitHadContent = true;
                 LazyIntIterator neighbors = graph.successors(node);
                 int degree = graph.outdegree(node);
                 int neighbor;
                 for (int d = 0; d < degree; d++) {
                     neighbor = neighbors.nextInt();
-                    int neighStartBit = neighbor * numSources, neighEndBit = neighStartBit + numSources;
-                    BitSet seenConjugates = seen.get(neighStartBit, neighEndBit);
-                    seenConjugates.flip(0, numSources);
-                    BitSet newVisits = (BitSet) nodeVisits.clone();
-                    newVisits.and(seenConjugates);
-                    if (newVisits.cardinality() > 0) {
-                        BitSet actualNewVisits = new BitSet(numOfBits);
-                        for (int bit = 0; bit < numSources; bit++)
-                            actualNewVisits.set(bit + neighStartBit, newVisits.get(bit));
-                        visitNext.or(actualNewVisits);
-                        seen.or(actualNewVisits);
+                    BitSet D = (BitSet) visit[node].clone();
+                    D.andNot(seen[neighbor]);
+                    if (D.cardinality() > 0) {
+                        visitNext[neighbor].or(D);
+                        seen[neighbor].or(D);
                     }
 
                 }
+
             }
-            visit = (BitSet) visitNext.clone();
-            visitNext.clear();
+
+            System.out.println("Finished iteration.");
+            if(visitHadContent) {
+                visit = visitNext;
+                visitNext = createBitsets();
+            }
         }
 
+    }*/
+
+    class BoolWrapper{
+        public boolean theBool = false;
+        public BoolWrapper(boolean initialValue){ theBool = initialValue; }
+        public BoolWrapper(){this(false);}
     }
 
 
