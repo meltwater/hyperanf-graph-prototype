@@ -1,11 +1,15 @@
 import org.junit.Test;
 import static org.junit.Assert.*;
-import se.meltwater.GraphChanger;
+import se.meltwater.graphEditing.GraphMerger;
 
 /**
  * Created by simon on 2016-02-26.
  */
-public class TestIntervalMerge extends GraphChanger {
+public class TestIntervalMerge extends GraphMerger {
+
+    public TestIntervalMerge(){
+        super("","","");
+    }
 
     @Test
     public void testIntervalOverlap(){

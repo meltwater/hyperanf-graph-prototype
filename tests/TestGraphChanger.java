@@ -4,7 +4,7 @@ import it.unimi.dsi.big.webgraph.UnionImmutableGraph;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import se.meltwater.GraphChanger;
+import se.meltwater.graphEditing.GraphMerger;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,15 +12,18 @@ import java.io.IOException;
 /**
  * Created by simon on 2016-02-26.
  */
-public class TestGraphChanger extends GraphChanger{
+public class TestGraphChanger extends GraphMerger {
+
+    public TestGraphChanger(){
+        super("testGraphs/noBlocksUk","testGraphs/wordassociationNoBlocks","testGraphs/tempOutGraph");
+    }
 
     @Test
     public void testMerge(){
-        String merge1 = "testGraphs/noBlocksUk", merge2 = "testGraphs/wordassociationNoBlocks", temp = "testGraphs/tempOutGraph";
         try {
-            merge(merge1,merge2,temp);
-            BVGraph mergedGraph = BVGraph.loadMapped(temp);
-            UnionImmutableGraph unionedGraph = new UnionImmutableGraph(BVGraph.loadMapped(merge1),BVGraph.loadMapped(merge2));
+            merge();
+            BVGraph mergedGraph = BVGraph.loadMapped(newGraph);
+            UnionImmutableGraph unionedGraph = new UnionImmutableGraph(BVGraph.loadMapped(graph1),BVGraph.loadMapped(graph2));
             assertEquals(mergedGraph.numNodes(),unionedGraph.numNodes());
             NodeIterator nodeItMerged = mergedGraph.nodeIterator();
             NodeIterator nodeItUnioned = unionedGraph.nodeIterator();
@@ -43,7 +46,7 @@ public class TestGraphChanger extends GraphChanger{
 
         File tempOut;
         for(String fileExtension : new String[]{".properties",".graph",".offsets"}){
-            tempOut = new File(temp + fileExtension);
+            tempOut = new File(newGraph + fileExtension);
             if(tempOut.exists())
                 tempOut.delete();
         }
