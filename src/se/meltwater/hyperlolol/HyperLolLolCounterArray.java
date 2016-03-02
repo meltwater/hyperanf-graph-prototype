@@ -11,6 +11,7 @@ import java.util.Arrays;
  * Its purpose is to be able to use a HyperLogLogCounterArray when
  * the number of nodes is unknown.
  * It overrides the registers of HyperLogLogCounterArray.
+ * The extended functionality is not thread-safe.
  *
  */
 public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
@@ -18,6 +19,9 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
     protected long size;
     protected long limit;
 
+    /**
+     * {@code bits} and {@code registers} share the same memory
+     */
     protected long[][] bits;
     protected LongBigList[] registers;
 
@@ -36,10 +40,25 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
         final long sizeInRegisters = arraySize * m;
         final int numVectors = getNumVectors(sizeInRegisters);
 
+        initBitArrays(numVectors, sizeInRegisters);
+    }
+
+    /**
+     * Allocates memory for the bit arrays {@code bits} {@code registers}
+     * and initiates them with shared memory.
+     *
+     * @param numVectors The number of vectors required
+     * @param sizeInRegisters The total size required (#counters * #registers)
+     */
+    private void initBitArrays(int numVectors, long sizeInRegisters) {
         bits = new long[ numVectors ][];
         registers = new LongBigList[ numVectors ];
 
-        initBitArrays(bits, registers, numVectors, sizeInRegisters);
+        for( int i = 0; i < numVectors; i++ ) {
+            final LongArrayBitVector bitVector = LongArrayBitVector.ofLength( registerSize * Math.min( CHUNK_SIZE, sizeInRegisters - ( (long)i << CHUNK_SHIFT ) ) );
+            bits[ i ] = bitVector.bits();
+            registers[ i ] = bitVector.asLongBigList( registerSize );
+        }
     }
 
     /**
@@ -60,46 +79,55 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
         size += numberOfNewCounters;
     }
 
-    private void increaseNumberOfCounters(long increaseSize) {
-        long newLimit = (long)(limit * resizeSize) + increaseSize;
+    /**
+     * Calculates the new array size and calls for a resize.
+     * Guarantees that at least the number of new counters
+     * requested will fit into the array.
+     * @param numberOfNewCounters Number of new counters needed
+     */
+    private void increaseNumberOfCounters(long numberOfNewCounters) {
+        long newLimit = (long)(limit * resizeSize) + numberOfNewCounters;
         resizeCounterArray(newLimit);
         limit = newLimit;
     }
 
+    /**
+     *
+     * @param newArraySize Must be strictly larger than previous size
+     * @throws IllegalArgumentException If size is smaller then previous
+     */
     private void resizeCounterArray(long newArraySize) throws IllegalArgumentException {
         if(limit > newArraySize) {
-            throw new IllegalArgumentException(exceptionString + "Requested a smaller array size than previous.");
+            throw new IllegalArgumentException(exceptionString + "A smaller array size than previous was requested.");
         }
 
         final long sizeInRegisters = newArraySize * m;
         final int numVectors = getNumVectors(sizeInRegisters);
 
-        long newBits[][] = new long[ numVectors ][];
-        LongBigList newRegisters[] = new LongBigList[ numVectors ];
+        long oldBits[][] = bits;
 
-        initBitArrays(newBits, newRegisters, numVectors, sizeInRegisters);
-        copyOldArraysIntoNew(newBits);
-
-        bits = newBits;
-        registers = newRegisters;
+        initBitArrays(numVectors, sizeInRegisters);
+        copyOldArraysIntoNew(oldBits);
     }
 
+    /**
+     * Calculates the number of vectors required to encode {@code sizeInRegisters}
+     * @param sizeInRegisters The total size required (#counters * #registers)
+     * @return the number of vectors required
+     */
     private int getNumVectors(long sizeInRegisters) {
         return  (int)( ( sizeInRegisters + CHUNK_MASK ) >>> CHUNK_SHIFT );
     }
 
-    private void initBitArrays(long[][] bits, LongBigList[] registers, int numVectors, long sizeInRegisters) {
-        for( int i = 0; i < numVectors; i++ ) {
-            final LongArrayBitVector bitVector = LongArrayBitVector.ofLength( registerSize * Math.min( CHUNK_SIZE, sizeInRegisters - ( (long)i << CHUNK_SHIFT ) ) );
-            bits[ i ] = bitVector.bits();
-            registers[ i ] = bitVector.asLongBigList( registerSize );
-        }
-    }
 
-    private void copyOldArraysIntoNew(long[][] newBits) {
-        for(int i = 0; i < bits.length; i++) {
-            for(int j = 0 ; j < bits[i].length; j++) {
-                newBits[i][j] = bits[i][j];
+    /**
+     * Copies {@code oldBits} into class variable {@code bits}
+     * @param oldBits Bits to be copied
+     */
+    private void copyOldArraysIntoNew(long[][] oldBits) {
+        for(int i = 0; i < oldBits.length; i++) {
+            for(int j = 0 ; j < oldBits[i].length; j++) {
+                bits[i][j] = oldBits[i][j];
             }
         }
     }

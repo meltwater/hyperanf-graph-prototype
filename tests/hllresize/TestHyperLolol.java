@@ -81,9 +81,9 @@ public class TestHyperLolol {
     private void setupParameters() {
         rand = new Random();
         arraySize = rand.nextInt(maxCounters);
-        n = maxCounters * 2;
+        n = maxCounters;
         log2m = rand.nextInt(10) + log2mMinSize;
-        increaseSize = rand.nextInt(maxCounters);
+        increaseSize = rand.nextInt(maxCounters - arraySize);
         counter = new HyperLolLolCounterArray(arraySize, n, log2m);
     }
 
