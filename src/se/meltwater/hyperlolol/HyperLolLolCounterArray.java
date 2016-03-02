@@ -27,14 +27,14 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
 
     protected long sentinelMask;
 
-    private final float resizeSize = 1 + (1 / 10);
+    private final float resizeFactor = 1.1f;
 
     private String exceptionString = "Exception in " + HyperLolLolCounterArray.class + ". ";
 
     public HyperLolLolCounterArray(long arraySize, long n, int log2m) {
         super(0, n, log2m);
         size = arraySize;
-        limit = arraySize;
+        limit = arraySize == 0 ? 1 : arraySize;
         sentinelMask = 1L << ( 1 << registerSize ) - 2;
 
         final long sizeInRegisters = arraySize * m;
@@ -72,7 +72,7 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
             throw new IllegalArgumentException(exceptionString + "Requested a negative number of new counters.");
         }
 
-        if(size + numberOfNewCounters >= limit) {
+        if(size + numberOfNewCounters > limit) {
             increaseNumberOfCounters(numberOfNewCounters);
         }
 
@@ -86,7 +86,9 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
      * @param numberOfNewCounters Number of new counters needed
      */
     private void increaseNumberOfCounters(long numberOfNewCounters) {
-        long newLimit = (long)(limit * resizeSize) + numberOfNewCounters;
+        double resizePow = Math.ceil(Math.log((limit + numberOfNewCounters) / (float)limit ) * (1/Math.log(resizeFactor)));
+
+        long newLimit = (long)(limit * Math.pow(resizeFactor, resizePow));
         resizeCounterArray(newLimit);
         limit = newLimit;
     }
@@ -98,7 +100,7 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
      */
     private void resizeCounterArray(long newArraySize) throws IllegalArgumentException {
         if(limit > newArraySize) {
-            throw new IllegalArgumentException(exceptionString + "A smaller array size than previous was requested.");
+            throw new IllegalArgumentException(exceptionString + "A smaller array size: " + newArraySize + " than previous " + limit + " was requested.");
         }
 
         final long sizeInRegisters = newArraySize * m;
