@@ -25,13 +25,15 @@ public class TestHyperLolol {
     private int increaseSize;
     private HyperLolLolCounterArray counter;
 
+
+
     @Test
     public void testNewPartsCanBeUsedOfResize() {
         int iteration = 0;
         while(iteration++ < nrTestIterations) {
             setupParameters();
 
-            counter.increaseCounterSize(increaseSize);
+            counter.addCounters(increaseSize);
             randomlyAddHashesToCounters(arraySize + increaseSize);
 
             assertAllCountersLargerThanZero(arraySize + increaseSize);
@@ -48,7 +50,7 @@ public class TestHyperLolol {
 
             double[] prevCounts = getCurrentCountersAsList(arraySize);
 
-            counter.increaseCounterSize(increaseSize);
+            counter.addCounters(increaseSize);
 
             assertPreviousValuesAreIntact(arraySize, prevCounts);
             assertNewValuesAreZero(arraySize + increaseSize, increaseSize);
@@ -67,7 +69,7 @@ public class TestHyperLolol {
 
             for(int i = 0; i < increaseSize - 1; ) {
                 int currentIncreaseSize = rand.nextInt(increaseSize - i) + 1;
-                counter.increaseCounterSize(currentIncreaseSize);
+                counter.addCounters(currentIncreaseSize);
 
                 assertPreviousValuesAreIntact(arraySize, prevCounts);
 

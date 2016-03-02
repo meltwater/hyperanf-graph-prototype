@@ -1,6 +1,5 @@
 package se.meltwater.hyperlolol;
 
-import com.sun.xml.internal.bind.annotation.OverrideAnnotationOf;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongBigList;
 import it.unimi.dsi.util.HyperLogLogCounterArray;
@@ -8,10 +7,13 @@ import it.unimi.dsi.util.HyperLogLogCounterArray;
 import java.util.Arrays;
 
 /**
- * Created by johan on 2016-03-01.
+ * An increment-only dynamic version of HyperLogLogCounterArray.
+ * Its purpose is to be able to use a HyperLogLogCounterArray when
+ * the number of nodes is unknown.
+ * It overrides the registers of HyperLogLogCounterArray.
+ *
  */
 public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
-
 
     protected long size;
     protected long limit;
@@ -19,7 +21,11 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
     protected long[][] bits;
     protected LongBigList[] registers;
 
-    private long sentinelMask;
+    protected long sentinelMask;
+
+    private final float resizeSize = 1 + (1 / 10);
+
+    private String exceptionString = "Exception in " + HyperLolLolCounterArray.class + ". ";
 
     public HyperLolLolCounterArray(long arraySize, long n, int log2m) {
         super(0, n, log2m);
@@ -36,35 +42,46 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
         initBitArrays(bits, registers, numVectors, sizeInRegisters);
     }
 
-    public void increaseCounterSize(long increaseSize) {
-        if(size + increaseSize >= limit) {
-            resizeCounterArray(size + increaseSize);
-
-            size = size + increaseSize;
-            limit = size;
+    /**
+     * Requests that the HyperLolLol counter needs
+     * {@code numberOfNewCounters} more counters.
+     * Will increase the counter array if necessary.
+     * @param numberOfNewCounters Number of new counters needed
+     */
+    public void addCounters(long numberOfNewCounters ) {
+        if(numberOfNewCounters < 0) {
+            throw new IllegalArgumentException(exceptionString + "Requested a negative number of new counters.");
         }
-        //TODO set limit
+
+        if(size + numberOfNewCounters >= limit) {
+            increaseNumberOfCounters(numberOfNewCounters);
+        }
+
+        size += numberOfNewCounters;
     }
 
+    private void increaseNumberOfCounters(long increaseSize) {
+        long newLimit = (long)(limit * resizeSize) + increaseSize;
+        resizeCounterArray(newLimit);
+        limit = newLimit;
+    }
 
-
-
-    private void resizeCounterArray(long arraySize) throws IllegalArgumentException {
-        if(size > arraySize) {
-            throw new IllegalArgumentException("Exception in HyperLololCounter. Cant downsize array size");
+    private void resizeCounterArray(long newArraySize) throws IllegalArgumentException {
+        if(limit > newArraySize) {
+            throw new IllegalArgumentException(exceptionString + "Requested a smaller array size than previous.");
         }
 
-        final long sizeInRegisters = arraySize * m;
+        final long sizeInRegisters = newArraySize * m;
         final int numVectors = getNumVectors(sizeInRegisters);
 
-        long newbits[][] = new long[ numVectors ][];
-        LongBigList newregisters[] = new LongBigList[ numVectors ];
+        long newBits[][] = new long[ numVectors ][];
+        LongBigList newRegisters[] = new LongBigList[ numVectors ];
 
-        initBitArrays(newbits, newregisters, numVectors, sizeInRegisters);
-        copyOldArraysIntoNew(newbits);
+        initBitArrays(newBits, newRegisters, numVectors, sizeInRegisters);
+        copyOldArraysIntoNew(newBits);
 
-        bits = newbits;
-        registers = newregisters;
+        bits = newBits;
+        registers = newRegisters;
     }
 
     private int getNumVectors(long sizeInRegisters) {
