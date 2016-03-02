@@ -3,6 +3,7 @@ package se.meltwater.graphEditing;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.io.InputBitStream;
 import it.unimi.dsi.io.OutputBitStream;
+import javafx.util.Pair;
 
 import java.io.*;
 import java.util.Properties;
@@ -87,7 +88,7 @@ public class GraphMerger{
             nodesLeft2 -= readIntervals(intervalCount2, intervals2, node, graph2Stream, gp2.getIntervalLength());
             long[][] resultingIntervals = new long[intervalCount1 + intervalCount2][2];
             Pair<Integer, Integer> result = mergeIntervals(intervals1, intervals2, resultingIntervals);
-            int numIntervals = result.fst, numNodesInIntervals = result.snd;
+            int numIntervals = result.getKey(), numNodesInIntervals = result.getValue();
             intervalisedarcs += numNodesInIntervals;
 
             long[] residuals = new long[nodesLeft1 + nodesLeft2];
@@ -202,12 +203,12 @@ public class GraphMerger{
             if(used1) { //the current node was used, read new node
                 used1 = false;
                 Pair<Long,Integer> res = readNextUnused(graph1Stream,nodesLeft1,nodesRead1,node,intervalizedNodes,n1);
-                n1 = res.fst; nodesRead1 = res.snd;
+                n1 = res.getKey(); nodesRead1 = res.getValue();
             }
             if(used2) {
                 used2 = false;
                 Pair<Long,Integer> res = readNextUnused(graph2Stream,nodesLeft2,nodesRead2,node,intervalizedNodes,n2);
-                n2 = res.fst; nodesRead2 = res.snd;
+                n2 = res.getKey(); nodesRead2 = res.getValue();
             }
 
             if(n1 == n2){
@@ -321,18 +322,6 @@ public class GraphMerger{
             readInto[i][1] = readInto[i][0]+len;
         }
         return nodesRead;
-    }
-
-    public static class Pair<P,Q>{
-        public P fst;
-        public Q snd;
-        public Pair(P fst, Q snd){
-            this.fst = fst;
-            this.snd = snd;
-        }
-        public String toString(){
-            return "(" + fst.toString() + "," + snd.toString() + ")";
-        }
     }
 
 

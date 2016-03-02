@@ -1,5 +1,7 @@
+
 package se.meltwater.test.GraphMerger;
 
+import javafx.util.Pair;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import se.meltwater.graphEditing.GraphMerger;
@@ -53,8 +55,8 @@ public class TestIntervalMerge extends GraphMerger {
         long[][] intervals2 = new long[][]{new long[]{4,6}};
         long[][] result = new long[4][2];
         Pair<Integer,Integer> res = mergeIntervals(intervals1,intervals2,result);
-        assertEquals((int)res.fst,2);
-        assertEquals((int)res.snd,6); // 1,3-8
+        assertEquals((int)res.getKey(),2);
+        assertEquals((int)res.getValue(),6); // 1,3-8
         assertArrayEquals(result[0],new long[]{1,2});
         assertArrayEquals(result[1],new long[]{3,8});
 
@@ -62,8 +64,8 @@ public class TestIntervalMerge extends GraphMerger {
         intervals2 = new long[][]{new long[]{4,6}};
         result = new long[4][2];
         res = mergeIntervals(intervals1,intervals2,result);
-        assertEquals((int)res.fst,4);
-        assertEquals((int)res.snd,5); // 1,4-6,7,9
+        assertEquals((int)res.getKey(),4);
+        assertEquals((int)res.getValue(),5); // 1,4-6,7,9
         assertArrayEquals(result[0],new long[]{1,2});
         assertArrayEquals(result[1],new long[]{4,6});
         assertArrayEquals(result[2],new long[]{7,8});
