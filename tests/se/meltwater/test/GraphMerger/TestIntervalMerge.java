@@ -63,7 +63,7 @@ public class TestIntervalMerge extends GraphMerger {
         intervals1 = new long[][]{new long[]{1,2}, new long[]{7,8}, new long[]{9,10}};
         intervals2 = new long[][]{new long[]{4,6}};
         result = new long[4][2];
-        res = mergeIntervals(intervals1,intervals2,result);
+        res = mergeIntervals(intervals2,intervals1,result);
         assertEquals((int)res.getKey(),4);
         assertEquals((int)res.getValue(),5); // 1,4-6,7,9
         assertArrayEquals(result[0],new long[]{1,2});

@@ -2,14 +2,16 @@ package se.meltwater.test.GraphMerger;
 
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.UnionImmutableGraph;
 import it.unimi.dsi.big.webgraph.NodeIterator;
+import it.unimi.dsi.big.webgraph.UnionImmutableGraph;
 import org.junit.Test;
-import static org.junit.Assert.*;
 import se.meltwater.graphEditing.GraphMerger;
 
 import java.io.File;
 import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Created by simon on 2016-02-26.

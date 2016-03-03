@@ -270,43 +270,44 @@ public class GraphMerger{
 
     /**
      * Merges two lists of intervals into one and tries to merge as many as possible. The resulting intervals are
-     * placed in resultingIntervals.
+     * placed in resultingIntervals. The input intervals
      *
-     * @param intervals1
-     * @param intervals2
-     * @param resultingIntervals
+     * @param intervals1 Must be sorted in ascending order on start node
+     * @param intervals2 Must be sorted in ascending order on start node
+     * @param resultingIntervals The items will be sorted in ascending order on start node
      * @return First is the number of intervals and second is the number of nodes included in the intervals
      */
     public static Pair<Integer,Integer> mergeIntervals(long[][] intervals1, long[][] intervals2, long[][] resultingIntervals){
         int intervalCount1 = intervals1.length, intervalCount2 = intervals2.length;
-        int i=0,j=0,k=0;
-        boolean foundInIndex = false;
+        if(intervalCount1 == 0 && intervalCount2 == 0)
+            return new Pair<>(0,0);
+
+        int i1=0,i2=0,ir=0;
         int totalNodes = 0;
-        while(i < intervalCount1 || k < intervalCount2){
-            boolean found = false;
-            if(i < intervalCount1 && tryToJoinIntervals(resultingIntervals[j],intervals1[i])) {
-                i++;
-                found = foundInIndex = true;
+        long[] currentInterval;
+        boolean first = true;
+        while (i1 < intervalCount1 || i2 < intervalCount2){
+
+            //We save the interval with smallest start point in currentInterval
+            if(i1 < intervalCount1 && (i2 >= intervalCount2 || intervals1[i1][0] < intervals2[i2][0]))
+                currentInterval = intervals1[i1++];
+            else
+                currentInterval = intervals2[i2++];
+
+            //In the first iteration we want to just save the first interval in resultingIntervals
+            if(first){
+                resultingIntervals[ir] = currentInterval;
+                first = false;
+            }else if(!tryToJoinIntervals(resultingIntervals[ir],currentInterval)) { // If we couldn't merge the current
+                                                                                    // interval
+                totalNodes += resultingIntervals[ir][1]-resultingIntervals[ir][0];  // We count the nodes in the current interval
+                resultingIntervals[++ir] = currentInterval;                         // And set the next resulting interval
+                                                                                    // to the current one
             }
-            if(k < intervalCount2 && tryToJoinIntervals(resultingIntervals[j],intervals2[k])) {
-                k++;
-                found = true;
-                foundInIndex = true;
-            }
-            if(!found){
-                if(foundInIndex) //If we are about to create a new interval we first save the number of nodes in the interval
-                    totalNodes += resultingIntervals[j][1]-resultingIntervals[j][0];
-                j = foundInIndex ? j+1 : j;
-                foundInIndex = true;
-                if(i < intervalCount1 && (k >= intervalCount2 || intervals1[i][0] < intervals2[k][0]))
-                    resultingIntervals[j] = intervals1[i++];
-                else
-                    resultingIntervals[j] = intervals2[k++];
-            }
+
         }
-        if(foundInIndex)
-            totalNodes += resultingIntervals[j][1]-resultingIntervals[j][0];
-        return new Pair<>(foundInIndex ? j+1 : j,totalNodes);
+        totalNodes += resultingIntervals[ir][1]-resultingIntervals[ir][0];
+        return new Pair<>(ir+1,totalNodes);
     }
 
     private static int readIntervals(int length, long[][] readInto, long node, InputBitStream ibs, int minIntervalLength) throws IOException {
