@@ -1,3 +1,5 @@
+package se.meltwater.test.GraphMerger;
+
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.UnionImmutableGraph;

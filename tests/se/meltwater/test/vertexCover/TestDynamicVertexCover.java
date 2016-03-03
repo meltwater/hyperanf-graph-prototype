@@ -1,14 +1,12 @@
-package vertexCover;
+package se.meltwater.test.vertexCover;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.SimulatedGraph;
+import se.meltwater.test.TestUtils;
 import se.meltwater.vertexcover.DynamicVertexCover;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 import java.util.stream.LongStream;
 
@@ -26,7 +24,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[1], nodes[2]),
                 new Edge(nodes[2], nodes[0])};
 
-        SimulatedGraph graph = setupSGraph(nodes, edges);
+        SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
         DynamicVertexCover dvc = setupDVC(graph);
 
         assertTrue(isVertexCover(graph, dvc));
@@ -40,9 +38,9 @@ public class TestDynamicVertexCover {
         int m = rand.nextInt((int)Math.pow(n, 2));
 
         long[] nodes = LongStream.rangeClosed(0, n).toArray();
-        Edge[] edges = generateEdges(n, m);
+        Edge[] edges = TestUtils.generateEdges(n, m);
 
-        SimulatedGraph graph = setupSGraph(nodes, new Edge[0]);
+        SimulatedGraph graph = TestUtils.setupSGraph(nodes, new Edge[0]);
         DynamicVertexCover dvc = setupDVC(graph);
 
         for(int i = 0; i < edges.length; i++) {
@@ -63,34 +61,13 @@ public class TestDynamicVertexCover {
         }
     }
 
-    private Edge[] generateEdges(int n, int m) {
-        HashMap<Long, Long> edgesMap = new HashMap<>();
-        ArrayList<Edge> edges = new ArrayList<>();
-
-        for(int i = 0; i < m; i++) {
-            Random rand = new Random();
-            long to   = rand.nextInt(n);
-            long from = rand.nextInt(n);
-            if(to != from) {
-                edgesMap.put(to, from);
-            }
-        }
-
-        for(Map.Entry<Long, Long> edge : edgesMap.entrySet()) {
-            edges.add(new Edge(edge.getKey(), edge.getValue()));
-        }
-
-        Edge[] edgeArray = new Edge[edges.size()];
-        return edges.toArray(edgeArray);
-    }
-
     @Test
     public void testDeletionsInMaximal() {
         long[] nodes = {0, 1, 2, 3};
         Edge[] edges = {new Edge(nodes[0], nodes[2]),
                 new Edge(nodes[1], nodes[2])};
 
-        SimulatedGraph graph = setupSGraph(nodes, edges);
+        SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
         DynamicVertexCover dvc = setupDVC(graph);
 
         graph.removeEdge(edges[0]);
@@ -106,7 +83,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[1], nodes[2]),
                 new Edge(nodes[2], nodes[0])};
 
-        SimulatedGraph graph = setupSGraph(nodes, edges);
+        SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
         DynamicVertexCover dvc = setupDVC(graph);
 
         graph.removeEdge(edges[1]);
@@ -122,7 +99,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[1], nodes[2]),
                 new Edge(nodes[2], nodes[0])};
 
-        SimulatedGraph graph = setupSGraph(nodes, edges);
+        SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
         DynamicVertexCover dvc = setupDVC(graph);
 
         for(Edge edge : edges ) {
@@ -133,20 +110,6 @@ public class TestDynamicVertexCover {
         assertTrue(isVertexCover(graph, dvc));
         assertTrue(dvc.getVertexCoverSize() == 0);
         assertTrue(dvc.getMaximalMatchingSize() == 0);
-    }
-
-    public SimulatedGraph setupSGraph(long[] nodes, Edge[] edges) {
-        SimulatedGraph graph = new SimulatedGraph();
-
-        for(long node : nodes) {
-            graph.addNode(node);
-        }
-
-        for(Edge edge : edges) {
-            graph.addEdge(edge);
-        }
-
-        return graph;
     }
 
     public DynamicVertexCover setupDVC(SimulatedGraph graph) {

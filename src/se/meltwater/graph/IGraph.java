@@ -1,5 +1,7 @@
 package se.meltwater.graph;
 
+import it.unimi.dsi.big.webgraph.NodeIterator;
+
 import java.util.*;
 
 /**
@@ -7,12 +9,15 @@ import java.util.*;
  */
 public interface IGraph {
 
-    public void setNodeIterator(long node);
-    public long  getNextNode();
+    void setNodeIterator(long node);
+    long  getNextNode();
 
-    public long getNextNeighbor();
-    public long getOutdegree();
+    long getNextNeighbor();
+    long getOutdegree();
 
-    public long getNumberOfNodes();
+    NodeIterator getNodeIterator();
+    NodeIterator getNodeIterator(long node);
+
+    long getNumberOfNodes();
 
 }

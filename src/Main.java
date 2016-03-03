@@ -2,11 +2,15 @@
 import com.martiansoftware.jsap.*;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import se.meltwater.Converter;
+import se.meltwater.MSBreadthFirst;
+import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graphEditing.GraphMerger;
 import se.meltwater.GraphReader;
 import se.meltwater.examples.VertexCover;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Created by simon on 2016-02-17.
@@ -43,10 +47,42 @@ public class Main {
             case "-r":
                 doReadGraph(argsWithoutFirstFlag);
                 break;
+            case "-bfs":
+                doBFS(argsWithoutFirstFlag);
+                break;
             default:
                 printUsages();
                 System.exit(0);
         }
+    }
+
+    private static void doBFS(String[] args) throws JSAPException, IOException {
+        SimpleJSAP jsap = new SimpleJSAP(jarName, jarDescription,
+                new Parameter[] {
+                        new UnflaggedOption("filename", JSAP.STRING_PARSER, true,
+                                "The graph to perform the Breadth First Search on")
+                }
+        );
+
+        JSAPResult result = jsap.parse(args);
+        checkErrorFlags(jsap, result);
+
+        String graphName = result.getString("filename");
+
+        BVGraph graph = BVGraph.loadMapped(graphName);
+        int[] bfsSources = new int[1000];
+        Random rand = new Random();
+        for(int i=0; i<1000 ; i++)
+            bfsSources[i] = (int)(rand.nextFloat()*(float)graph.numNodes());
+
+        MSBreadthFirst MSBFS = new MSBreadthFirst(bfsSources,new ImmutableGraphWrapper(graph));
+        try {
+            MSBFS.breadthFirstSearch();
+        } catch (InterruptedException e) {
+            System.err.println("The breadth first search was interrupted.");
+            e.printStackTrace();
+        }
+
     }
 
     private static void doUnion(String[] args) throws Exception {
@@ -160,11 +196,12 @@ public class Main {
     }
 
     private static void printUsages(){
-        System.out.println("-g  : Generate BVGraph from .graph");
-        System.out.println("-r  : Read graph");
-        System.out.println("-rb : Remove blocks from graph");
-        System.out.println("-u  : Join two graphs to one");
-        System.out.println("-vc : Calculate a 2-approximate vertex cover in graph");
+        System.out.println("-g   : Generate BVGraph from .graph");
+        System.out.println("-r   : Read graph");
+        System.out.println("-rb  : Remove blocks from graph");
+        System.out.println("-u   : Join two graphs to one");
+        System.out.println("-vc  : Calculate a 2-approximate vertex cover in graph");
+        System.out.println("-bfs : Do a random Multi-Source Breadth-First search");
     }
 
 }

@@ -1,3 +1,5 @@
+package se.meltwater.test.GraphMerger;
+
 import org.junit.Test;
 import static org.junit.Assert.*;
 import se.meltwater.graphEditing.GraphMerger;

@@ -44,4 +44,12 @@ public class ImmutableGraphWrapper implements IGraph{
     public long getNumberOfNodes() {
         return graph.numNodes();
     }
+
+    public NodeIterator getNodeIterator(long node){
+        return graph.nodeIterator(node);
+    }
+
+    public NodeIterator getNodeIterator(){
+        return getNodeIterator(0);
+    }
 }

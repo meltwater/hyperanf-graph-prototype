@@ -1,5 +1,9 @@
 package se.meltwater.graph;
 
+import it.unimi.dsi.big.webgraph.NodeIterator;
+import it.unimi.dsi.fastutil.BigArrays;
+import it.unimi.dsi.fastutil.longs.LongBigArrays;
+
 import java.util.*;
 
 /**
@@ -61,4 +65,56 @@ public class SimulatedGraph implements IGraph {
     public long getNumberOfNodes() {
         return nodes.size();
     }
+
+    @Override
+    public NodeIterator getNodeIterator(long node) {
+        return new SimulatedGraphNodeIterator(node,this);
+    }
+
+    public NodeIterator getNodeIterator(){
+        return new SimulatedGraphNodeIterator(iteratorNeighbors.firstKey(),this);
+    }
+
+    private static class SimulatedGraphNodeIterator extends NodeIterator{
+
+        private long currentIndex;
+        private SimulatedGraph graph;
+        private long outdegree;
+
+        public SimulatedGraphNodeIterator(long startAt, SimulatedGraph graph){
+            currentIndex = startAt-1;
+            this.graph = graph;
+            outdegree = graph.iteratorNeighbors.get(startAt).size();
+        }
+
+        @Override
+        public long outdegree() {
+            return outdegree;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return currentIndex < graph.iteratorNeighbors.lastKey();
+        }
+
+        @Override
+        public long nextLong() {
+            if(!hasNext())
+                throw new IllegalStateException("No more nodes");
+            currentIndex = graph.iteratorNeighbors.higherKey(currentIndex);
+            outdegree = graph.iteratorNeighbors.get(currentIndex).size();
+            return currentIndex;
+        }
+
+        @Override
+        public long[][] successorBigArray() {
+            HashSet<Long> succs = graph.iteratorNeighbors.get(currentIndex);
+            long[][] arr = LongBigArrays.newBigArray(succs.size());
+            int i = 0;
+            for(long succ : succs)
+                LongBigArrays.add(arr,i++,succ);
+            return arr;
+        }
+    }
+
 }
