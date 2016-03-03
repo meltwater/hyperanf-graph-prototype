@@ -83,6 +83,7 @@ public class MSBreadthFirst {
 
         MSBFS(visit,seen);
         System.out.println("Finished Breadth first in: " + (System.currentTimeMillis() - time) + "ms");
+
         return seen;
 
     }
@@ -162,6 +163,7 @@ public class MSBreadthFirst {
             }catch (InterruptedException e){
                 System.err.println("Thread was interrupted");
                 e.printStackTrace();
+
             }
         };
     }
@@ -228,6 +230,7 @@ public class MSBreadthFirst {
          *
          */
         void visit(long node, BitSet bfsVisits, BitSet seen, int depth);
+
     }
 
 
