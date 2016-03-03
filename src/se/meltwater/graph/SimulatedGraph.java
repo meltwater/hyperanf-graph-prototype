@@ -112,6 +112,7 @@ public class SimulatedGraph implements IGraph {
                 LongBigArrays.add(arr,i++,succ);
             return arr;
         }
+
     }
 
 }

@@ -1,4 +1,4 @@
-package hllresize;
+package se.meltwater.test.hllresize;
 
 import org.junit.Test;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;

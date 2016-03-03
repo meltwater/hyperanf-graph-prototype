@@ -2,7 +2,6 @@ package se.meltwater.graph;
 
 import it.unimi.dsi.big.webgraph.NodeIterator;
 
-
 /**
  *  IGraphs purpose is to abstract what type of
  *  graph the test suite is testing. In some cases
