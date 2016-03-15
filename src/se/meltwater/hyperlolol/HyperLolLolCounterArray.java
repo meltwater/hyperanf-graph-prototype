@@ -197,15 +197,16 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
     }
 
     /**
-     * Take the union of the elements of {@code index} of this counter and {@code from}
-     * and update this counter with the result. <b>WARNING: It is vital that both counters
+     * Take the union of the elements of {@code index} of this counter and node {@code fromIndex}
+     * from counter {@code from} and place it in {@code index} of this counter.
+     * <b>WARNING: It is vital that both counters
      * have the same number of registers and the same register size. Make sure that the
-     * counters are created with the same parameters to their constructors
+     * counters are created with the same parameters to their constructors</b>
      * @param index
      * @param from
      * @throws IllegalArgumentException If the counters didn't have the same parameters
      */
-    public void union(long index, HyperLolLolCounterArray from) throws IllegalArgumentException{
+    public void union(long index, HyperLolLolCounterArray from, long fromIndex) throws IllegalArgumentException{
         if(registerSize != from.registerSize || m != from.m ||
                 offset(index) != from.offset(index) || chunk(index) != from.chunk(index)){
             throw new IllegalArgumentException("The counters to union between had different parameters " +
@@ -214,23 +215,32 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
         long[] chunk = bits[chunk(index)];
         long offset = offset(index);
         long remaining = registerSize*m;      // The remaining number of bits to be cleared
-        int fromRight = (int)(offset % Long.SIZE);  // The offset in the current long from {the least significant bit}
-        // that should be cleared. We see the least signifcant bit to be the "rightmost" bit
+        int fromLSB = (int)(offset % Long.SIZE);  // The offset in the current long from the least significant bit
+                                                    // that should be cleared. We see the least signifcant bit to be the "rightmost" bit
         int word = (int) (offset / Long.SIZE);// The long to be edited
-        long[] temp = new long[counterLongwords];
-        this.getLolLolCounter(index, temp);
-        long[] temp2 = new long[counterLongwords];
-        from.getLolLolCounter(index, temp2);
-        max(temp,temp2); // union the counters
+        long[] bitsToUnionTo = new long[counterLongwords];
+        this.getLolLolCounter(index, bitsToUnionTo);
+        long[] bitsToUnionFrom = new long[counterLongwords];
+        from.getLolLolCounter(fromIndex, bitsToUnionFrom);
+        max(bitsToUnionTo,bitsToUnionFrom); // union the counters
 
-        if(fromRight == 0) { //No shift, we can just copy the data
-            //endMask: The bits that are 1 are the bits we want to keep from the last element in temp
+        if(fromLSB == 0) { //No shift, we can just copy the data
+            System.arraycopy(bitsToUnionTo,0,chunk,word,bitsToUnionTo.length-1);
+            //endMask: The bits that are 1 are the bits we want to keep from the last element in bitsToUnionTo
             long endMask = remaining % Long.SIZE == 0 ? ~0 : (1L << (remaining % Long.SIZE)) - 1L;
-            System.arraycopy(temp,0,chunk,word,temp.length-1);
-            chunk[word + temp.length-1] = chunk[word + temp.length-1] & ~endMask | temp[temp.length-1] & endMask;
+            chunk[word + bitsToUnionTo.length-1] = chunk[word + bitsToUnionTo.length-1] & ~endMask | bitsToUnionTo[bitsToUnionTo.length-1] & endMask;
         }else{
-            copyShiftedArray(temp,0,chunk,word,remaining,fromRight);
+            copyShiftedArray(bitsToUnionTo,0,chunk,word,remaining,fromLSB);
         }
+    }
+
+    /**
+     * Adds all elements in {@code from} for all indices
+     * @param from
+     */
+    public void union(HyperLolLolCounterArray from){
+        for(int i=0; i < bits.length; i++)
+            max(bits[i],from.bits[i]);
     }
 
     /**
@@ -247,9 +257,9 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
      * @param shift   The bit position in the first word in {@code dest} that the bits in {@code src} should be copied to.
      */
     private static void copyShiftedArray(long[] src, int srcPos, long[] dest, int destPos, long numBits, int shift){
-        // We want to keep the bits to the left of shift in the destination so we place them in the carry
-        long startMask = (1L << shift) - 1L;
-        long carry = dest[destPos] & startMask;
+        // The bits we want to keep from destination (to not throw any data away)
+        long LSBToKeepFromFirst = (1L << shift) - 1L;
+        long carry = dest[destPos] & LSBToKeepFromFirst;
 
         int carryLength = shift;  // The carry length is the number of bits that have been shifted away
         long remaining = numBits;
@@ -266,13 +276,13 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
         }
 
         if(remaining > 0) {
-            long bitsToKeep = ((1L << remaining) - 1L);
+            long LSBToKeepFromLast = ~((1L << remaining) - 1L);
             // We keep the rest in the last element of the src array along with the carry.
             // As we know that the remaining bits are less than 64 we know that we won't shift away
             // relevant data. We also mask away any eventual scrap data from src (we only keep the last remaining bits).
-            long dataToAdd = (src[i] << carryLength | carry) & bitsToKeep;
+            long dataToAdd = (src[i] << carryLength | carry) & ~LSBToKeepFromLast;
             // We don't want to delete the bits which are not in our range.
-            long dataToKeep = dest[destPos + i] & ~bitsToKeep;
+            long dataToKeep = dest[destPos + i] & LSBToKeepFromLast;
             dest[destPos + i] = dataToKeep | dataToAdd;
         }
     }

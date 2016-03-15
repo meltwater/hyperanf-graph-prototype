@@ -26,17 +26,29 @@ public class NodeHistory {
         for(int i = 0; i < historyRecords; i++)
             history[i] = new HyperLolLolCounterArray(vc.getVertexCoverSize(),vc.getVertexCoverSize(),log2m);
         this.graph = graph;
+        int i = 0;
+        for(long node : vc.getNodesInVertexCover())
+            counterIndex.put(node,(long)(i++));
 
     }
 
-    public void recalculateHistory(long node){
+    public void recalculateHistory(long node) throws InterruptedException {
         if(vc.isInVertexCover(node)) {
             long counterInd = counterIndex.get(node);
             for(HyperLolLolCounterArray counter : history)
                 counter.clearCounter(counterInd);
             MSBreadthFirst msbfs = new MSBreadthFirst(new int[]{(int) node}, graph, recalculateVisitor(node,counterInd));
+            msbfs.breadthFirstSearch();
+            for(int i = 1; i < historyRecords; i++)
+                history[i].union(history[i-1]);
         }
 
+    }
+
+    public void calculateHistory(long node, HyperLolLolCounterArray addInto){
+        if(vc.isInVertexCover(node)){
+
+        }
     }
 
     public MSBreadthFirst.Visitor recalculateVisitor(long node, long nodeIndex){
@@ -44,7 +56,10 @@ public class NodeHistory {
             if(depth > 0){
 
                 if(vc.isInVertexCover(visitNode)){
-                    //history[historyRecords-depth-1];
+                    history[depth].union(nodeIndex,history[historyRecords-depth], counterIndex.get(visitNode));
+                    bfsVisits.clear();
+                }else{
+                    history[depth].add(nodeIndex,visitNode);
                 }
 
             }

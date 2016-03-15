@@ -176,9 +176,9 @@ public class MSBreadthFirst {
 
             if (visitor != null) {
                 visitor.visit(node,visit[node], seen[node],iteration);
+                if(visit[node].cardinality() == 0) continue;
             }
 
-            if(visit[node].cardinality() == 0) continue;
 
             visitHadContent.theBool = true;
             LazyLongIterator neighbors = nodeIt.successors();
@@ -215,7 +215,7 @@ public class MSBreadthFirst {
     public interface Visitor{
         /**
          *
-         * @apiNote Note that several visitors are very likely to be called in parallel and they should
+         *  Note that several visitors are very likely to be called in parallel and they should
          * be thread safe
          *
          * @param node The visited node

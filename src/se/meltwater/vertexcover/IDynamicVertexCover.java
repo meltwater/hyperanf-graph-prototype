@@ -12,6 +12,8 @@ public interface IDynamicVertexCover {
 
     boolean isInVertexCover(long node);
 
+    long[] getNodesInVertexCover();
+
     int getVertexCoverSize();
 
 }

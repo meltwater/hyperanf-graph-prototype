@@ -156,6 +156,15 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     @Override
+    public long[] getNodesInVertexCover(){
+        long[] ret = new long[vertexCover.cardinality()];
+        int node = -1, i = 0;
+        while ((node = vertexCover.nextSetBit(node+1)) != -1)
+            ret[i++] = node;
+        return ret;
+    }
+
+    @Override
     public int getVertexCoverSize() {
         return vertexCover.cardinality();
     }

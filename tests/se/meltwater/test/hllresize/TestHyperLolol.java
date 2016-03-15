@@ -1,5 +1,6 @@
 package se.meltwater.test.hllresize;
 
+import javafx.util.Pair;
 import org.junit.Test;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 
@@ -114,9 +115,9 @@ public class TestHyperLolol {
             /* counterOriginial will be a clone of counter */
             addValuesToHLL(addedCounterValues, counterOriginal);
 
-            long unionedNode = unionRandomNode(newArraySize, counter, counter2);
+            Pair<Long,Long> unionedNodes = unionRandomNode(newArraySize, counter, counter2);
 
-            checkValues(counter, counter2, counterOriginal, newArraySize, unionedNode);
+            checkValues(counter, counter2, counterOriginal, newArraySize, unionedNodes.getKey(),unionedNodes.getValue());
         }
     }
 
@@ -140,10 +141,11 @@ public class TestHyperLolol {
      * @param from
      * @return
      */
-    private long unionRandomNode(int newArraySize, HyperLolLolCounterArray to, HyperLolLolCounterArray from) {
+    private Pair<Long,Long> unionRandomNode(int newArraySize, HyperLolLolCounterArray to, HyperLolLolCounterArray from) {
         long unionedNode = (long)rand.nextInt(newArraySize);
-        to.union(unionedNode, from);
-        return unionedNode;
+        long fromNode = (long)rand.nextInt(newArraySize);
+        to.union(unionedNode, from, fromNode);
+        return new Pair<>(unionedNode,fromNode);
     }
 
     /**
@@ -157,7 +159,7 @@ public class TestHyperLolol {
      * @param unionedNode
      */
     private void checkValues(HyperLolLolCounterArray counter1, HyperLolLolCounterArray counter2, HyperLolLolCounterArray counterOriginal,
-                             int arraySize, long unionedNode) {
+                             int arraySize, long unionedNode, long unionFromNode) {
         long[] counter1Bits = new long[counter1.counterLongwords];
         long[] counter2Bits = new long[counter1.counterLongwords];
         long[] counter1OriginalBits = new long[counter1.counterLongwords];
@@ -165,12 +167,12 @@ public class TestHyperLolol {
         /* Compares all nodes in the counters */
         for (int i = 0; i < arraySize; i++) {
             counter1.getLolLolCounter(i,counter1Bits);
-            counter2.getLolLolCounter(i,counter2Bits);
             counterOriginal.getLolLolCounter(i,counter1OriginalBits);
 
             if (i != unionedNode) {
                 assertArrayEquals(counter1Bits,counter1OriginalBits);
             } else {
+                counter2.getLolLolCounter(unionFromNode,counter2Bits);
                 checkUnionedValue(counter1Bits, counter2Bits, counter1OriginalBits);
             }
         }
@@ -241,10 +243,11 @@ public class TestHyperLolol {
             randomlyAddHashesToCounters(arraySize + 5);
             randomlyAddHashesToCounters(arraySize + 5, counter2);
             long unionedNode = (long) rand.nextInt(arraySize + 3) + 1;
+            long unionedNode2 = (long) rand.nextInt(arraySize + 3) + 1;
             double countNodeBefore = counter.count(unionedNode-1);
             double countBefore = counter.count(unionedNode);
             double countNodeAfter = counter.count(unionedNode+1);
-            counter.union(unionedNode, counter2);
+            counter.union(unionedNode, counter2, unionedNode2);
             double countAfter = counter.count(unionedNode);
             assertTrue("countBefore: " + countBefore + ", countAfter " + countAfter, countBefore <= countAfter);
             assertEquals(counter.count(unionedNode-1), countNodeBefore, 0.01);
