@@ -221,7 +221,7 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
             chunk[word + temp.length-1] = chunk[word + temp.length-1] & ~endMask | temp[temp.length-1] & endMask;
         }else{
             System.out.println("nemen");
-
+            
             long startMask = ~((1L << fromRight) - 1L);
             chunk[word] = chunk[word] & ~startMask | temp[0] << fromRight;
             long carry = temp[0] >>> Long.SIZE - fromRight;
@@ -231,18 +231,16 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
             int i = 1;
             while(remaining >= 64){
                 chunk[word+i] = temp[i] << carryLength | carry;
+
                 carry = temp[i] >>> Long.SIZE - carryLength;
                 remaining -= 64;
                 i++;
             }
-            if(remaining > 0)
-                chunk[i] = chunk[i] & ~((1L << remaining) - 1L) | (temp[i] << carryLength | carry) & ((1L << remaining) - 1L);
 
-
-
+            if(remaining > 0) {
+                chunk[word + i] = chunk[word + i] & ~((1L << remaining) - 1L) | (temp[i] << carryLength | carry) & ((1L << remaining) - 1L);
+            }
         }
-
-
     }
 
     public static long jenkins( final long x, final long seed ) {
