@@ -196,50 +196,84 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
 
     }
 
-    public void union(long index, HyperLolLolCounterArray from){
+    /**
+     * Take the union of the elements of {@code index} of this counter and {@code from}
+     * and update this counter with the result. <b>WARNING: It is vital that both counters
+     * have the same number of registers and the same register size. Make sure that the
+     * counters are created with the same parameters to their constructors
+     * @param index
+     * @param from
+     * @throws IllegalArgumentException If the counters didn't have the same parameters
+     */
+    public void union(long index, HyperLolLolCounterArray from) throws IllegalArgumentException{
+        if(registerSize != from.registerSize || m != from.m ||
+                offset(index) != from.offset(index) || chunk(index) != from.chunk(index)){
+            throw new IllegalArgumentException("The counters to union between had different parameters " +
+                                               "which this function can't handle.");
+        }
         long[] chunk = bits[chunk(index)];
         long offset = offset(index);
         long remaining = registerSize*m;      // The remaining number of bits to be cleared
         int fromRight = (int)(offset % Long.SIZE);  // The offset in the current long from {the least significant bit}
         // that should be cleared. We see the least signifcant bit to be the "rightmost" bit
-        long mask = (1L << fromRight) - 1L;   // All zeroes from the most significant bit up to the bit at fromRight.
-        // The rest is ones.
         int word = (int) (offset / Long.SIZE);// The long to be edited
         long[] temp = new long[counterLongwords];
         this.getLolLolCounter(index, temp);
         long[] temp2 = new long[counterLongwords];
         from.getLolLolCounter(index, temp2);
-        max(temp,temp2);
-        temp[temp.length-1] = temp[temp.length-1];
-        if(fromRight == 0) {
+        max(temp,temp2); // union the counters
+
+        if(fromRight == 0) { //No shift, we can just copy the data
+            //endMask: The bits that are 1 are the bits we want to keep from the last element in temp
             long endMask = remaining % Long.SIZE == 0 ? ~0 : (1L << (remaining % Long.SIZE)) - 1L;
-            if(remaining % Long.SIZE == 0)
-                System.out.println("yo, yoyo");
-            for(int i = 0; i <temp.length-1; i++) {
-                chunk[word + i] = temp[i];
-            }
+            System.arraycopy(temp,0,chunk,word,temp.length-1);
             chunk[word + temp.length-1] = chunk[word + temp.length-1] & ~endMask | temp[temp.length-1] & endMask;
         }else{
-            System.out.println("nemen");
-            
-            long startMask = ~((1L << fromRight) - 1L);
-            chunk[word] = chunk[word] & ~startMask | temp[0] << fromRight;
-            long carry = temp[0] >>> Long.SIZE - fromRight;
-            int carryLength = fromRight;
-            remaining -= Long.SIZE - fromRight;
+            copyShiftedArray(temp,0,chunk,word,remaining,fromRight);
+        }
+    }
 
-            int i = 1;
-            while(remaining >= 64){
-                chunk[word+i] = temp[i] << carryLength | carry;
+    /**
+     * Copies an array {@code src} where the values start at bit 0 (no shift) into an array
+     * {@code dest} with all values shifted {@code shift} number of bits. The 0-bit in the
+     * first word to be copied from {@code src} will be the {@code shift}-bit in the first
+     * element to copy to in {@code dest}. All bits not copied to in {@code dest} will
+     * remain unchanged.
+     * @param dest    The destination array
+     * @param destPos The index of the first word in {@code dest} to copy to
+     * @param src     The array to copy from
+     * @param srcPos  The index of the first word in {@code src} to copy from
+     * @param numBits The total number of bits to be copied
+     * @param shift   The bit position in the first word in {@code dest} that the bits in {@code src} should be copied to.
+     */
+    private static void copyShiftedArray(long[] src, int srcPos, long[] dest, int destPos, long numBits, int shift){
+        // We want to keep the bits to the left of shift in the destination so we place them in the carry
+        long startMask = (1L << shift) - 1L;
+        long carry = dest[destPos] & startMask;
 
-                carry = temp[i] >>> Long.SIZE - carryLength;
-                remaining -= 64;
-                i++;
-            }
+        int carryLength = shift;  // The carry length is the number of bits that have been shifted away
+        long remaining = numBits;
 
-            if(remaining > 0) {
-                chunk[word + i] = chunk[word + i] & ~((1L << remaining) - 1L) | (temp[i] << carryLength | carry) & ((1L << remaining) - 1L);
-            }
+        int i = srcPos;
+        while(remaining >= Long.SIZE){ // The last word needs to be treated specially so we don't overwrite any data.
+            dest[destPos+i] = src[i] << carryLength | carry; // add the bits in src along with the carry
+
+            carry = src[i] >>> Long.SIZE - carryLength; // Set the new carry to the bits that weren't included
+
+            // In the first iteration we only consume the bits that are to the left of shift
+            remaining -= i == 0 ? Long.SIZE - shift : Long.SIZE;
+            i++;
+        }
+
+        if(remaining > 0) {
+            long bitsToKeep = ((1L << remaining) - 1L);
+            // We keep the rest in the last element of the src array along with the carry.
+            // As we know that the remaining bits are less than 64 we know that we won't shift away
+            // relevant data. We also mask away any eventual scrap data from src (we only keep the last remaining bits).
+            long dataToAdd = (src[i] << carryLength | carry) & bitsToKeep;
+            // We don't want to delete the bits which are not in our range.
+            long dataToKeep = dest[destPos + i] & ~bitsToKeep;
+            dest[destPos + i] = dataToKeep | dataToAdd;
         }
     }
 
