@@ -92,6 +92,13 @@ public class TestHyperLolol {
     }
 
     @Test
+    /**
+     * Tests that union a node from one HLL to another doesnt affect any other node than
+     * the unioned and that the unioned node gets the correct value.
+     *
+     * Randomized tests that performs {@code nrTestIterations} number of
+     * tests with random HLLs and a random node to union.
+     */
     public void testUnion(){
         int iteration = 0;
         while(iteration++ < nrTestIterations){
@@ -230,25 +237,46 @@ public class TestHyperLolol {
     }
 
     @Test
+    /**
+     * Tests that a union between two HLL cannot lower the unioned node value.
+     *
+     * Randomized tests that performs {@code nrTestIterations} number of
+     * tests with random HLLs and a random node to union.
+     */
     public void testUnionNotSmaller(){
         int iteration = 0;
         while(iteration++ < nrTestIterations) {
             setupParameters();
-            HyperLolLolCounterArray counter2 = new HyperLolLolCounterArray(arraySize, n, log2m);
+
+            final int extraElementsInArray = 5;
+            final int newArraySize = arraySize + extraElementsInArray;
+
+            /* Init counters */
+            counter = new HyperLolLolCounterArray(newArraySize, n, log2m);
+            HyperLolLolCounterArray counter2 = new HyperLolLolCounterArray(newArraySize, n, log2m);
+            HyperLolLolCounterArray counterOriginal = new HyperLolLolCounterArray(newArraySize, n, log2m);
+
+            /* The counters need to use the same hash to avoid nodes being mapped to different registers and values */
             counter2.setJenkinsSeed(counter.getJenkinsSeed());
-            counter.addCounters(5);
-            counter2.addCounters(5);
-            randomlyAddHashesToCounters(arraySize + 5);
-            randomlyAddHashesToCounters(arraySize + 5, counter2);
-            long unionedNode = (long) rand.nextInt(arraySize + 3) + 1;
-            double countNodeBefore = counter.count(unionedNode-1);
-            double countBefore = counter.count(unionedNode);
-            double countNodeAfter = counter.count(unionedNode+1);
+            counterOriginal.setJenkinsSeed(counter.getJenkinsSeed());
+
+            long[][] addedValues = randomlyAddHashesToCounters(newArraySize, counter);
+            randomlyAddHashesToCounters(newArraySize, counter2);
+
+            /* Basically counterOriginal = counter.clone() */
+            addValuesToHLL(addedValues, counterOriginal);
+
+            final long unionedNode = (long) rand.nextInt(newArraySize);
+
             counter.union(unionedNode, counter2);
-            double countAfter = counter.count(unionedNode);
-            assertTrue("countBefore: " + countBefore + ", countAfter " + countAfter, countBefore <= countAfter);
-            assertEquals(counter.count(unionedNode-1), countNodeBefore, 0.01);
-            assertEquals(counter.count(unionedNode+1), countNodeAfter, 0.01);
+
+            /* Make sure all counters are at least as big as before */
+            for(int i = 0; i < newArraySize; i++) {
+                double countBefore = counterOriginal.count(i);
+                double countAfter = counterOriginal.count(i);
+
+                assertTrue(countBefore <= countAfter);
+            }
         }
     }
 
