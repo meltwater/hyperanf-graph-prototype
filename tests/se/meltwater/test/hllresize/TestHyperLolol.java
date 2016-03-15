@@ -4,7 +4,6 @@ import org.junit.Test;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -25,7 +24,6 @@ public class TestHyperLolol {
     private Random rand;
     private int increaseSize;
     private HyperLolLolCounterArray counter;
-
 
 
     @Test
@@ -98,80 +96,136 @@ public class TestHyperLolol {
         int iteration = 0;
         while(iteration++ < nrTestIterations){
             setupParameters();
-            HyperLolLolCounterArray counter2 = new HyperLolLolCounterArray(arraySize,n,log2m);
-            counter2.setJenkinsSeed(counter.getJenkinsSeed());
-            counter.addCounters(5);
-            counter2.addCounters(5);
-            long[][] stuff = randomlyAddHashesToCounters(arraySize+5);
-            long[][] moreStuff = randomlyAddHashesToCounters(arraySize+5,counter2);
-            HyperLolLolCounterArray counterOriginal = new HyperLolLolCounterArray(arraySize,n,log2m);
-            counterOriginal.addCounters(5);
-            counterOriginal.setJenkinsSeed(counter.getJenkinsSeed());
-            for(int i=0; i<stuff.length; i++){
-                for(int j=0; j<stuff[i].length; j++)
-                    counterOriginal.add(i,stuff[i][j]);
-            }
-            /*long[][] maxHashes = new long[1 << log2m][stuff.length];
-            long[][] maxHashes2 = new long[1 << log2m][moreStuff.length];
-            for(int i = 0; i < stuff.length; i++){
-                maxHashes[i] = 0;
-                for(int j=0; j < stuff[i].length; j++){
-                    long thisHash = HyperLolLolCounterArray.jenkins(stuff[i][j],counter.getJenkinsSeed());
-                    thisHash = thisHash >>> log2m | (1L << ( 1 << HyperLolLolCounterArray.registerSize(n) ) - 2);
-                    maxHashes[i] = Math.max(Long.numberOfTrailingZeros(thisHash),maxHashes[i]);
-                }
-            }
-            for(int i = 0; i < moreStuff.length; i++){
-                maxHashes2[i] = 0;
-                for(int j=0; j < moreStuff[i].length; j++){
-                    long thisHash = HyperLolLolCounterArray.jenkins(moreStuff[i][j],counter2.getJenkinsSeed());
-                    thisHash = thisHash >>> log2m | (1L << ( 1 << HyperLolLolCounterArray.registerSize(n) ) - 2);
-                    maxHashes2[i] = Math.max(Long.numberOfTrailingZeros(thisHash),maxHashes2[i]);
-                }
-            }*/
-            long unionedNode = (long)rand.nextInt(arraySize+5);
-            counter.union(unionedNode, counter2);
-            long[] bits1 = new long[counter.counterLongwords];
-            long[] bits2 = new long[counter.counterLongwords];
-            long[] bitsOriginal1 = new long[counter.counterLongwords];
-            for(int i = 0; i< stuff.length; i++){
-                Arrays.fill(bits1,0);
-                Arrays.fill(bits2,0);
-                Arrays.fill(bitsOriginal1,0);
-                counter.getLolLolCounter(i,bits1);
-                counter2.getLolLolCounter(i,bits2);
-                counterOriginal.getLolLolCounter(i,bitsOriginal1);
-                if(i != unionedNode){
-                    assertArrayEquals(bits1,bitsOriginal1);
-                }else{
-                    long valMask = (1 << counter.registerSize) - 1;
-                    long carry1 = 0, carry2 = 0, carryOriginal1 = 0;
-                    int carryLength = 0;
-                    for(int j=0; j<bitsOriginal1.length; j++){
-                        long valOriginal1 = bitsOriginal1[j];
-                        long val2 = bits2[j];
-                        long val1 = bits1[j];
-                        int remaining = Long.SIZE;
-                        while(remaining >= counter.registerSize) {
-                            int bitsToConsume =  counter.registerSize - carryLength;
-                            assertEquals(((val1 << carryLength) | carry1) & valMask,
-                                Math.max(((val2 << carryLength) | carry2) & valMask,
-                                         ((valOriginal1 << carryLength) | carryOriginal1) & valMask));
-                            valOriginal1 >>>= bitsToConsume;
-                            val1 >>>= bitsToConsume;
-                            val2 >>>= bitsToConsume;
-                            remaining -= bitsToConsume;
-                            carry1 = carry2 = carryOriginal1 = 0;
-                            carryLength = 0;
-                        }
-                        carryLength = remaining;
-                        carry1 = val1;
-                        carry2 = val2;
-                        carryOriginal1 = valOriginal1;
-                    }
 
-                }
+            final int extraElementsInArray = 5;
+            final int newArraySize = arraySize + extraElementsInArray;
+
+            counter  = new HyperLolLolCounterArray(newArraySize,n,log2m);
+            HyperLolLolCounterArray counter2 = new HyperLolLolCounterArray(newArraySize,n,log2m);
+            HyperLolLolCounterArray counterOriginal = new HyperLolLolCounterArray(newArraySize,n,log2m);
+
+            /* The counters need to use the same hash to avoid nodes being mapped to different registers and values */
+            counter2.setJenkinsSeed(counter.getJenkinsSeed());
+            counterOriginal.setJenkinsSeed(counter.getJenkinsSeed());
+
+            long[][] addedCounterValues = randomlyAddHashesToCounters(newArraySize);
+            randomlyAddHashesToCounters(newArraySize, counter2);
+
+            /* counterOriginial will be a clone of counter */
+            addValuesToHLL(addedCounterValues, counterOriginal);
+
+            long unionedNode = unionRandomNode(newArraySize, counter, counter2);
+
+            checkValues(counter, counter2, counterOriginal, newArraySize, unionedNode);
+        }
+    }
+
+    /**
+     * Inserts all values in {@code values} into {@code counter}
+     * @param values
+     * @param counter
+     */
+    public void addValuesToHLL(long[][] values, HyperLolLolCounterArray counter) {
+        for(int i=0; i<values.length; i++){
+            for(int j=0; j<values[i].length; j++)
+                counter.add(i,values[i][j]);
+        }
+    }
+
+    /**
+     * Randomly retreives a node and performs a union on that node index.
+     * Takes the node from {@code from} and performs the union into {@code to}
+     * @param newArraySize
+     * @param to The HLL counter to be unioned
+     * @param from
+     * @return
+     */
+    private long unionRandomNode(int newArraySize, HyperLolLolCounterArray to, HyperLolLolCounterArray from) {
+        long unionedNode = (long)rand.nextInt(newArraySize);
+        to.union(unionedNode, from);
+        return unionedNode;
+    }
+
+    /**
+     * Checks that the values after a union are correct. Counters that wasnt affected by the union
+     * should be the same and counters that was affected by the union should have maxed the values
+     * in its registers.
+     * @param counter1
+     * @param counter2
+     * @param counterOriginal
+     * @param arraySize
+     * @param unionedNode
+     */
+    private void checkValues(HyperLolLolCounterArray counter1, HyperLolLolCounterArray counter2, HyperLolLolCounterArray counterOriginal,
+                             int arraySize, long unionedNode) {
+        long[] counter1Bits = new long[counter1.counterLongwords];
+        long[] counter2Bits = new long[counter1.counterLongwords];
+        long[] counter1OriginalBits = new long[counter1.counterLongwords];
+
+        /* Compares all nodes in the counters */
+        for (int i = 0; i < arraySize; i++) {
+            counter1.getLolLolCounter(i,counter1Bits);
+            counter2.getLolLolCounter(i,counter2Bits);
+            counterOriginal.getLolLolCounter(i,counter1OriginalBits);
+
+            if (i != unionedNode) {
+                assertArrayEquals(counter1Bits,counter1OriginalBits);
+            } else {
+                checkUnionedValue(counter1Bits, counter2Bits, counter1OriginalBits);
             }
+        }
+    }
+
+
+    /**
+     * Checks that the registers in {@code counter1Bits} have the max value of either {@code counter2Bits} or
+     * {@code counter1OriginalBits}. Its purpose is to check that a counter union have correctly chosen the
+     * max value of the unioned counters.
+     * @param counter1Bits
+     * @param counter2Bits
+     * @param counter1OriginalBits
+     */
+    private void checkUnionedValue(long[] counter1Bits, long[] counter2Bits, long[] counter1OriginalBits) {
+        long LSBToKeep = (1 << counter.registerSize) - 1;
+        long carryCounter1 = 0, carryCounter2 = 0, carryCounterOriginal = 0;
+        int carryLength = 0;
+
+        /* Iterate all words of the counters */
+        for (int i = 0; i < counter1OriginalBits.length; i++) {
+            long valOriginal1 = counter1OriginalBits[i];
+            long val2 = counter2Bits[i];
+            long val1 = counter1Bits[i];
+
+            int remaining = Long.SIZE;
+
+            /* Iterate the registers in the current word */
+            while (remaining >= counter.registerSize) {
+                int bitsToConsume =  counter.registerSize - carryLength;
+
+                /* Shift in possible carries from previous iterations and get the current register value */
+                long registerValueCounter1 = ((val1 << carryLength) | carryCounter1) & LSBToKeep;
+                long registerValueCounter2 = ((val2 << carryLength) | carryCounter2) & LSBToKeep;
+                long registerValueCounterOriginal = ((valOriginal1 << carryLength) | carryCounterOriginal) & LSBToKeep;
+
+                /* The union should have updated the register to use the max value of counter1 or counter2 */
+                assertEquals( registerValueCounter1, Math.max(registerValueCounter2, registerValueCounterOriginal));
+
+                /* Shift away the checked bits */
+                valOriginal1 >>>= bitsToConsume;
+                val1 >>>= bitsToConsume;
+                val2 >>>= bitsToConsume;
+                remaining -= bitsToConsume;
+
+                /* Reset carries as we dont have any carries in the middle of a word */
+                carryCounter1 = carryCounter2 = carryCounterOriginal = 0;
+                carryLength = 0;
+            }
+
+            /* Set possible carries from the old word */
+            carryLength = remaining;
+            carryCounter1 = val1;
+            carryCounter2 = val2;
+            carryCounterOriginal = valOriginal1;
         }
     }
 
