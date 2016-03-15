@@ -37,7 +37,7 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
         limit = arraySize == 0 ? 1 : arraySize;
         sentinelMask = 1L << ( 1 << registerSize ) - 2;
 
-        final long sizeInRegisters = arraySize * m;
+        final long sizeInRegisters = limit * m;
         final int numVectors = getNumVectors(sizeInRegisters);
 
         initBitArrays(numVectors, sizeInRegisters);
@@ -152,6 +152,10 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
         return count( bits[ chunk( k ) ], offset( k ) );
     }
 
+    public long getJenkinsSeed(){
+        return seed;
+    }
+
     /** Adds an element to a counter.
      *
      * @param k the index of the counter.
@@ -167,8 +171,81 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
         l.set( offset, Math.max( r + 1, l.getLong( offset ) ) );
     }
 
+    public void clearCounter(long index){
+        long[] list = bits[chunk(index)];
+        long offset = offset(index);
+        long remaining = registerSize*m;      // The remaining number of bits to be cleared
+        long fromRight = offset % Long.SIZE;  // The offset in the current long from {the least significant bit}
+                                              // that should be cleared. We see the least signifcant bit to be the "rightmost" bit
+        long mask = (1L << fromRight) - 1L;   // All zeroes from the most significant bit up to the bit at fromRight.
+                                              // The rest is ones.
+        int word = (int) (offset / Long.SIZE);// The long to be edited
+        while(remaining > 0) { // Still have bits to clear
+            // mask currently contains all bits to the left of fromRight. If those zeroes are more than the number of
+            // remaining bits we have to set some bits to one.
+            if (remaining < Long.SIZE - fromRight)
+                // We want to set all bits from the most significant bit up to bit remaining+fromRight to one.
+                // To do this we create a mask with zeroes up to bit remaining+fromRight and the rest ones.
+                // We then take the bitwise compliment of this mask and /or/ it with the original mask.
+                mask |= ~((1L << (fromRight + remaining)) - 1L);
+            list[word++] &= mask; // clear the zeroed bits in the current long
+            remaining -= Long.SIZE-fromRight;
+            mask = 0; // Only the first iteration will have a fromRight offset
+            fromRight = 0;
+        }
 
-    private final static long jenkins( final long x, final long seed ) {
+    }
+
+    public void union(long index, HyperLolLolCounterArray from){
+        long[] chunk = bits[chunk(index)];
+        long offset = offset(index);
+        long remaining = registerSize*m;      // The remaining number of bits to be cleared
+        int fromRight = (int)(offset % Long.SIZE);  // The offset in the current long from {the least significant bit}
+        // that should be cleared. We see the least signifcant bit to be the "rightmost" bit
+        long mask = (1L << fromRight) - 1L;   // All zeroes from the most significant bit up to the bit at fromRight.
+        // The rest is ones.
+        int word = (int) (offset / Long.SIZE);// The long to be edited
+        long[] temp = new long[counterLongwords];
+        this.getLolLolCounter(index, temp);
+        long[] temp2 = new long[counterLongwords];
+        from.getLolLolCounter(index, temp2);
+        max(temp,temp2);
+        temp[temp.length-1] = temp[temp.length-1];
+        if(fromRight == 0) {
+            long endMask = remaining % Long.SIZE == 0 ? ~0 : (1L << (remaining % Long.SIZE)) - 1L;
+            if(remaining % Long.SIZE == 0)
+                System.out.println("yo, yoyo");
+            for(int i = 0; i <temp.length-1; i++) {
+                chunk[word + i] = temp[i];
+            }
+            chunk[word + temp.length-1] = chunk[word + temp.length-1] & ~endMask | temp[temp.length-1] & endMask;
+        }else{
+            System.out.println("nemen");
+
+            long startMask = ~((1L << fromRight) - 1L);
+            chunk[word] = chunk[word] & ~startMask | temp[0] << fromRight;
+            long carry = temp[0] >>> Long.SIZE - fromRight;
+            int carryLength = fromRight;
+            remaining -= Long.SIZE - fromRight;
+
+            int i = 1;
+            while(remaining >= 64){
+                chunk[word+i] = temp[i] << carryLength | carry;
+                carry = temp[i] >>> Long.SIZE - carryLength;
+                remaining -= 64;
+                i++;
+            }
+            if(remaining > 0)
+                chunk[i] = chunk[i] & ~((1L << remaining) - 1L) | (temp[i] << carryLength | carry) & ((1L << remaining) - 1L);
+
+
+
+        }
+
+
+    }
+
+    public static long jenkins( final long x, final long seed ) {
         long a, b, c;
 
 		/* Set up the internal state */
@@ -190,5 +267,13 @@ public class HyperLolLolCounterArray extends HyperLogLogCounterArray {
         c -= a; c -= b; c ^= (b >>> 22);
 
         return c;
+    }
+
+    public final void getLolLolCounter(long index, long[] dest) {
+        this.getCounter(this.bits[this.chunk(index)], index, dest);
+    }
+
+    public void setJenkinsSeed(long seed){
+        this.seed = seed;
     }
 }

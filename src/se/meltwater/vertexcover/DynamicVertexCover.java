@@ -155,6 +155,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         vertexCover.set((int)edge.to,   false);
     }
 
+    @Override
     public int getVertexCoverSize() {
         return vertexCover.cardinality();
     }
