@@ -14,10 +14,14 @@ import java.util.stream.LongStream;
  * Created by johan on 2016-02-29.
  */
 public class TestDynamicVertexCover {
-
-
+    
 
     @Test
+    /**
+     * Small test that inserts a small graph into the dynamic
+     * vertex cover and assures that the resulting vertex cover
+     * actually is a vertex cover.
+     */
     public void testInsertions() {
         long[] nodes = {0, 1, 2};
         Edge[] edges = {new Edge(nodes[0], nodes[1]),
@@ -30,8 +34,14 @@ public class TestDynamicVertexCover {
         assertTrue(isVertexCover(graph, dvc));
     }
 
-    @Test //OPA QUICKCHECK STYLE
-    public void testRandomInsertions() {
+    @Test
+    /**
+     * Randomly generates a graph and sequentially inserts
+     * edges into the dynamic vertex cover. After each insertion
+     * we assert that it is a VC. Then we delete the edges
+     * one by one and assure that it still is a VC.
+     */
+    public void testRandomInsertionsAndDeletions() {
         final int maxNumNodes = 500;
         Random rand = new Random();
         int n = rand.nextInt(maxNumNodes);
@@ -43,6 +53,8 @@ public class TestDynamicVertexCover {
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, new Edge[0]);
         DynamicVertexCover dvc = setupDVC(graph);
 
+        /*TODO Possible improvement: Calculate a random permutation of edges and insert them in that order
+        and the same for deletion */
         for(int i = 0; i < edges.length; i++) {
             graph.addEdge(edges[i]);
             dvc.insertEdge(edges[i]);
@@ -57,6 +69,10 @@ public class TestDynamicVertexCover {
     }
 
     @Test
+    /**
+     * Tests that after we delete an edge in the Maximal Matching
+     * we still have a VC.
+     */
     public void testDeletionsInMaximal() {
         long[] nodes = {0, 1, 2, 3};
         Edge[] edges = {new Edge(nodes[0], nodes[2]),
@@ -72,6 +88,10 @@ public class TestDynamicVertexCover {
     }
 
     @Test
+    /**
+     * Tests that after we delete an edge that is NOT in the
+     * maximal matching we still have a VC (should be unaffected)
+     */
     public void testDeletionsOutsideMaximal() {
         long[] nodes = {0, 1, 2};
         Edge[] edges = {new Edge(nodes[0], nodes[1]),
@@ -88,6 +108,11 @@ public class TestDynamicVertexCover {
     }
 
     @Test
+    /**
+     * Inserts a small graph into the VC and then deleted them all.
+     * At the end, we should have a VC of size 0 and a Maximal matching
+     * of size 0
+     */
     public void testDeleteAllEdges() {
         long[] nodes = {0, 1, 2};
         Edge[] edges = {new Edge(nodes[0], nodes[1]),
@@ -107,6 +132,11 @@ public class TestDynamicVertexCover {
         assertTrue(dvc.getMaximalMatchingSize() == 0);
     }
 
+    /**
+     * Inserts all edges in the graph into a dynamic vertex cover
+     * @param graph
+     * @return The created vertex cover
+     */
     public DynamicVertexCover setupDVC(SimulatedGraph graph) {
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
@@ -123,10 +153,15 @@ public class TestDynamicVertexCover {
             }
         }
 
-
         return dvc;
     }
 
+    /**
+     * Assures that all edges in {@code graph} is covered in {@code dvc}
+     * @param graph
+     * @param dvc
+     * @return
+     */
     public boolean isVertexCover(SimulatedGraph graph, DynamicVertexCover dvc) {
         long n = graph.getNumberOfNodes();
 
@@ -142,7 +177,6 @@ public class TestDynamicVertexCover {
                 outdegree--;
             }
         }
-
 
         return true;
     }
