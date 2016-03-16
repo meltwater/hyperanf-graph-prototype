@@ -165,7 +165,7 @@ public class TestMSBFS {
      * @param numNodes
      * @return
      */
-    private int[] generateSources(int numNodes){ // TODO Only unique sources?
+    private int[] generateSources(int numNodes){
         Random rand = new Random(System.currentTimeMillis());
         int numSources = 100;
         int[] sources = new int[numSources];

@@ -1,20 +1,130 @@
 package se.meltwater.test.vertexCover;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import se.meltwater.graph.Edge;
+import se.meltwater.graph.IGraph;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
 import se.meltwater.vertexcover.DynamicVertexCover;
+import se.meltwater.vertexcover.IDynamicVertexCover;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.function.Function;
 import java.util.stream.LongStream;
 
 /**
- * Created by johan on 2016-02-29.
+ * Tests for the Dynamic Vertex Cover
  */
 public class TestDynamicVertexCover {
-    
+
+    final int nrTestIterations = 100;
+
+    @Test
+    public void testInsertAffectedNodes() {
+        long[] nodes = {0, 1, 2};
+        Edge[] edges = {new Edge(nodes[0], nodes[1]),
+                new Edge(nodes[1], nodes[2]),
+                new Edge(nodes[2], nodes[0])};
+
+        SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+        Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap = dvc.insertEdge(edges[0]);
+
+        /* Both endpoints should've been added and none more */
+        assertTrue(affectedStateMap.get(edges[0].from) == IDynamicVertexCover.AffectedState.Added);
+        assertTrue(affectedStateMap.get(edges[0].to)   == IDynamicVertexCover.AffectedState.Added);
+        assertTrue(affectedStateMap.size() == 2);
+
+        /* The from node of this edge should already be covered => no affected nodes */
+        affectedStateMap = dvc.insertEdge(edges[1]);
+        assertTrue(affectedStateMap.size() == 0);
+
+        /* The to node of this edge should already be covered => no affected nodes */
+        affectedStateMap = dvc.insertEdge(edges[2]);
+        assertTrue(affectedStateMap.size() == 0);
+    }
+
+    @Test
+    /**
+     * Tests that when we delete edges from the VC we get the correct affected nodes back
+     */
+    public void testDeleteAffectedNodes() {
+        long[] nodes = {0, 1, 2};
+        Edge[] edges = {new Edge(nodes[0], nodes[1]),
+                new Edge(nodes[1], nodes[2])};
+
+        SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
+        DynamicVertexCover dvc = setupDVC(graph);
+
+        Edge removedEdge = edges[0];
+        graph.deleteEdge(removedEdge);
+        Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap = dvc.deleteEdge(removedEdge);
+
+        /* First node dont have any more edges so should be removed from VC */
+        assertTrue(affectedStateMap.get(nodes[0]) == IDynamicVertexCover.AffectedState.Removed);
+
+        /* Third node are no longer covered by second node so it should be added together with the second */
+        assertTrue(affectedStateMap.get(nodes[2]) == IDynamicVertexCover.AffectedState.Added);
+
+        /* Second node were already in VC so shouldnt be affected */
+        assertTrue(affectedStateMap.get(nodes[1]) == null);
+        assertTrue(affectedStateMap.size() == 2);
+    }
+
+    @Test
+    /**
+     * Tests that after sequential insertions and then deletions the total number
+     * of nodes affected are zero.
+     */
+    public void testSequentialInsertionsAndDeletions() throws CloneNotSupportedException {
+        int iteration = 0;
+        final int maxNumNodes = 100;
+
+        while(iteration++ < nrTestIterations) {
+            SimulatedGraph graph = TestUtils.genRandomGraph(maxNumNodes);
+
+            DynamicVertexCover dvc = new DynamicVertexCover(graph);
+            Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap = new HashMap<>();
+
+            insertEdgesIntoVCAndUpdateAffected(graph, dvc, affectedStateMap);
+
+            /* Make sure there are affected nodes */
+            assertTrue(affectedStateMap.size() > 0);
+
+            deleteEdgesFromVCAndUpdateAffected(graph, dvc, affectedStateMap);
+
+            /* After all have been inserted and deleted we should not have any affected nodes left */
+            assertTrue(affectedStateMap.size() == 0);
+        }
+    }
+
+    private void deleteEdgesFromVCAndUpdateAffected(SimulatedGraph graph, DynamicVertexCover dvc, Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap) {
+        graph.iterateAllEdges(edge -> {
+            graph.deleteEdge(edge);
+
+            Map<Long, IDynamicVertexCover.AffectedState> currentAffectedStateMap = dvc.deleteEdge(edge);
+            for (Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : currentAffectedStateMap.entrySet()) {
+                DynamicVertexCover.updateAffectedNodes(entry.getKey(), entry.getValue(), affectedStateMap);
+            }
+            return null;
+        });
+    }
+
+    private void insertEdgesIntoVCAndUpdateAffected(SimulatedGraph graph, DynamicVertexCover dvc, Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap) {
+        graph.iterateAllEdges(edge -> {
+            Map<Long, IDynamicVertexCover.AffectedState> currentAffectedStateMap = dvc.insertEdge(edge);
+            for (Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : currentAffectedStateMap.entrySet()) {
+                DynamicVertexCover.updateAffectedNodes(entry.getKey(), entry.getValue(), affectedStateMap);
+            }
+            return null;
+        });
+    }
+
 
     @Test
     /**
@@ -32,6 +142,7 @@ public class TestDynamicVertexCover {
         DynamicVertexCover dvc = setupDVC(graph);
 
         assertTrue(isVertexCover(graph, dvc));
+
     }
 
     @Test
@@ -55,6 +166,7 @@ public class TestDynamicVertexCover {
 
         /*TODO Possible improvement: Calculate a random permutation of edges and insert them in that order
         and the same for deletion */
+
         for(int i = 0; i < edges.length; i++) {
             graph.addEdge(edges[i]);
             dvc.insertEdge(edges[i]);
@@ -163,21 +275,17 @@ public class TestDynamicVertexCover {
      * @return
      */
     public boolean isVertexCover(SimulatedGraph graph, DynamicVertexCover dvc) {
-        long n = graph.getNumberOfNodes();
-
-        for(int i = 0; i < n; i++) {
-            graph.setNodeIterator(i);
-            long outdegree = graph.getOutdegree();
-
-            while(outdegree != 0) {
-                long neighbor = graph.getNextNeighbor();
-                if(!(dvc.isInVertexCover(i) || dvc.isInVertexCover(neighbor))) {
-                    return false;
-                }
-                outdegree--;
+        Boolean failedValue = graph.iterateAllEdges(edge -> {
+            if(!(dvc.isInVertexCover(edge.from) || dvc.isInVertexCover(edge.to))) {
+                return new Boolean(false);
             }
+            return null;
+        });
+
+        if(failedValue == null) {
+            return true;
         }
 
-        return true;
+        return false;
     }
 }

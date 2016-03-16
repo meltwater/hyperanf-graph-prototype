@@ -2,7 +2,9 @@ package se.meltwater.graph;
 
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.fastutil.BigArrays;
+import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
+import sun.reflect.generics.tree.Tree;
 
 import java.util.*;
 
@@ -13,12 +15,23 @@ import java.util.*;
  * not feasable to create a physical file for
  * each test case.
  */
-public class SimulatedGraph implements IGraph {
+public class SimulatedGraph extends IGraph implements  Cloneable {
 
 
     private long nodeIterator = 0;
     private Iterator<Long> successors;
     private TreeMap<Long, HashSet<Long>> iteratorNeighbors = new TreeMap<>();
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        SimulatedGraph clone = (SimulatedGraph) super.clone();
+        clone.iteratorNeighbors = new TreeMap<>();
+        for(Map.Entry<Long, HashSet<Long>> entry : iteratorNeighbors.entrySet()) {
+            clone.iteratorNeighbors.put(entry.getKey(), (HashSet<Long>) entry.getValue().clone());
+        }
+
+        return clone;
+    }
 
 
     public void addNode(long node) {

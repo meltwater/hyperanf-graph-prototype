@@ -65,14 +65,15 @@ public class TestUtils {
 
     /**
      * Randomly generates a graph consisting of at max {@code maxNumNodes} nodes
-     * and 2^{@code maxNumNodes} edges
+     * and 2^{@code maxNumNodes} edges.
+     * At least 2 nodes and 1 edge will be generated.
      * @param maxNumNodes
      * @return
      */
     public static SimulatedGraph genRandomGraph(int maxNumNodes){
         Random rand = new Random();
-        int n = maxNumNodes > 1 ? rand.nextInt(maxNumNodes - 1) + 1 : 1;
-        int m = rand.nextInt((int)Math.pow(n, 2));
+        int n = maxNumNodes > 2 ? rand.nextInt(maxNumNodes - 2) + 2 : 2;
+        int m = rand.nextInt((int)Math.pow(n, 2) - 1) + 1;
 
         long[] nodes = LongStream.rangeClosed(0, n).toArray();
         Edge[] edges = generateEdges(n, m);

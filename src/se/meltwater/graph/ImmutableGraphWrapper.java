@@ -10,7 +10,7 @@ import it.unimi.dsi.big.webgraph.NodeIterator;
  * is useful in testing as the type of the graph is now
  * abstracted away from the test cases.
  */
-public class ImmutableGraphWrapper implements IGraph{
+public class ImmutableGraphWrapper extends IGraph{
 
     private ImmutableGraph graph;
     private NodeIterator nodeIterator;
