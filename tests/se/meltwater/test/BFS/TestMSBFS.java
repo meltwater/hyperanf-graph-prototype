@@ -24,49 +24,80 @@ import java.util.Random;
 public class TestMSBFS {
 
     @Test
+    /**
+     * Loads a random simulated graph and tests MSBFS on it.
+     */
     public void testOnGeneratedGraph() throws InterruptedException {
         SimulatedGraph graph = TestUtils.genRandomGraph(1000);
         testGraph(graph);
     }
 
     @Test
+    /**
+     * Loads a real graph file without blocks and tests MSBFS on it.
+     */
     public void testBFSValidity() throws IOException, InterruptedException {
-
         IGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
         testGraph(graph);
-
     }
 
+    /**
+     * Performs a MSBFS with random sources on {@code graph} and makes sure that the sources gets the same result
+     * as a standard BFS algorithm would.
+     * @param graph
+     * @throws InterruptedException
+     */
     public void testGraph(IGraph graph) throws InterruptedException {
-
         int[] bfsSources = generateSources((int) graph.getNumberOfNodes());
         MSBreadthFirst msbfs = new MSBreadthFirst(bfsSources, graph);
         BitSet[] seen = msbfs.breadthFirstSearch();
         checkValidSeen(bfsSources, seen, graph);
-
     }
 
     @Test
+    /**
+     * Performs a MSBFS with a visitor on a real graph. The visitor should only visit
+     * its source node and then stop the propagation.
+     */
     public void testBFSVisitorOnlySources() throws IOException, InterruptedException {
-
         IGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
         int[] bfsSources = generateSources((int) graph.getNumberOfNodes());
-        MSBreadthFirst msbfs = new MSBreadthFirst(bfsSources, graph, onlySourcesVisitor(bfsSources));
+        ArrayList<AssertionError> errors = new ArrayList<>();
+        MSBreadthFirst msbfs = new MSBreadthFirst(bfsSources, graph, onlySourcesVisitor(bfsSources, errors));
         msbfs.breadthFirstSearch();
-
+        assertEquals(0,errors.size());
     }
 
-    public MSBreadthFirst.Visitor onlySourcesVisitor(int[] bfsSources){
+    /**
+     * Returns a visitor that SHOULD only visit its source node.
+     * The visitor asserts that it never visits another node.
+     * @param bfsSources
+     * @return
+     */
+    public MSBreadthFirst.Visitor onlySourcesVisitor(int[] bfsSources, ArrayList<AssertionError> errors){
         return (long node, BitSet visitedBy, BitSet seen, int iteration) -> {
-            assertEquals("Iteration for node " + node + " should be zero",0,iteration);
-            int bfs = -1;
-            while((bfs = visitedBy.nextSetBit(bfs+1)) != -1)
-                assertEquals("Node " + node + " should be visited by " + bfs,bfsSources[bfs], node);
-            visitedBy.clear();
+            try {
+            /* An iteration > 0 implies a bfs have reached a node != its source */
+                assertEquals("Iteration for node " + node + " should be zero", 0, iteration);
+
+                int bfs = -1;
+            /* Assert that the only bfs that have visited this node is the bfs that had it as source */
+                while ((bfs = visitedBy.nextSetBit(bfs + 1)) != -1)
+                    assertEquals("Node " + node + " should be visited by " + bfs, bfsSources[bfs], node);
+
+            /* Stop this bfs propagation */
+                visitedBy.clear();
+            } catch (AssertionError error) {
+                errors.add(error);
+                visitedBy.clear();
+            }
         };
     }
 
     @Test
+    /**
+     *
+     */
     public void testBFSVisitorNeighborsCorrect() throws IOException, InterruptedException {
 
         IGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
