@@ -314,6 +314,9 @@ public class TestHyperLolol {
         }
     }
 
+    /**
+     * Creates a HLL counter with random parameters (in valid intervals)
+     */
     private void setupParameters() {
         rand = new Random();
         arraySize = rand.nextInt(maxCounters);
@@ -328,11 +331,18 @@ public class TestHyperLolol {
             assertTrue(counter.count(i) > 0);
         }
     }
-    
+
     private long[][] randomlyAddHashesToCounters(int numberOfCounters) {
         return randomlyAddHashesToCounters(numberOfCounters,counter);
     }
 
+    /**
+     * Inserts 100 random node values into each counter.
+     * All counters will have at least 1 value inserted.
+     * @param numberOfCounters
+     * @param counter
+     * @return The node values inserted into each node
+     */
     private long[][] randomlyAddHashesToCounters(int numberOfCounters, HyperLolLolCounterArray counter) {
         int maxAddedValues = 100;
         long[][] ret = new long[numberOfCounters][maxAddedValues];
@@ -346,6 +356,11 @@ public class TestHyperLolol {
         return ret;
     }
 
+    /**
+     * Returns the values of all the counters in {@code counter}
+     * @param numberOfCounters
+     * @return
+     */
     private double[] getCurrentCountersAsList(int numberOfCounters) {
         double prevCounts[] = new double[numberOfCounters];
         for (int i = 0; i < numberOfCounters; i++) {
