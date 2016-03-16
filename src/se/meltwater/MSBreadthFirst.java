@@ -214,10 +214,6 @@ public class MSBreadthFirst {
      */
     public interface Visitor{
         /**
-         * The BitSet parameter will contain the bfs's that reach the node in this iteration.
-         * The BitSet will never contain the bfs's that have visited the node in an earlier iteration
-         * If any of the bfs's should stop searching at the current node and iteration it can be
-         * achieved by clearing the bit for that bfs in the BitSet
          *
          * @apiNote Note that several visitors are very likely to be called in parallel and they should
          * be thread safe
@@ -225,7 +221,7 @@ public class MSBreadthFirst {
          * @param node The visited node
          * @param bfsVisits Which BFS's that visited the node in this iteration. If the bit of a BFS is cleared
          *                  that BFS will stop propagating.
-         * @param seen All BFS's that have seen this node in any iteration.
+         * @param seen All BFS's that have seen this node in any iteration. This should never be modified
          * @param depth The length from the source node.
          *
          */

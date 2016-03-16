@@ -26,7 +26,6 @@ public class TestHyperLolol {
     private HyperLolLolCounterArray counter;
 
 
-
     @Test
     /**
      * Tests that we can add values to newly allocated parts
@@ -111,7 +110,6 @@ public class TestHyperLolol {
         int iteration = 0;
         while(iteration++ < nrTestIterations){
             setupParameters();
-
             /* Make sure we have room for at least 1 element, needed in case arraySize is randomized to 0 */
             counter.addCounters(1);
 
@@ -330,13 +328,7 @@ public class TestHyperLolol {
             assertTrue(counter.count(i) > 0);
         }
     }
-
-    private void assertAllCountersZero(int arraySize) {
-        for(int i = 0; i < arraySize ; i++) {
-            assertTrue(counter.count(i) == 0);
-        }
-    }
-
+    
     private long[][] randomlyAddHashesToCounters(int numberOfCounters) {
         return randomlyAddHashesToCounters(numberOfCounters,counter);
     }
@@ -348,6 +340,7 @@ public class TestHyperLolol {
             for(int j = 0; j < maxAddedValues; j++) {
                 int addedValue = rand.nextInt();
                 counter.add(i, addedValue);
+                ret[i][j] = addedValue;
             }
         }
         return ret;
