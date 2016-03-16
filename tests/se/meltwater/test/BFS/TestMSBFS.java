@@ -1,10 +1,7 @@
 package se.meltwater.test.BFS;
 
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import it.unimi.dsi.big.webgraph.LazyIntIterator;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import se.meltwater.MSBreadthFirst;
@@ -19,17 +16,25 @@ import java.util.BitSet;
 import java.util.Random;
 
 /**
- * Created by simon on 2016-03-01.
+ * Class resposible for testing that MSBFS traverses
+ * a graph correctly.
  */
 public class TestMSBFS {
+
+    private final int maxIterations = 50;
+    private final int maxGraphSize  = 100;
 
     @Test
     /**
      * Loads a random simulated graph and tests MSBFS on it.
      */
     public void testOnGeneratedGraph() throws InterruptedException {
-        SimulatedGraph graph = TestUtils.genRandomGraph(1000);
-        testGraph(graph);
+        int iteration = 0;
+        while(iteration++ < maxIterations ) {
+            int numNodes = new Random().nextInt(maxGraphSize - 1) + 1; /* Make sure numNodes always positive */
+            SimulatedGraph graph = TestUtils.genRandomGraph(numNodes);
+            testGraph(graph);
+        }
     }
 
     @Test
@@ -69,7 +74,7 @@ public class TestMSBFS {
     }
 
     /**
-     * Returns a visitor that SHOULD only visit its source node.
+     * Returns a visitor that should only visit its source node.
      * The visitor asserts that it never visits another node.
      * @param bfsSources
      * @return
@@ -96,21 +101,31 @@ public class TestMSBFS {
 
     @Test
     /**
-     *
+     * Tests a MSBFS with a visitor that should visit itself and all its neighbors.
      */
     public void testBFSVisitorNeighborsCorrect() throws IOException, InterruptedException {
-
         IGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
         int[] bfsSources = generateSources((int) graph.getNumberOfNodes());
         ArrayList<AssertionError> errors = new ArrayList<>();
+
         MSBreadthFirst msbfs = new MSBreadthFirst(bfsSources, graph,neighborsCorrect(bfsSources,graph,errors));
         msbfs.breadthFirstSearch();
-        assertEquals(0,errors.size());
+
+        assertEquals(errors.size() + " visitors reported assertion errors" ,0,errors.size());
     }
 
+    /**
+     * Returns a visitor that should visit itself and its immediate neighbors.
+     * Asserts that it never travels farther than 1 step.
+     * @param bfsSources
+     * @param graph
+     * @param errors
+     * @return
+     */
     public MSBreadthFirst.Visitor neighborsCorrect(int[] bfsSources, IGraph graph, ArrayList<AssertionError> errors){
         BitSet[] shouldHave = new BitSet[(int)graph.getNumberOfNodes()];
         BitSet[] alreadySeen = new BitSet[(int)graph.getNumberOfNodes()];
+
         for(int node = 0; node < graph.getNumberOfNodes() ; node++) {
             shouldHave[node] = new BitSet(bfsSources.length);
             alreadySeen[node] = new BitSet(bfsSources.length);
@@ -125,28 +140,32 @@ public class TestMSBFS {
                         BitSet clonedShouldHave = (BitSet) shouldHave[(int) node].clone();
                         clonedShouldHave.and(visitedBy);
                         assertEquals("Node " + node, clonedShouldHave.cardinality(), shouldHave[(int) node].cardinality());
+
                         visitedBy.clear();
                     } else {
                         graph.setNodeIterator(node);
                         long out = (int) graph.getOutdegree(), neigh;
                         alreadySeen[(int) node].or(visitedBy);
+
                         for (int neighI = 0; neighI < out; neighI++) {
                             neigh = graph.getNextNeighbor();
                             shouldHave[(int) neigh].or(visitedBy);
                         }
-
                     }
                 } catch (AssertionError e) {
                     errors.add(e);
                     visitedBy.clear();
                 }
             }
-
         };
     }
 
-    private int[] generateSources(int numNodes){
-
+    /**
+     * Randomly selects 100 sources from {@code numNodes}
+     * @param numNodes
+     * @return
+     */
+    private int[] generateSources(int numNodes){ // TODO Only unique sources?
         Random rand = new Random(System.currentTimeMillis());
         int numSources = 100;
         int[] sources = new int[numSources];
@@ -156,42 +175,56 @@ public class TestMSBFS {
 
     }
 
+    /**
+     * Performs a standard BFS from each source and makes sure that the MSBFS detected the same nodes
+     * @param sources
+     * @param seen
+     * @param graph
+     */
     private void checkValidSeen(int[] sources, BitSet[] seen, IGraph graph){
-
         BitSet[] originalSeen = new BitSet[seen.length];
         int i = 0;
-        for(BitSet bits : seen)
+        for (BitSet bits : seen)
             originalSeen[i++] = (BitSet)bits.clone();
-        for(int bfs = 0; bfs < sources.length ; bfs++){
 
+        /* Do standard BFS from each source */
+        for (int bfs = 0; bfs < sources.length ; bfs++) {
             IntArrayFIFOQueue queue = new IntArrayFIFOQueue();
             queue.enqueue(sources[bfs]);
             BitSet nodesChecked = new BitSet((int)graph.getNumberOfNodes());
             nodesChecked.set(sources[bfs]);
+
             assertTrue("Source node " + sources[bfs] + " for bfs " + bfs,seen[sources[bfs]].get(bfs));
+
             seen[sources[bfs]].clear(bfs);
+
+            /* Do bfs from current node */
             while (!queue.isEmpty()) {
                 int curr = queue.dequeueInt();
                 graph.setNodeIterator(curr);
                 int d = (int)graph.getOutdegree();
 
+                /* Visit all neighbors */
                 while (d-- != 0) {
                     int succ = (int)graph.getNextNeighbor();
+
                     if (!nodesChecked.get(succ)) {
                         nodesChecked.set(succ);
                         queue.enqueue(succ);
+
+                        /* Make sure the MSBFS also have seen the node */
                         assertTrue("Node " + succ + " for bfs " + bfs,seen[succ].get(bfs));
+
+                        /* Clearing the bit is used to make sure the MSBFS have not seen to many  */
                         seen[succ].clear(bfs);
                     }
                 }
             }
-
         }
 
+        /* If any MSBFS have any bit still set it means it have seen more than the standard BFS did */
         for(int node = 0; node<seen.length; node++){
             assertEquals("Node " + node + " should be clear",0,seen[node].cardinality());
         }
-
     }
-
 }

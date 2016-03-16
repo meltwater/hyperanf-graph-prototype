@@ -70,9 +70,8 @@ public class TestUtils {
      * @return
      */
     public static SimulatedGraph genRandomGraph(int maxNumNodes){
-
         Random rand = new Random();
-        int n = rand.nextInt(maxNumNodes);
+        int n = maxNumNodes > 1 ? rand.nextInt(maxNumNodes - 1) + 1 : 1;
         int m = rand.nextInt((int)Math.pow(n, 2));
 
         long[] nodes = LongStream.rangeClosed(0, n).toArray();
