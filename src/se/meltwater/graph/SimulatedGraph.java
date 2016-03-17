@@ -21,6 +21,7 @@ public class SimulatedGraph extends IGraph implements  Cloneable {
     private long nodeIterator = 0;
     private Iterator<Long> successors;
     private TreeMap<Long, HashSet<Long>> iteratorNeighbors = new TreeMap<>();
+    private long numArcs = 0;
 
     @Override
     public Object clone() throws CloneNotSupportedException {
@@ -41,11 +42,13 @@ public class SimulatedGraph extends IGraph implements  Cloneable {
     public void addEdge(Edge edge){
         HashSet neighbors = iteratorNeighbors.get(edge.from);
         neighbors.add(edge.to);
+        numArcs++;
     }
 
     public void deleteEdge(Edge edge) {
         HashSet neighbors = iteratorNeighbors.get(edge.from);
         neighbors.remove(edge.to);
+        numArcs--;
     }
 
     @Override
@@ -75,6 +78,9 @@ public class SimulatedGraph extends IGraph implements  Cloneable {
     public long getNumberOfNodes() {
         return iteratorNeighbors.size();
     }
+
+    @Override
+    public long getNumberOfArcs() { return numArcs; }
 
     @Override
     public NodeIterator getNodeIterator(long node) {

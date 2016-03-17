@@ -22,6 +22,7 @@ public abstract class IGraph {
     abstract public NodeIterator getNodeIterator(long node);
 
     abstract public long getNumberOfNodes();
+    abstract public long getNumberOfArcs();
 
     /**
      * Iterates all edges in the graph and calls the lambda function for each edge.

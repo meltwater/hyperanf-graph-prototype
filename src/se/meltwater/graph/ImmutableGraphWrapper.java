@@ -48,6 +48,9 @@ public class ImmutableGraphWrapper extends IGraph{
         return graph.numNodes();
     }
 
+    @Override
+    public long getNumberOfArcs() { return graph.numArcs(); }
+
     public NodeIterator getNodeIterator(long node){
         return graph.nodeIterator(node);
     }
