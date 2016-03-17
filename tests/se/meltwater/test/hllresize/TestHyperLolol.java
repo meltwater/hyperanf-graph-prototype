@@ -93,6 +93,13 @@ public class TestHyperLolol {
     }
 
     @Test
+    /**
+     * Tests that union a node from one HLL to another doesnt affect any other node than
+     * the unioned and that the unioned node gets the correct value.
+     *
+     * Randomized tests that performs {@code nrTestIterations} number of
+     * tests with random HLLs and a random node to union.
+     */
     public void testUnion(){
         int iteration = 0;
         while(iteration++ < nrTestIterations){
@@ -103,17 +110,10 @@ public class TestHyperLolol {
 
             counter  = new HyperLolLolCounterArray(newArraySize,n,log2m);
             HyperLolLolCounterArray counter2 = new HyperLolLolCounterArray(newArraySize,n,log2m);
-            HyperLolLolCounterArray counterOriginal = new HyperLolLolCounterArray(newArraySize,n,log2m);
+            HyperLolLolCounterArray counterOriginal = (HyperLolLolCounterArray) counter.clone();
 
-            /* The counters need to use the same hash to avoid nodes being mapped to different registers and values */
-            counter2.setJenkinsSeed(counter.getJenkinsSeed());
-            counterOriginal.setJenkinsSeed(counter.getJenkinsSeed());
-
-            long[][] addedCounterValues = randomlyAddHashesToCounters(newArraySize);
+            randomlyAddHashesToCounters(newArraySize);
             randomlyAddHashesToCounters(newArraySize, counter2);
-
-            /* counterOriginial will be a clone of counter */
-            addValuesToHLL(addedCounterValues, counterOriginal);
 
             Pair<Long,Long> unionedNodes = unionRandomNode(newArraySize, counter, counter2);
 
@@ -166,13 +166,13 @@ public class TestHyperLolol {
 
         /* Compares all nodes in the counters */
         for (int i = 0; i < arraySize; i++) {
-            counter1.getLolLolCounter(i,counter1Bits);
-            counterOriginal.getLolLolCounter(i,counter1OriginalBits);
+            counter1.getCounter(i,counter1Bits);
+            counterOriginal.getCounter(i,counter1OriginalBits);
 
             if (i != unionedNode) {
                 assertArrayEquals(counter1Bits,counter1OriginalBits);
             } else {
-                counter2.getLolLolCounter(unionFromNode,counter2Bits);
+                counter2.getCounter(unionFromNode,counter2Bits);
                 checkUnionedValue(counter1Bits, counter2Bits, counter1OriginalBits);
             }
         }
@@ -232,26 +232,40 @@ public class TestHyperLolol {
     }
 
     @Test
+    /**
+     * Tests that a union between two HLL cannot lower the unioned node value.
+     *
+     * Randomized tests that performs {@code nrTestIterations} number of
+     * tests with random HLLs and a random node to union.
+     */
     public void testUnionNotSmaller(){
         int iteration = 0;
         while(iteration++ < nrTestIterations) {
             setupParameters();
-            HyperLolLolCounterArray counter2 = new HyperLolLolCounterArray(arraySize, n, log2m);
-            counter2.setJenkinsSeed(counter.getJenkinsSeed());
-            counter.addCounters(5);
-            counter2.addCounters(5);
-            randomlyAddHashesToCounters(arraySize + 5);
-            randomlyAddHashesToCounters(arraySize + 5, counter2);
-            long unionedNode = (long) rand.nextInt(arraySize + 3) + 1;
-            long unionedNode2 = (long) rand.nextInt(arraySize + 3) + 1;
-            double countNodeBefore = counter.count(unionedNode-1);
-            double countBefore = counter.count(unionedNode);
-            double countNodeAfter = counter.count(unionedNode+1);
-            counter.union(unionedNode, counter2, unionedNode2);
-            double countAfter = counter.count(unionedNode);
-            assertTrue("countBefore: " + countBefore + ", countAfter " + countAfter, countBefore <= countAfter);
-            assertEquals(counter.count(unionedNode-1), countNodeBefore, 0.01);
-            assertEquals(counter.count(unionedNode+1), countNodeAfter, 0.01);
+
+            final int extraElementsInArray = 5;
+            final int newArraySize = arraySize + extraElementsInArray;
+
+            /* Init counters */
+            counter = new HyperLolLolCounterArray(newArraySize, n, log2m);
+            HyperLolLolCounterArray counter2 = new HyperLolLolCounterArray(newArraySize, n, log2m);
+            HyperLolLolCounterArray counterOriginal = (HyperLolLolCounterArray) counter.clone();
+
+            randomlyAddHashesToCounters(newArraySize, counter);
+            randomlyAddHashesToCounters(newArraySize, counter2);
+
+            final long unionedNode = (long) rand.nextInt(newArraySize), unionFrom = (long) rand.nextInt(newArraySize);
+
+            counter.union(unionedNode, counter2, unionFrom);
+
+            /* Make sure all counters are at least as big as before */
+            for(int i = 0; i < newArraySize; i++) {
+                double countBefore = counterOriginal.count(i);
+                double countAfter = counter.count(i);
+
+                assertTrue(countBefore <= countAfter);
+            }
+
         }
     }
 
