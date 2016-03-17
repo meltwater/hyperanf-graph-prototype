@@ -29,6 +29,12 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
+ * An increment-only dynamic version of HyperLogLogCounterArray.
+ * Its purpose is to be able to use a HyperLogLogCounterArray when
+ * the number of nodes is unknown.
+ * It overrides the registers of HyperLogLogCounterArray.
+ * The extended functionality is not thread-safe.
+
  * An array of approximate sets each represented using a HyperLogLog counter.
  *
  * <p>HyperLogLog counters represent the number of elements of a set in an approximate way. They have been
@@ -68,6 +74,8 @@ import java.util.Arrays;
  *
  * @author Paolo Boldi
  * @author Sebastiano Vigna
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
  */
 
 public class HyperLolLolCounterArray implements Serializable, Cloneable {

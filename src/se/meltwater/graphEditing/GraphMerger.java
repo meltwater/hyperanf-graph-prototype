@@ -8,9 +8,11 @@ import javafx.util.Pair;
 import java.io.*;
 import java.util.Properties;
 
-
 /**
- * Created by simon on 2016-02-16.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * // TODO class description
  */
 public class GraphMerger{
 

@@ -1,14 +1,15 @@
 package se.meltwater;
 
-import com.martiansoftware.jsap.JSAPException;
 import it.unimi.dsi.webgraph.BVGraph;
 import it.unimi.dsi.webgraph.UnionImmutableGraph;
 
 import java.io.IOException;
-import java.util.BitSet;
 
 /**
- * Created by johan on 2016-01-28.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * // TODO class description
  */
 public class Converter {
 

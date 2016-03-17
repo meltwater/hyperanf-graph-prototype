@@ -16,6 +16,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+/**
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * // TODO class description
+ */
 public class DataReader {
     private HashMap<String,Integer> entities = new HashMap<>();
     private int nextId = 0;

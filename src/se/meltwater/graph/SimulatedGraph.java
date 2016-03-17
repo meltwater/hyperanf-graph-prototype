@@ -2,30 +2,43 @@ package se.meltwater.graph;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
-import it.unimi.dsi.fastutil.BigArrays;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
-import it.unimi.dsi.fastutil.longs.LongIterator;
 
 import java.util.*;
 
 /**
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
  * Instead of loading a physical graph file
  * this class can be used to simulate a graph.
  * Mainly used for testing purposes when it's
  * not feasable to create a physical file for
  * each test case.
  */
-public class SimulatedGraph implements IGraph {
+public class SimulatedGraph extends IGraph implements  Cloneable {
 
     private long nodeIterator = 0;
     private Iterator<Long> successors;
     private TreeMap<Long, HashSet<Long>> iteratorNeighbors = new TreeMap<>();
-    private long arcs = 0;
+
+    private long numArcs = 0;
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        SimulatedGraph clone = (SimulatedGraph) super.clone();
+        clone.iteratorNeighbors = new TreeMap<>();
+        for(Map.Entry<Long, HashSet<Long>> entry : iteratorNeighbors.entrySet()) {
+            clone.iteratorNeighbors.put(entry.getKey(), (HashSet<Long>) entry.getValue().clone());
+        }
+
+        return clone;
+    }
 
     public IGraph copy(){
         SimulatedGraph copy = new SimulatedGraph();
         copy.iteratorNeighbors = (TreeMap<Long, HashSet<Long>>) iteratorNeighbors.clone();
-        copy.arcs = arcs;
+        copy.numArcs = numArcs;
         return copy;
     }
 
@@ -36,13 +49,14 @@ public class SimulatedGraph implements IGraph {
     public void addEdge(Edge edge){
         HashSet<Long> neighbors = iteratorNeighbors.get(edge.from);
         neighbors.add(edge.to);
-        arcs++;
+
+        numArcs++;
     }
 
     public void deleteEdge(Edge edge) {
         HashSet neighbors = iteratorNeighbors.get(edge.from);
         neighbors.remove(edge.to);
-        arcs--;
+        numArcs--;
     }
 
     @Override
@@ -94,7 +108,7 @@ public class SimulatedGraph implements IGraph {
 
     @Override
     public long getNumberOfArcs(){
-        return arcs;
+        return numArcs;
     }
 
     private static class SimulatedGraphNodeIterator extends NodeIterator{

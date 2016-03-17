@@ -8,7 +8,16 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.concurrent.*;
 
+
+
+
+
+
+
 /**
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
  * A class to perform Multi-source Breadth-first searches on graphs using the algorithm
  * developed in the paper: "The More the Merrier: Efficient Multi-Source Graph Traversal"
  */

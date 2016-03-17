@@ -2,13 +2,20 @@ package se.meltwater.vertexcover;
 
 import se.meltwater.graph.Edge;
 
+import java.util.Map;
+
 /**
- * Created by johan on 2016-02-26.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * // TODO class description
  */
 public interface IDynamicVertexCover {
 
-    void insertEdge(Edge edge);
-    void deleteEdge(Edge edge);
+    enum AffectedState {Added, Removed};
+
+    Map<Long, AffectedState> insertEdge(Edge edge);
+    Map<Long, AffectedState> deleteEdge(Edge edge);
 
     boolean isInVertexCover(long node);
 

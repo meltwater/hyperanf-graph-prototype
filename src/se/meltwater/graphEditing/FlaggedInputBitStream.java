@@ -6,7 +6,10 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Created by simon on 2016-02-29.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * // TODO class description
  */
 public class FlaggedInputBitStream extends InputBitStream {
 

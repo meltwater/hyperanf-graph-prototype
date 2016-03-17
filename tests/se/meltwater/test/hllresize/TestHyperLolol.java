@@ -10,7 +10,10 @@ import java.util.Random;
 import static org.junit.Assert.*;
 
 /**
- * Created by johan on 2016-03-01.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * Class for testing our HyperLolLol extension of HyperLogLog
  */
 public class TestHyperLolol {
 
@@ -28,6 +31,14 @@ public class TestHyperLolol {
 
 
     @Test
+    /**
+     * Tests that we can add values to newly allocated parts
+     * of the counter and that they after insertions all have
+     * values != 0.
+     *
+     * Randomized tests that performs {@code nrTestIterations} number of
+     * tests with random HLLs and random increaseSize;
+     */
     public void testNewPartsCanBeUsedOfResize() {
         int iteration = 0;
         while(iteration++ < nrTestIterations) {
@@ -41,6 +52,13 @@ public class TestHyperLolol {
     }
 
     @Test
+    /**
+     * Tests that all previous values are kept after increasing the counter
+     * size and that the new counters are initiated to zero.
+     *
+     * Randomized tests that performs {@code nrTestIterations} number of
+     * tests with random HLLs and random increaseSize;
+     */
     public void testResizeKeepsPreviousValues() throws IOException {
         int iteration = 0;
         while(iteration++ < nrTestIterations) {
@@ -58,20 +76,27 @@ public class TestHyperLolol {
     }
 
     @Test
+    /**
+     * Creates a HLL with random values added to each counter and makes
+     * sure that these remain unaffected by a series of random HLL size increases.
+     *
+     * Randomized tests that performs {@code nrTestIterations} number of
+     * tests with random HLLs and random increaseSize;
+     *
+     */
     public void testManyIncreases() {
         int iteration = 0;
         while(iteration++ < nrTestIterations) {
             setupParameters();
-
             randomlyAddHashesToCounters(arraySize);
 
-            double[] prevCounts = getCurrentCountersAsList(arraySize);
+            double[] originalCounts = getCurrentCountersAsList(arraySize);
 
             for(int i = 0; i < increaseSize - 1; ) {
                 int currentIncreaseSize = rand.nextInt(increaseSize - i) + 1;
                 counter.addCounters(currentIncreaseSize);
 
-                assertPreviousValuesAreIntact(arraySize, prevCounts);
+                assertPreviousValuesAreIntact(arraySize, originalCounts);
 
                 i += currentIncreaseSize;
             }
@@ -79,14 +104,26 @@ public class TestHyperLolol {
     }
 
     @Test
+    /**
+     * Tests that clearCounter actually clears a specific counter.
+     *
+     * Randomized tests that performs {@code nrTestIterations} number of
+     * tests with random HLLs and random index to clear.
+     */
     public void testClearCounter(){
         int iteration = 0;
         while(iteration++ < nrTestIterations){
             setupParameters();
+            /* Make sure we have room for at least 1 element, needed in case arraySize is randomized to 0 */
             counter.addCounters(1);
+
             long index = arraySize == 0 ? 0 : rand.nextInt(arraySize);
-            counter.add(index, 5);
-            assertTrue(counter.count(index) > 0);
+
+            /* Make sure counter increases */
+            randomlyAddHashesToCounters(arraySize);
+            assertAllCountersLargerThanZero(arraySize);
+
+            /* Make sure counter is cleared */
             counter.clearCounter(index);
             assertEquals("Iteration " + iteration + " failed.",0, counter.count(index), 0.01);
         }
@@ -269,6 +306,9 @@ public class TestHyperLolol {
         }
     }
 
+    /**
+     * Creates a HLL counter with random parameters (in valid intervals)
+     */
     private void setupParameters() {
         rand = new Random();
         arraySize = rand.nextInt(maxCounters);
@@ -288,6 +328,13 @@ public class TestHyperLolol {
         return randomlyAddHashesToCounters(numberOfCounters,counter);
     }
 
+    /**
+     * Inserts 100 random node values into each counter.
+     * All counters will have at least 1 value inserted.
+     * @param numberOfCounters
+     * @param counter
+     * @return The node values inserted into each node
+     */
     private long[][] randomlyAddHashesToCounters(int numberOfCounters, HyperLolLolCounterArray counter) {
         int maxAddedValues = 100;
         long[][] ret = new long[numberOfCounters][maxAddedValues];
@@ -301,6 +348,11 @@ public class TestHyperLolol {
         return ret;
     }
 
+    /**
+     * Returns the values of all the counters in {@code counter}
+     * @param numberOfCounters
+     * @return
+     */
     private double[] getCurrentCountersAsList(int numberOfCounters) {
         double prevCounts[] = new double[numberOfCounters];
         for (int i = 0; i < numberOfCounters; i++) {

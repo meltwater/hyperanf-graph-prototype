@@ -13,7 +13,10 @@ import java.util.Arrays;
 import java.util.Random;
 
 /**
- * Created by simon on 2016-02-17.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * // TODO class description
  */
 public class Main {
 
