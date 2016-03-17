@@ -70,7 +70,7 @@ import java.util.Arrays;
  * @author Sebastiano Vigna
  */
 
-public class HyperLolLolCounterArray implements Serializable {
+public class HyperLolLolCounterArray implements Serializable, Cloneable {
     private static final long serialVersionUID = 1L;
     private static final boolean ASSERTS = false;
     private static final boolean DEBUG = false;
@@ -114,6 +114,10 @@ public class HyperLolLolCounterArray implements Serializable {
     public final int counterSize;
     /** The size of a counter in longwords (ceiled if there are less then {@link Long#SIZE} registers per counter). */
     public final int counterLongwords;
+    protected long limit;
+    protected long size;
+    private String exceptionString = "Exception in " + HyperLolLolCounterArray.class + ". ";
+    private final float resizeFactor = 1.1f;
 
     /**
      * Returns the logarithm of the number of registers per counter that are necessary to attain a
@@ -202,11 +206,13 @@ public class HyperLolLolCounterArray implements Serializable {
         this.mMinus1 = m - 1;
         this.registerSize = registerSize( n );
         this.counterSize = registerSize << log2m;
+        size = arraySize;
+        limit = arraySize == 0 ? 1 : arraySize;
 
         counterShift = CHUNK_SHIFT - log2m;
         sentinelMask = 1L << ( 1 << registerSize ) - 2;
         // System.err.println( arraySize + " " + m + " " + registerSize);
-        final long sizeInRegisters = arraySize * m;
+        final long sizeInRegisters = limit * m;
         final int numVectors = (int)( ( sizeInRegisters + CHUNK_MASK ) >>> CHUNK_SHIFT );
 
         initBitArrays(numVectors,sizeInRegisters);
@@ -216,10 +222,12 @@ public class HyperLolLolCounterArray implements Serializable {
         longwordAligned = counterSize % Long.SIZE == 0;
 
         // We initialise the masks for the broadword code in max().
-        msbMask = new long[ counterLongwords ];
-        lsbMask = new long[ counterLongwords ];
-        for( int i = registerSize - 1; i < msbMask.length * Long.SIZE; i += registerSize ) msbMask[ i / Long.SIZE ] |= 1L << i % Long.SIZE;
-        for( int i = 0; i < lsbMask.length * Long.SIZE; i += registerSize ) lsbMask[ i / Long.SIZE ] |= 1L << i % Long.SIZE;
+        msbMask = new long[ registerSize ];
+        lsbMask = new long[ registerSize ];
+        for( int i = registerSize - 1; i < msbMask.length * Long.SIZE; i += registerSize )
+            msbMask[ i / Long.SIZE ] |= 1L << i % Long.SIZE;
+        for( int i = 0; i < lsbMask.length * Long.SIZE; i += registerSize )
+            lsbMask[ i / Long.SIZE ] |= 1L << i % Long.SIZE;
 
         this.seed = seed;
         if ( DEBUG ) System.err.println( "Register size: " + registerSize + " log2m (b): " + log2m + " m: " + m );
@@ -259,17 +267,173 @@ public class HyperLolLolCounterArray implements Serializable {
         HyperLolLolCounterArray clone;
         try {
             clone = (HyperLolLolCounterArray) super.clone();
-            for(int i = 0; i<bits.length; i++){
-                final LongArrayBitVector bitVector = LongArrayBitVector.ofLength( registerSize * Math.min( CHUNK_SIZE, limit*m - ( (long)i << CHUNK_SHIFT ) ) );
-                clone.bits[ i ] = bitVector.bits();
-                clone.registers[ i ] = bitVector.asLongBigList( registerSize );
-                System.arraycopy(bits[i],0,clone.bits[i],0,bits[i].length);
-            }
+            clone.initBitArrays((int)((limit*m + CHUNK_MASK) >>> CHUNK_SHIFT),limit*m);
+            clone.msbMask = new long[registerSize];
+            clone.lsbMask = new long[registerSize];
+            clone.copyOldArraysIntoNew(bits);
             System.arraycopy(msbMask,0,clone.msbMask,0,msbMask.length);
             System.arraycopy(lsbMask,0,clone.lsbMask,0,lsbMask.length);
             return clone;
         }catch (Exception e){}
         return null;
+    }
+
+    /**
+     * Requests that the HyperLolLol counter needs
+     * {@code numberOfNewCounters} more counters.
+     * Will increase the counter array if necessary.
+     * @param numberOfNewCounters Number of new counters needed
+     */
+    public void addCounters(long numberOfNewCounters ) {
+        if(numberOfNewCounters < 0) {
+            throw new IllegalArgumentException(exceptionString + "Requested a negative number of new counters.");
+        }
+
+        if(size + numberOfNewCounters > limit) {
+            increaseNumberOfCounters(numberOfNewCounters);
+        }
+
+        size += numberOfNewCounters;
+    }
+
+    /**
+     * Calculates the new array size and calls for a resize.
+     * Guarantees that at least the number of new counters
+     * requested will fit into the array.
+     * @param numberOfNewCounters Number of new counters needed
+     */
+    private void increaseNumberOfCounters(long numberOfNewCounters) {
+        double resizePow = Math.ceil(Math.log((limit + numberOfNewCounters) / (float)limit ) * (1/Math.log(resizeFactor)));
+
+        long newLimit = (long)(limit * Math.pow(resizeFactor, resizePow));
+        resizeCounterArray(newLimit);
+        limit = newLimit;
+    }
+
+    /**
+     *
+     * @param newArraySize Must be strictly larger than previous size
+     * @throws IllegalArgumentException If size is smaller then previous
+     */
+    private void resizeCounterArray(long newArraySize) throws IllegalArgumentException {
+        if(limit > newArraySize) {
+            throw new IllegalArgumentException(exceptionString + "A smaller array size: " + newArraySize + " than previous " + limit + " was requested.");
+        }
+
+        final long sizeInRegisters = newArraySize * m;
+        final int numVectors = getNumVectors(sizeInRegisters);
+
+        long oldBits[][] = bits;
+
+        this.msbMask = new long[this.registerSize];
+        this.lsbMask = new long[this.registerSize];
+
+        for(int i = this.registerSize - 1; i < this.msbMask.length * 64; i += this.registerSize) {
+            this.msbMask[i / 64] |= 1L << i % 64;
+        }
+
+        for(int i = 0; i < this.lsbMask.length * 64; i += this.registerSize) {
+            this.lsbMask[i / 64] |= 1L << i % 64;
+        }
+
+        initBitArrays(numVectors, sizeInRegisters);
+        copyOldArraysIntoNew(oldBits);
+    }
+
+    /**
+     * Calculates the number of vectors required to encode {@code sizeInRegisters}
+     * @param sizeInRegisters The total size required (#counters * #registers)
+     * @return the number of vectors required
+     */
+    private int getNumVectors(long sizeInRegisters) {
+        return  (int)( ( sizeInRegisters + CHUNK_MASK ) >>> CHUNK_SHIFT );
+    }
+
+
+    /**
+     * Copies {@code oldBits} into class variable {@code bits}
+     * @param oldBits Bits to be copied
+     */
+    private void copyOldArraysIntoNew(long[][] oldBits) {
+        for(int i = 0; i < oldBits.length; i++) {
+            for(int j = 0 ; j < oldBits[i].length; j++) {
+                bits[i][j] = oldBits[i][j];
+            }
+        }
+    }
+
+    public long getJenkinsSeed(){
+        return seed;
+    }
+
+    public void clearCounter(long index){
+        long[] list = bits[chunk(index)];
+        long offset = offset(index);
+        long remaining = registerSize*m;      // The remaining number of bits to be cleared
+        long fromRight = offset % Long.SIZE;  // The offset in the current long from {the least significant bit}
+        // that should be cleared. We see the least signifcant bit to be the "rightmost" bit
+        long mask = (1L << fromRight) - 1L;   // All zeroes from the most significant bit up to the bit at fromRight.
+        // The rest is ones.
+        int word = (int) (offset / Long.SIZE);// The long to be edited
+        while(remaining > 0) { // Still have bits to clear
+            // mask currently contains all bits to the left of fromRight. If those zeroes are more than the number of
+            // remaining bits we have to set some bits to one.
+            if (remaining < Long.SIZE - fromRight)
+                // We want to set all bits from the most significant bit up to bit remaining+fromRight to one.
+                // To do this we create a mask with zeroes up to bit remaining+fromRight and the rest ones.
+                // We then take the bitwise compliment of this mask and /or/ it with the original mask.
+                mask |= ~((1L << (fromRight + remaining)) - 1L);
+            list[word++] &= mask; // clear the zeroed bits in the current long
+            remaining -= Long.SIZE-fromRight;
+            mask = 0; // Only the first iteration will have a fromRight offset
+            fromRight = 0;
+        }
+
+    }
+
+    /**
+     * Take the union of the elements of {@code index} of this counter and node {@code fromIndex}
+     * from counter {@code from} and place it in {@code index} of this counter.
+     * <b>WARNING: It is vital that both counters
+     * have the same number of registers and the same register size. Make sure that the
+     * counters are created with the same parameters to their constructors</b>
+     * @param index
+     * @param from
+     * @throws IllegalArgumentException If the counters didn't have the same parameters
+     */
+    public void union(long index, HyperLolLolCounterArray from, long fromIndex) throws IllegalArgumentException{
+        if(registerSize != from.registerSize || m != from.m ||
+                offset(index) != from.offset(index) || chunk(index) != from.chunk(index)){
+            throw new IllegalArgumentException("The counters to union between had different parameters " +
+                    "which this function can't handle.");
+        }
+        long[] bitsToUnionTo = new long[counterLongwords];
+        this.getCounter(index, bitsToUnionTo);
+        long[] bitsToUnionFrom = new long[counterLongwords];
+        from.getCounter(fromIndex, bitsToUnionFrom);
+        max(bitsToUnionTo,bitsToUnionFrom); // union the counters
+
+        setCounter(bitsToUnionTo,index);
+    }
+
+    /**
+     * Adds all elements in {@code from} for all indices
+     * @param from
+     */
+    public void union(HyperLolLolCounterArray from){
+        for(int i=0; i < bits.length; i++)
+            max(bits[i],from.bits[i]);
+    }
+
+    public long getUsedBytes(){
+        long bytes = 0;
+        for( long[] chunk : bits ) bytes += chunk.length * ( (long)Long.SIZE / Byte.SIZE );
+        return bytes;
+    }
+
+    public void transferNodeFrom(long index, HyperLolLolCounterArray from){
+        int chunk = chunk(index);
+        transfer(from.bits[chunk],bits[chunk],index);
     }
 
     /** Clears all registers and sets a new seed (e.g., using {@link Util#randomSeed()}).
@@ -573,6 +737,22 @@ public class HyperLolLolCounterArray implements Serializable {
         }
     }
 
+
+    /** Performs a multiple precision subtraction, leaving the result in the first operand.
+     *
+     * @param x an array of longs.
+     * @param y an array of longs that will be subtracted from <code>x</code>.
+     * @param l the length of <code>x</code> and <code>y</code>.
+     */
+    private static final void subtractWithModulus( final long[] x, final long[] y, final int l , final int mod) {
+        boolean borrow = false;
+
+        for( int i = 0; i < l; i++ ) {
+            if ( ! borrow || x[ i ]-- != 0 ) borrow = x[ i ] < y[ i % mod ] ^ x[ i ] < 0 ^ y[ i % mod ] < 0; // This expression returns the result of an unsigned strict comparison.
+            x[ i ] -= y[ i % mod ];
+        }
+    }
+
     /** Computes the register-by-register maximum of two counters.
      *
      * <p>This method will allocate two temporary arrays. To reduce object creation, use {@link #max(long[], long[], long[], long[])}.
@@ -615,13 +795,13 @@ public class HyperLolLolCounterArray implements Serializable {
 		 */
 
         // We load y | H_r into the accumulator.
-        for( int i = l; i-- != 0; ) accumulator[ i ] = y[ i ] | msbMask[ i ];
+        for( int i = l; i-- != 0; ) accumulator[ i ] = y[ i ] | msbMask[ i % registerSize ];
         // We subtract x & ~H_r, using mask as temporary storage
-        for( int i = l; i-- != 0; ) mask[ i ] = x[ i ] & ~msbMask[ i ];
+        for( int i = l; i-- != 0; ) mask[ i ] = x[ i ] & ~msbMask[ i % registerSize ];
         subtract( accumulator, mask, l );
 
         // We OR with x ^ y, XOR with ( x | ~y), and finally AND with H_r.
-        for( int i = l; i-- != 0; ) accumulator[ i ] = ( ( accumulator[ i ] | ( y[ i ] ^ x[ i ] ) ) ^ ( y[ i ] | ~x[ i ] ) ) & msbMask[ i ];
+        for( int i = l; i-- != 0; ) accumulator[ i ] = ( ( accumulator[ i ] | ( y[ i ] ^ x[ i ] ) ) ^ ( y[ i ] | ~x[ i ] ) ) & msbMask[ i % registerSize ];
 
         if ( ASSERTS ) {
             final LongBigList a = LongArrayBitVector.wrap( x ).asLongBigList( registerSize );
@@ -634,14 +814,14 @@ public class HyperLolLolCounterArray implements Serializable {
 
         // We shift by registerSize - 1 places and put the result into mask.
         final int rMinus1 = registerSize - 1, longSizeMinusRMinus1 = Long.SIZE - rMinus1;
-        for( int i = l - 1; i-- != 0; ) mask[ i ] = accumulator[ i ] >>> rMinus1 | accumulator[ i + 1 ] << longSizeMinusRMinus1 | msbMask[ i ];
-        mask[ l - 1 ] = accumulator[ l - 1 ] >>> rMinus1 | msbMask[ l - 1 ];
+        for( int i = l - 1; i-- != 0; ) mask[ i ] = accumulator[ i ] >>> rMinus1 | accumulator[ i + 1 ] << longSizeMinusRMinus1 | msbMask[ i % registerSize ];
+        mask[ l - 1 ] = accumulator[ l - 1 ] >>> rMinus1 | msbMask[ (l - 1) % registerSize ];
 
         // We subtract L_r from mask.
-        subtract( mask, lsbMask, l );
+        subtractWithModulus( mask, lsbMask, l , registerSize);
 
         // We OR with H_r and XOR with the accumulator.
-        for( int i = l; i-- != 0; ) mask[ i ] = ( mask[ i ] | msbMask[ i ] ) ^ accumulator[ i ];
+        for( int i = l; i-- != 0; ) mask[ i ] = ( mask[ i ] | msbMask[ i % registerSize ] ) ^ accumulator[ i ];
 
         if ( ASSERTS ) {
             final long[] t = x.clone();

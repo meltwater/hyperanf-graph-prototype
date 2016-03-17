@@ -23,7 +23,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     private BitSet vertexCover = new BitSet();
     private IGraph graph;
 
-    public  DynamicVertexCover(IGraph graph) {
+    public DynamicVertexCover(IGraph graph) {
         this.graph = graph;
     }
 

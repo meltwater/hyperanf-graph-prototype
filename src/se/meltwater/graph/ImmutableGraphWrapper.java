@@ -30,7 +30,9 @@ public class ImmutableGraphWrapper implements IGraph{
 
     @Override
     public long getNextNode() {
-        return nodeIterator.nextLong();
+        long node = nodeIterator.nextLong();
+        successors = nodeIterator.successors();
+        return node;
     }
 
     @Override

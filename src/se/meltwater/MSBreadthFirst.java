@@ -4,11 +4,9 @@ import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import se.meltwater.graph.IGraph;
 
+import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * A class to perform Multi-source Breadth-first searches on graphs using the algorithm
@@ -21,6 +19,10 @@ public class MSBreadthFirst {
     private int numSources;
     private int threadsLeft;
     private Visitor visitor;
+    private long waitTime;
+    private TimeUnit waitTimeUnit;
+    private final static int DEFAULT_WAIT_TIME = 1;
+    private final static TimeUnit DEFAULT_WAIT_TIME_UNIT = TimeUnit.HOURS;
 
     /**
      * Initialize a Breadth-first search in {@code graph} from the nodes in {@code bfsSources}
@@ -39,14 +41,42 @@ public class MSBreadthFirst {
      *                   the BFS starting at that node.
      * @param graph
      * @param visitor
+     * @param maxWaitTime  The maximum time the algorithm should wait for the threads to finish (default 1 hour)
+     * @param waitTimeUnit The units which {@code maxWaitTime} is expressed in
      */
-    public MSBreadthFirst(int[] bfsSources, IGraph graph, Visitor visitor){
+    public MSBreadthFirst(int[] bfsSources, IGraph graph, Visitor visitor, long maxWaitTime, TimeUnit waitTimeUnit){
 
         this.graph = graph;
         numSources = bfsSources.length;
         this.bfsSources = bfsSources;
         this.visitor = visitor;
+        this.waitTime = maxWaitTime;
+        this.waitTimeUnit = waitTimeUnit;
 
+    }
+
+    /**
+     * Initialize a Breadth-first search in {@code graph} from the nodes in {@code bfsSources}. At each new visit,
+     * the passed visitor will be called.
+     * @param bfsSources The source nodes to start BFS's from. The index of a node is used as an identifier for
+     *                   the BFS starting at that node.
+     * @param graph
+     * @param visitor
+     * */
+     public MSBreadthFirst(int[] bfsSources, IGraph graph, Visitor visitor){
+         this(bfsSources,graph,visitor,DEFAULT_WAIT_TIME,DEFAULT_WAIT_TIME_UNIT);
+     }
+
+    /**
+     * Initialize a Breadth-first search in {@code graph} from the nodes in {@code bfsSources}
+     * @param bfsSources The source nodes to start BFS's from. The index of a node is used as an identifier for
+     *                   the BFS starting at that node.
+     * @param graph
+     * @param maxWaitTime  The maximum time the algorithm should wait for the threads to finish (default 1 hour)
+     * @param waitTimeUnit The units which {@code maxWaitTime} is expressed in
+     */
+    public MSBreadthFirst(int[] bfsSources, IGraph graph, long maxWaitTime, TimeUnit waitTimeUnit){
+        this(bfsSources,graph,null,maxWaitTime,waitTimeUnit);
     }
 
     private BitSet[] createBitsets(){
@@ -92,13 +122,13 @@ public class MSBreadthFirst {
      * Performs a multi-source breadth-first search in parallel
      * @param visit
      * @param seen
-     * @throws InterruptedException
+     * @throws InterruptedException If the time ran out
      */
     private void MSBFS(BitSet[] visit, BitSet[] seen) throws InterruptedException {
 
         BitSet[] visitNext = createBitsets();
         BoolWrapper visitHadContent = new BoolWrapper(true);
-        int processors = Runtime.getRuntime().availableProcessors();
+        int processors = 1;//Runtime.getRuntime().availableProcessors();
         int iteration = 0;
         while(visitHadContent.theBool){
 
@@ -114,6 +144,8 @@ public class MSBreadthFirst {
 
     }
 
+
+
     private void iterate(BoolWrapper visitHadContent, int threads,BitSet[] visit, BitSet[] seen,BitSet[] visitNext,
                          int iteration) throws InterruptedException {
 
@@ -121,14 +153,20 @@ public class MSBreadthFirst {
         int nodesPerProcessor = (int)graph.getNumberOfNodes() / threads;
         visitHadContent.theBool = false;
         threadsLeft = threads;
+        ArrayList<Future<?>> futures = new ArrayList<>(threads);
 
         for(int i = 0; i < threads; i++) {
             int start = i*nodesPerProcessor;
             int end = i == threads-1 ? (int)graph.getNumberOfNodes() : start + nodesPerProcessor;
-            pool.submit(bothPhasesIterator(start,end,visit,visitNext,seen,visitHadContent, graph.getNodeIterator(start),iteration));
+             futures.add(pool.submit(bothPhasesIterator(start,end,visit,visitNext,seen,visitHadContent, graph.getNodeIterator(start),iteration)));
         }
         pool.shutdown();
-        pool.awaitTermination(10,TimeUnit.MINUTES);
+        boolean normalTermination = pool.awaitTermination(waitTime,waitTimeUnit);
+        if(!normalTermination){
+            for(Future<?> future : futures)
+                future.cancel(true);
+            throw new InterruptedException("The time ran out");
+        }
     }
 
     private synchronized void synchronize() throws InterruptedException {
