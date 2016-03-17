@@ -110,10 +110,10 @@ public class TestHyperLolol {
 
             counter  = new HyperLolLolCounterArray(newArraySize,n,log2m);
             HyperLolLolCounterArray counter2 = new HyperLolLolCounterArray(newArraySize,n,log2m);
-            HyperLolLolCounterArray counterOriginal = (HyperLolLolCounterArray) counter.clone();
 
             randomlyAddHashesToCounters(newArraySize);
             randomlyAddHashesToCounters(newArraySize, counter2);
+            HyperLolLolCounterArray counterOriginal = (HyperLolLolCounterArray) counter.clone();
 
             Pair<Long,Long> unionedNodes = unionRandomNode(newArraySize, counter, counter2);
 
