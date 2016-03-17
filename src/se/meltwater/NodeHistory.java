@@ -1,6 +1,7 @@
 package se.meltwater;
 
 import org.apache.commons.lang.ObjectUtils;
+import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 import se.meltwater.vertexcover.IDynamicVertexCover;
@@ -19,6 +20,7 @@ public class NodeHistory {
     private int h;
     private IGraph graph;
     private int historyRecords;
+    private long currentlyUsedMapIndex = 0;
 
     public NodeHistory(IDynamicVertexCover vertexCover, int h, IGraph graph){
 
@@ -27,12 +29,15 @@ public class NodeHistory {
         this.h = h;
         history = new HyperLolLolCounterArray[historyRecords];
         this.graph = graph;
-        int i = 0;
-        counterIndex = new HashMap<>();
-        for(long node : vc.getNodesInVertexCover())
-            counterIndex.put(node,(long)(i++));
 
+        counterIndex = new HashMap<>();
+        for(long node : vc.getNodesInVertexCover()) {
+            counterIndex.put(node, currentlyUsedMapIndex);
+            currentlyUsedMapIndex++;
+        }
     }
+
+
 
     private long getNodeIndex(long node){
         return node;
