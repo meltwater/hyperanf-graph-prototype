@@ -48,6 +48,12 @@ public class SimulatedGraph extends IGraph implements  Cloneable {
 
     public void addEdge(Edge edge){
         HashSet<Long> neighbors = iteratorNeighbors.get(edge.from);
+
+        if(neighbors == null) {
+            neighbors = new HashSet<>();
+            iteratorNeighbors.put(edge.from, neighbors);
+        }
+
         neighbors.add(edge.to);
 
         numArcs++;
