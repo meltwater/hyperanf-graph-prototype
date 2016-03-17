@@ -108,11 +108,9 @@ public class MSBreadthFirst {
             seen[bfsSources[bfs]].set(bfs);
         }
 
-        System.out.println("Starting Breadth first");
         long time = System.currentTimeMillis();
 
         MSBFS(visit,seen);
-        System.out.println("Finished Breadth first in: " + (System.currentTimeMillis() - time) + "ms");
 
         return seen;
 
@@ -129,6 +127,7 @@ public class MSBreadthFirst {
         BitSet[] visitNext = createBitsets();
         BoolWrapper visitHadContent = new BoolWrapper(true);
         int processors = 1;//Runtime.getRuntime().availableProcessors();
+        System.err.println("MSBreadthFirst: Running on one processor only");
         int iteration = 0;
         while(visitHadContent.theBool){
 
@@ -139,7 +138,6 @@ public class MSBreadthFirst {
                 visit = visitNext;
                 visitNext = createBitsets();
             }
-            System.out.println("Finished iteration.");
         }
 
     }

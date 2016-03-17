@@ -36,6 +36,21 @@ public class ImmutableGraphWrapper implements IGraph{
     }
 
     @Override
+    public IGraph copy(){
+        return new ImmutableGraphWrapper(graph.copy());
+    }
+
+    @Override
+    public long getOutdegree(long node){
+        return graph.outdegree(node);
+    }
+
+    @Override
+    public LazyLongIterator getSuccessors(long node){
+        return graph.successors(node);
+    }
+
+    @Override
     public long getNextNeighbor() {
         return successors.nextLong();
     }
@@ -50,10 +65,17 @@ public class ImmutableGraphWrapper implements IGraph{
         return graph.numNodes();
     }
 
+    @Override
+    public long getNumberOfArcs(){
+        return graph.numArcs();
+    }
+
+    @Override
     public NodeIterator getNodeIterator(long node){
         return graph.nodeIterator(node);
     }
 
+    @Override
     public NodeIterator getNodeIterator(){
         return getNodeIterator(0);
     }

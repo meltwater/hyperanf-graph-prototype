@@ -1,5 +1,6 @@
 package se.meltwater.graph;
 
+import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 
 /**
@@ -15,10 +16,16 @@ public interface IGraph {
 
     long getNextNeighbor();
     long getOutdegree();
+    long getOutdegree(long node);
+
+    IGraph copy();
 
     NodeIterator getNodeIterator();
     NodeIterator getNodeIterator(long node);
 
+    LazyLongIterator getSuccessors(long node);
+
     long getNumberOfNodes();
+    long getNumberOfArcs();
 
 }

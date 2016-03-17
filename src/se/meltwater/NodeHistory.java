@@ -34,6 +34,10 @@ public class NodeHistory {
 
     }
 
+    private long getNodeIndex(long node){
+        return node;
+    }
+
     public void addHistory(HyperLolLolCounterArray counter, int h){
         history[h-1] = (HyperLolLolCounterArray) counter.clone();
     }
@@ -41,7 +45,7 @@ public class NodeHistory {
     public double count(long node, int h){
         if(!vc.isInVertexCover(node))
             throw new IllegalArgumentException("Node " + node + " wasn't in the vertex cover.");
-        return history[h-1].count(counterIndex.get(node));
+        return history[h-1].count(getNodeIndex(node));
     }
 
     public double[] count(long node){
@@ -50,13 +54,13 @@ public class NodeHistory {
         double[] ret = new double[historyRecords];
         int i=0;
         for(HyperLolLolCounterArray counter : history)
-            ret[i++] = counter.count(counterIndex.get(node));
+            ret[i++] = counter.count(getNodeIndex(node));
         return ret;
     }
 
     public void recalculateHistory(long node) throws InterruptedException {
         if(vc.isInVertexCover(node)) {
-            long counterInd = counterIndex.get(node);
+            long counterInd = getNodeIndex(node);
             for(HyperLolLolCounterArray counter : history) {
                 counter.clearCounter(counterInd);
                 counter.add(counterInd,node);
@@ -64,7 +68,7 @@ public class NodeHistory {
             MSBreadthFirst msbfs = new MSBreadthFirst(new int[]{(int) node}, graph, recalculateVisitor(node,counterInd));
             msbfs.breadthFirstSearch();
             for(int i = 1; i < historyRecords; i++)
-                history[i].union(history[i-1]);
+                history[i].union(node,history[i-1],node);
         }
 
     }
@@ -78,14 +82,15 @@ public class NodeHistory {
     public MSBreadthFirst.Visitor recalculateVisitor(long node, long nodeIndex){
         return (long visitNode, BitSet bfsVisits, BitSet seen, int depth) -> {
             if(depth > 0){
-
-                if(vc.isInVertexCover(visitNode)){
-                    for(int i = historyRecords-1; i >= depth ; i-- )
-                        history[i].union(nodeIndex,history[i-depth], counterIndex.get(visitNode));
-                    history[depth-1].add(nodeIndex,visitNode);
-                    bfsVisits.clear();
-                }else{
-                    history[depth-1].add(nodeIndex,visitNode);
+                synchronized (this) {
+                    if (vc.isInVertexCover(visitNode)) {
+                        for (int i = historyRecords - 1; i >= depth; i--)
+                            history[i].union(nodeIndex, history[i - depth], getNodeIndex(visitNode));
+                        history[depth - 1].add(nodeIndex, visitNode);
+                        bfsVisits.clear();
+                    } else {
+                        history[depth - 1].add(nodeIndex, visitNode);
+                    }
                 }
 
             }

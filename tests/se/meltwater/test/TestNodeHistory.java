@@ -25,29 +25,31 @@ public class TestNodeHistory {
         IGraph graph = new ImmutableGraphWrapper(bvGraph);
         IDynamicVertexCover vc = new DynamicVertexCover(graph);
         graph.setNodeIterator(0);
-        for(int node = 0; ; node++){
+        for (int node = 0; ; node++) {
 
             for (int neigh = 0; neigh < graph.getOutdegree(); neigh++)
-                vc.insertEdge(new Edge(node,graph.getNextNeighbor()));
+                vc.insertEdge(new Edge(node, graph.getNextNeighbor()));
 
-            if(node >= graph.getNumberOfNodes()-1)
+            if (node >= graph.getNumberOfNodes() - 1)
                 break;
             graph.getNextNode();
         }
-        NodeHistory nh = new NodeHistory(vc,2,graph);
+        NodeHistory nh = new NodeHistory(vc, 3, graph);
 
-        HyperBoll hyperBoll = new HyperBoll(bvGraph,7);
+        HyperBoll hyperBoll = new HyperBoll(bvGraph, 7);
         hyperBoll.init();
-        hyperBoll.iterate();
-        nh.addHistory(hyperBoll.getCounter(),1);
+        for (int i = 1; i < 3; i++){
+            hyperBoll.iterate();
+            nh.addHistory(hyperBoll.getCounter(), i);
+        }
 
         hyperBoll.close();
 
-        double history;
+        double[] history;
         for(long node : vc.getNodesInVertexCover()){
-            history = nh.count(node,1);
+            history = nh.count(node);
             nh.recalculateHistory(node);
-            assertEquals("Failed for node " + node,history,nh.count(node,1), 0.01);
+            assertArrayEquals("Failed for node " + node,history,nh.count(node), 0.01);
         }
 
     }

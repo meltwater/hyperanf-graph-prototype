@@ -1,8 +1,10 @@
 package se.meltwater.graph;
 
+import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.fastutil.BigArrays;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 
 import java.util.*;
 
@@ -15,24 +17,32 @@ import java.util.*;
  */
 public class SimulatedGraph implements IGraph {
 
-
     private long nodeIterator = 0;
     private Iterator<Long> successors;
     private TreeMap<Long, HashSet<Long>> iteratorNeighbors = new TreeMap<>();
+    private long arcs = 0;
 
+    public IGraph copy(){
+        SimulatedGraph copy = new SimulatedGraph();
+        copy.iteratorNeighbors = (TreeMap<Long, HashSet<Long>>) iteratorNeighbors.clone();
+        copy.arcs = arcs;
+        return copy;
+    }
 
     public void addNode(long node) {
         iteratorNeighbors.put(node, new HashSet<>());
     }
 
     public void addEdge(Edge edge){
-        HashSet neighbors = iteratorNeighbors.get(edge.from);
+        HashSet<Long> neighbors = iteratorNeighbors.get(edge.from);
         neighbors.add(edge.to);
+        arcs++;
     }
 
     public void deleteEdge(Edge edge) {
         HashSet neighbors = iteratorNeighbors.get(edge.from);
         neighbors.remove(edge.to);
+        arcs--;
     }
 
     @Override
@@ -70,6 +80,21 @@ public class SimulatedGraph implements IGraph {
 
     public NodeIterator getNodeIterator(){
         return new SimulatedGraphNodeIterator(iteratorNeighbors.firstKey(),this);
+    }
+
+    @Override
+    public long getOutdegree(long node){
+        return iteratorNeighbors.get(node).size();
+    }
+
+    @Override
+    public LazyLongIterator getSuccessors(long node){
+        return new SimulatedGraphSuccessorsIterator(iteratorNeighbors.get(node).iterator());
+    }
+
+    @Override
+    public long getNumberOfArcs(){
+        return arcs;
     }
 
     private static class SimulatedGraphNodeIterator extends NodeIterator{
@@ -113,6 +138,27 @@ public class SimulatedGraph implements IGraph {
             return arr;
         }
 
+    }
+
+    private class SimulatedGraphSuccessorsIterator implements LazyLongIterator{
+
+        Iterator<Long> it;
+
+        SimulatedGraphSuccessorsIterator(Iterator<Long> successors){
+            it = successors;
+        }
+
+        @Override
+        public long nextLong() {
+            return it.hasNext() ? it.next() : -1;
+        }
+
+        @Override
+        public long skip(long l) {
+            int i = 0;
+            while(it.hasNext() && i++ < l) it.next();
+            return i;
+        }
     }
 
 }

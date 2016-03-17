@@ -108,6 +108,8 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.Switch;
 import com.martiansoftware.jsap.UnflaggedOption;
+import se.meltwater.graph.IGraph;
+import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 
 /** <p>Computes an approximation of the neighbourhood function, of the size of the reachable sets,
@@ -384,7 +386,7 @@ public class HyperBoll implements SafelyCloseable {
      * @param granularity the number of node per task in a multicore environment (it will be rounded to the next multiple of 64), or 0 for {@link #DEFAULT_GRANULARITY}.
      * @param external if true, results of an iteration will be stored on disk.
      */
-    public HyperBoll( final ImmutableGraph g, final ImmutableGraph gt, final int log2m, final ProgressLogger pl, final int numberOfThreads, final int bufferSize, final int granularity, final boolean external ) throws IOException {
+    public HyperBoll( final IGraph g, final IGraph gt, final int log2m, final ProgressLogger pl, final int numberOfThreads, final int bufferSize, final int granularity, final boolean external ) throws IOException {
         this( g, gt, log2m, pl, numberOfThreads, bufferSize, granularity, external, false, false, null, Util.randomSeed() );
     }
 
@@ -394,7 +396,7 @@ public class HyperBoll implements SafelyCloseable {
      * @param gt the transpose of <code>g</code> in case you want to perform systolic computations, or <code>null</code>.
      * @param log2m the logarithm of the number of registers per counter.
      */
-    public HyperBoll( final ImmutableGraph g, final ImmutableGraph gt, final int log2m ) throws IOException {
+    public HyperBoll( final IGraph g, final IGraph gt, final int log2m ) throws IOException {
         this( g, gt, log2m, null, 0, 0, 0, false );
     }
 
@@ -405,7 +407,7 @@ public class HyperBoll implements SafelyCloseable {
      * @param log2m the logarithm of the number of registers per counter.
      * @param pl a progress logger, or <code>null</code>.
      */
-    public HyperBoll( final ImmutableGraph g, final ImmutableGraph gt, final int log2m, final ProgressLogger pl ) throws IOException {
+    public HyperBoll( final IGraph g, final IGraph gt, final int log2m, final ProgressLogger pl ) throws IOException {
         this( g, null, log2m, pl, 0, 0, 0, false );
     }
 
@@ -414,7 +416,7 @@ public class HyperBoll implements SafelyCloseable {
      * @param g the graph whose neighbourhood function you want to compute.
      * @param log2m the logarithm of the number of registers per counter.
      */
-    public HyperBoll( final ImmutableGraph g, final int log2m ) throws IOException {
+    public HyperBoll( final IGraph g, final int log2m ) throws IOException {
         this( g, null, log2m );
     }
 
@@ -424,7 +426,7 @@ public class HyperBoll implements SafelyCloseable {
      * @param log2m the logarithm of the number of registers per counter.
      * @param seed the random seed passed to {@link HyperLogLogCounterArray#HyperLogLogCounterArray(long, long, int, long)}.
      */
-    public HyperBoll( final ImmutableGraph g, final int log2m, final long seed ) throws IOException {
+    public HyperBoll( final IGraph g, final int log2m, final long seed ) throws IOException {
         this( g, null, log2m, null, 0, 0, 0, false, false, false, null, seed );
     }
 
@@ -434,7 +436,7 @@ public class HyperBoll implements SafelyCloseable {
      * @param log2m the logarithm of the number of registers per counter.
      * @param pl a progress logger, or <code>null</code>.
      */
-    public HyperBoll( final ImmutableGraph g, final int log2m, final ProgressLogger pl ) throws IOException {
+    public HyperBoll( final IGraph g, final int log2m, final ProgressLogger pl ) throws IOException {
         this( g, null, log2m, pl );
     }
 
@@ -454,24 +456,24 @@ public class HyperBoll implements SafelyCloseable {
      * @param discountFunction an array (possibly <code>null</code>) of discount functions.
      * @param seed the random seed passed to {@link HyperLogLogCounterArray#HyperLogLogCounterArray(long, long, int, long)}.
      */
-    public HyperBoll( final ImmutableGraph g, final ImmutableGraph gt, final int log2m, final ProgressLogger pl, final int numberOfThreads, final int bufferSize, final int granularity, final boolean external, boolean doSumOfDistances, boolean doSumOfInverseDistances, final Int2DoubleFunction[] discountFunction, final long seed ) throws IOException {
+    public HyperBoll(final IGraph g, final IGraph gt, final int log2m, final ProgressLogger pl, final int numberOfThreads, final int bufferSize, final int granularity, final boolean external, boolean doSumOfDistances, boolean doSumOfInverseDistances, final Int2DoubleFunction[] discountFunction, final long seed ) throws IOException {
 
-        workingCounter = new HyperLolLolCounterArray(g.numNodes(), g.numNodes(), ensureRegisters( log2m ), seed);
+        workingCounter = new HyperLolLolCounterArray(g.getNumberOfNodes(), g.getNumberOfNodes(), ensureRegisters( log2m ), seed);
 
         info( "Seed : " + Long.toHexString( seed ) );
 
         gotTranspose = gt != null;
         localNextMustBeChecked = gotTranspose ? LongSets.synchronize( new LongOpenHashSet( Hash.DEFAULT_INITIAL_SIZE, Hash.VERY_FAST_LOAD_FACTOR ) ) : null;
 
-        numNodes = g.numNodes();
+        numNodes = g.getNumberOfNodes();
         try {
-            numArcs = g.numArcs();
+            numArcs = g.getNumberOfArcs();
         }
         catch( UnsupportedOperationException e ) {
             // No number of arcs. We have to enumerate.
             long a = 0;
-            final NodeIterator nodeIterator = g.nodeIterator();
-            for( long i = g.numNodes(); i-- != 0; ) {
+            final NodeIterator nodeIterator = g.getNodeIterator();
+            for( long i = g.getNumberOfNodes(); i-- != 0; ) {
                 nodeIterator.nextLong();
                 a += nodeIterator.outdegree();
             }
@@ -486,8 +488,8 @@ public class HyperBoll implements SafelyCloseable {
         if ( gt != null ) {
             mustBeChecked = BooleanBigArrays.newBigArray( numNodes );
             nextMustBeChecked = BooleanBigArrays.newBigArray( numNodes );
-            if ( gt.numNodes() != g.numNodes() ) throw new IllegalArgumentException( "The graph and its transpose have a different number of nodes" );
-            if ( gt.numArcs() != g.numArcs() ) throw new IllegalArgumentException( "The graph and its transpose have a different number of arcs" );
+            if ( gt.getNumberOfNodes() != g.getNumberOfNodes() ) throw new IllegalArgumentException( "The graph and its transpose have a different number of nodes" );
+            if ( gt.getNumberOfArcs() != g.getNumberOfArcs() ) throw new IllegalArgumentException( "The graph and its transpose have a different number of arcs" );
         }
 
         this.pl = pl;
@@ -532,7 +534,7 @@ public class HyperBoll implements SafelyCloseable {
         if ( ! external ) {
             info( "Allocating result bit vectors..." );
             // Allocate vectors that will store the result.
-            resultCounter = new HyperLolLolCounterArray(g.numNodes(), g.numNodes(), ensureRegisters( log2m ), seed);
+            resultCounter = new HyperLolLolCounterArray(g.getNumberOfNodes(), g.getNumberOfNodes(), ensureRegisters( log2m ), seed);
         }
         else {
             resultCounter = null;
@@ -670,9 +672,9 @@ public class HyperBoll implements SafelyCloseable {
 
     private final class IterationThread extends Thread {
         /** A copy of the graph for this thread only. */
-        private final ImmutableGraph g;
+        private final IGraph g;
         /** A copy of the transpose graph for this thread only. */
-        private final ImmutableGraph gt;
+        private final IGraph gt;
         /** The index of this thread (just used to identify the thread). */
         private final int index;
         /** True if we should wait for the end of the current phase. */
@@ -681,7 +683,7 @@ public class HyperBoll implements SafelyCloseable {
         /** Create a new iteration thread.
          * @param index the index of this thread (just used to identify the thread).
          */
-        private IterationThread( final ImmutableGraph g, ImmutableGraph gt, final int index ) {
+        private IterationThread( final IGraph g, IGraph gt, final int index ) {
             this.g = g;
             this.gt = gt;
             this.index = index;
@@ -709,7 +711,7 @@ public class HyperBoll implements SafelyCloseable {
                 // Lots of local caching.
                 final int counterLongwords = HyperBoll.this.workingCounter.counterLongwords;
                 final boolean external = HyperBoll.this.external;
-                final ImmutableGraph g = this.g;
+                final IGraph g = this.g;
                 final boolean doSumOfDistances = HyperBoll.this.doSumOfDistances;
                 final boolean doSumOfInverseDistances = HyperBoll.this.doSumOfInverseDistances;
                 final int numberOfDiscountFunctions = HyperBoll.this.discountFunction.length;
@@ -787,7 +789,7 @@ public class HyperBoll implements SafelyCloseable {
                             end = nextNode;
                         }
 
-                        final NodeIterator nodeIterator = local || systolic ? null : g.nodeIterator( start );
+                        final NodeIterator nodeIterator = local || systolic ? null : g.getNodeIterator( start );
                         long arcs = 0;
 
                         for( long i = start; i < end; i++ ) {
@@ -803,8 +805,8 @@ public class HyperBoll implements SafelyCloseable {
                                 LazyLongIterator successors = null;
 
                                 if ( local || systolic ) {
-                                    d = g.outdegree( node );
-                                    successors = g.successors( node );
+                                    d = g.getOutdegree( node );
+                                    successors = g.getSuccessors( node );
                                 }
                                 else {
                                     nodeIterator.nextLong();
@@ -893,7 +895,7 @@ public class HyperBoll implements SafelyCloseable {
                                     if ( ! external ) BooleanBigArrays.set( modifiedResultCounter, node, true );
 
                                     if ( systolic ) {
-                                        final LazyLongIterator predecessors = gt.successors( node );
+                                        final LazyLongIterator predecessors = gt.getSuccessors( node );
                                         long p;
 										/* In systolic computations we must keep track of which counters must
 										 * be checked on the next iteration. If we are preparing a local computation,
@@ -1346,7 +1348,7 @@ public class HyperBoll implements SafelyCloseable {
         final ImmutableGraph grapht = basenamet == null ? null : basenamet.equals( basename ) ? graph : spec ? ObjectParser.fromSpec( basenamet, ImmutableGraph.class, GraphClassParser.PACKAGE ) :
                 offline ? ImmutableGraph.loadMapped( basenamet, new ProgressLogger() ) : ImmutableGraph.load( basenamet, new ProgressLogger() );
 
-        final HyperBoll hyperBoll = new HyperBoll( graph, grapht, log2m, pl, threads, bufferSize, granularity, external, sumOfDistances || closenessCentrality || linCentrality || nieminenCentrality, harmonicCentrality, discountFunction, seed );
+        final HyperBoll hyperBoll = new HyperBoll( new ImmutableGraphWrapper(graph), new ImmutableGraphWrapper(grapht), log2m, pl, threads, bufferSize, granularity, external, sumOfDistances || closenessCentrality || linCentrality || nieminenCentrality, harmonicCentrality, discountFunction, seed );
         hyperBoll.run( jsapResult.getLong( "upperBound" ), jsapResult.getDouble( "threshold" ) );
         hyperBoll.close();
 
