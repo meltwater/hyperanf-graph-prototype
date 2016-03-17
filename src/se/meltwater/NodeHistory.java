@@ -3,11 +3,13 @@ package se.meltwater;
 import org.apache.commons.lang.ObjectUtils;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
+import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Simon Lindhén
@@ -23,7 +25,6 @@ public class NodeHistory {
     private int h;
     private IGraph graph;
     private int historyRecords;
-    private long currentlyUsedMapIndex = 0;
 
     public NodeHistory(IDynamicVertexCover vertexCover, int h, IGraph graph){
 
@@ -33,14 +34,31 @@ public class NodeHistory {
         history = new HyperLolLolCounterArray[historyRecords];
         this.graph = graph;
 
+        long i = 0;
         counterIndex = new HashMap<>();
         for(long node : vc.getNodesInVertexCover()) {
-            counterIndex.put(node, currentlyUsedMapIndex);
-            currentlyUsedMapIndex++;
+            counterIndex.put(node, i++);
         }
     }
 
+    public void addEdge(Edge edge) throws InterruptedException {
+        // TODO Must implement addEdge to immutableGraph
+        SimulatedGraph sgraph = (SimulatedGraph) graph;
+        sgraph.addEdge(edge);
 
+        Map<Long, IDynamicVertexCover.AffectedState> affectedNodes = vc.insertEdge(edge);
+
+        // TODO this should be inside the Added case when the mapping is completed
+        for (int i = 0; i < history.length; i++) {
+            history[i].addCounters(1);
+        }
+
+        for(Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : affectedNodes.entrySet()) {
+            if(entry.getValue() == IDynamicVertexCover.AffectedState.Added) {
+                recalculateHistory(entry.getKey());
+            }
+        }
+    }
 
     private long getNodeIndex(long node){
         return node;
