@@ -7,6 +7,9 @@ import it.unimi.dsi.util.HyperLogLogCounterArray;
 import java.util.Arrays;
 
 /**
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
  * An increment-only dynamic version of HyperLogLogCounterArray.
  * Its purpose is to be able to use a HyperLogLogCounterArray when
  * the number of nodes is unknown.

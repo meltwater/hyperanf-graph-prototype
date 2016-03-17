@@ -4,11 +4,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.*;
-
 /**
- * Created by johan on 2016-01-29.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * // TODO class description
  */
-
 public class TranslationHandler {
 
     private static final String translationFile = "files/translation.txt";

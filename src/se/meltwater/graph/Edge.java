@@ -1,7 +1,10 @@
 package se.meltwater.graph;
 
 /**
- * Created by johan on 2016-02-26.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * Class for containing a directed edge
  */
 public class Edge {
 

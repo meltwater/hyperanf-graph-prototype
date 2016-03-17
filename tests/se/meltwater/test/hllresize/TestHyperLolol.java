@@ -9,7 +9,10 @@ import java.util.Random;
 import static org.junit.Assert.*;
 
 /**
- * Created by johan on 2016-03-01.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * Class for testing our HyperLolLol extension of HyperLogLog
  */
 public class TestHyperLolol {
 

@@ -16,6 +16,9 @@ import java.util.BitSet;
 import java.util.Random;
 
 /**
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
  * Class resposible for testing that MSBFS traverses
  * a graph correctly.
  */

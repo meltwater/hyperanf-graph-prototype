@@ -6,7 +6,10 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * Created by simon on 2016-03-01.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * // TODO class description
  */
 public class GraphProperties extends Properties {
 

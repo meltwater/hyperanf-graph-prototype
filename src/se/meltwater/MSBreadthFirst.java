@@ -10,7 +10,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
 
+
+
+
+
+
+
 /**
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
  * A class to perform Multi-source Breadth-first searches on graphs using the algorithm
  * developed in the paper: "The More the Merrier: Efficient Multi-Source Graph Traversal"
  */

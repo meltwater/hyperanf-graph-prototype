@@ -1,11 +1,7 @@
 package se.meltwater.examples;
 
-import com.martiansoftware.jsap.*;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.logging.ProgressLogger;
-import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.vertexcover.DynamicVertexCover;
@@ -14,6 +10,9 @@ import java.io.IOException;
 
 
 /**
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
  * Example for calculating a Vertex Cover on
  * a physical graph file.
  */

@@ -1,23 +1,22 @@
 package se.meltwater.test.vertexCover;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
 import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Function;
 import java.util.stream.LongStream;
 
 /**
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
  * Tests for the Dynamic Vertex Cover
  */
 public class TestDynamicVertexCover {

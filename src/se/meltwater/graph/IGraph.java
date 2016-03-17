@@ -5,10 +5,13 @@ import it.unimi.dsi.big.webgraph.NodeIterator;
 import java.util.function.Function;
 
 /**
- *  IGraphs purpose is to abstract what type of
- *  graph the test suite is testing. In some cases
- *  it is appropriate to use a physical file and in
- *  other cases its not.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * IGraphs purpose is to abstract what type of
+ * graph the test suite is testing. In some cases
+ * it is appropriate to use a physical file and in
+ * other cases its not.
  */
 public abstract class IGraph {
 

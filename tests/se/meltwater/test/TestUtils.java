@@ -10,6 +10,9 @@ import java.util.Random;
 import java.util.stream.LongStream;
 
 /**
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
  * Functions that are useful across several test classes.
  */
 public class TestUtils {

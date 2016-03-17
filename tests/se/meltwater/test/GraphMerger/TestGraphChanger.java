@@ -14,7 +14,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 /**
- * Created by simon on 2016-02-26.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * // TODO class description
  */
 public class TestGraphChanger extends GraphMerger {
 

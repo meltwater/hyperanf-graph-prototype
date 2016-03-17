@@ -9,6 +9,9 @@ import sun.reflect.generics.tree.Tree;
 import java.util.*;
 
 /**
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
  * Instead of loading a physical graph file
  * this class can be used to simulate a graph.
  * Mainly used for testing purposes when it's

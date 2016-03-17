@@ -7,7 +7,10 @@ import static org.junit.Assert.*;
 import se.meltwater.graphEditing.GraphMerger;
 
 /**
- * Created by simon on 2016-02-26.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * // TODO class description
  */
 public class TestIntervalMerge extends GraphMerger {
 

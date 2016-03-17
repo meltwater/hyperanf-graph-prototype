@@ -1,18 +1,16 @@
 package se.meltwater;
 
-import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.io.InputBitStream;
-import it.unimi.dsi.io.OutputBitStream;
 
 import java.io.*;
-import java.nio.IntBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
- * Created by simon on 2016-02-08.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * // TODO class description
  */
 public class GraphReader {
 

@@ -6,6 +6,9 @@ import se.meltwater.graph.IGraph;
 import java.util.*;
 
 /**
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
  * Maintains a 2-approximate Vertex Cover by
  * calculating a maximal matching and for every
  * edge in the matching we pick both nodes to the VC.

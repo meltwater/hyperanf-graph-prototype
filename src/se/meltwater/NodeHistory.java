@@ -8,7 +8,10 @@ import java.util.BitSet;
 import java.util.HashMap;
 
 /**
- * Created by simon on 2016-03-04.
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
+ *
+ * // TODO class description
  */
 public class NodeHistory {
 
