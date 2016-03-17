@@ -36,7 +36,7 @@ public class TestNodeHistory {
         }
         NodeHistory nh = new NodeHistory(vc, 3, graph);
 
-        HyperBoll hyperBoll = new HyperBoll(bvGraph, 7);
+        HyperBoll hyperBoll = new HyperBoll(graph, 7);
         hyperBoll.init();
         for (int i = 1; i < 3; i++){
             hyperBoll.iterate();

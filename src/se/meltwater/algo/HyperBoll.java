@@ -3,7 +3,6 @@ package se.meltwater.algo;
 import com.martiansoftware.jsap.*;
 import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.*;
-import it.unimi.dsi.big.webgraph.algo.EliasFanoCumulativeOutdegreeList;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.booleans.BooleanBigArrays;
@@ -597,7 +596,7 @@ public class HyperBoll implements SafelyCloseable {
     /** Initialises the approximator, providing a new seed to the underlying {@link HyperLogLogCounterArray}.
      *
      * <p>This method must be call before a series of {@linkplain #iterate() iterations}.
-     * @param seed passed to {@link #HyperLolLolCounterArray.clear(seed)}.
+     * @param seed passed to {@link HyperLolLolCounterArray#clear(long)}.
      */
     public void init( final long seed ) {
         ensureOpen();

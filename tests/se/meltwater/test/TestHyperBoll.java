@@ -5,6 +5,8 @@ import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.algo.HyperBall;
 import org.junit.Test;
 import se.meltwater.algo.HyperBoll;
+import se.meltwater.graph.IGraph;
+import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 
 import java.io.IOException;
@@ -22,7 +24,7 @@ public class TestHyperBoll {
         long seed = Util.randomSeed();
 
         HyperBall hyperBall = new HyperBall(graph,7,seed);
-        HyperBoll hyperBoll = new HyperBoll(graph,7,seed);
+        HyperBoll hyperBoll = new HyperBoll(new ImmutableGraphWrapper(graph),7,seed);
         hyperBall.init();
         hyperBoll.init();
         hyperBall.run();
