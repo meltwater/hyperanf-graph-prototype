@@ -1,12 +1,15 @@
 package se.meltwater.test;
 
 import se.meltwater.graph.Edge;
+import se.meltwater.graph.IGraph;
 import se.meltwater.graph.SimulatedGraph;
+import se.meltwater.vertexcover.DynamicVertexCover;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.LongStream;
 
 /**
@@ -46,6 +49,16 @@ public class TestUtils {
         return edges.toArray(edgeArray);
     }
 
+    public static Edge generateEdge(long minFrom, long maxFrom, long minTo, long maxTo) {
+        /* In a world where Java would have a bounded nextLong method in their
+           Random class this would be new Random().nextLong(n);
+         */
+        long from = ThreadLocalRandom.current().nextLong(maxFrom - minFrom) + minFrom;
+        long to   = ThreadLocalRandom.current().nextLong(maxTo - minTo) + minTo;
+
+        return new Edge(from, to);
+    }
+
     /**
      * Creates a Simulated Graph containing {@code nodes} and {@code edges}
      * @param nodes
@@ -82,5 +95,21 @@ public class TestUtils {
         Edge[] edges = generateEdges(n, m);
 
         return setupSGraph(nodes, edges);
+    }
+
+    /**
+     * Inserts all edges in the graph into a dynamic vertex cover
+     * @param graph
+     * @return The created vertex cover
+     */
+    public static DynamicVertexCover setupDVC(IGraph graph) {
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+        graph.iterateAllEdges(edge -> {
+            dvc.insertEdge(edge);
+            return null;
+        });
+
+        return dvc;
     }
 }

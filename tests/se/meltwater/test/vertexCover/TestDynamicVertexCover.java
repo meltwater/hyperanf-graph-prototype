@@ -58,7 +58,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[1], nodes[2])};
 
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
-        DynamicVertexCover dvc = setupDVC(graph);
+        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
 
         Edge removedEdge = edges[0];
         graph.deleteEdge(removedEdge);
@@ -138,7 +138,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[2], nodes[0])};
 
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
-        DynamicVertexCover dvc = setupDVC(graph);
+        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
 
         assertTrue(isVertexCover(graph, dvc));
 
@@ -161,7 +161,7 @@ public class TestDynamicVertexCover {
         Edge[] edges = TestUtils.generateEdges(n, m);
 
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, new Edge[0]);
-        DynamicVertexCover dvc = setupDVC(graph);
+        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
 
         /*TODO Possible improvement: Calculate a random permutation of edges and insert them in that order
         and the same for deletion */
@@ -190,7 +190,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[1], nodes[2])};
 
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
-        DynamicVertexCover dvc = setupDVC(graph);
+        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
 
         graph.deleteEdge(edges[0]);
         dvc.deleteEdge(edges[0]);
@@ -210,7 +210,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[2], nodes[0])};
 
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
-        DynamicVertexCover dvc = setupDVC(graph);
+        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
 
         graph.deleteEdge(edges[1]);
         dvc.deleteEdge(edges[1]);
@@ -231,7 +231,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[2], nodes[0])};
 
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
-        DynamicVertexCover dvc = setupDVC(graph);
+        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
 
         for(Edge edge : edges ) {
             graph.deleteEdge(edge);
@@ -243,29 +243,7 @@ public class TestDynamicVertexCover {
         assertTrue(dvc.getMaximalMatchingSize() == 0);
     }
 
-    /**
-     * Inserts all edges in the graph into a dynamic vertex cover
-     * @param graph
-     * @return The created vertex cover
-     */
-    public DynamicVertexCover setupDVC(SimulatedGraph graph) {
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        long n = graph.getNumberOfNodes();
-
-        for(int i = 0; i < n; i++) {
-            graph.setNodeIterator(i);
-            long outdegree = graph.getOutdegree();
-
-            while(outdegree != 0) {
-                long neighbor = graph.getNextNeighbor();
-                dvc.insertEdge(new Edge(i, neighbor));
-                outdegree--;
-            }
-        }
-
-        return dvc;
-    }
 
     /**
      * Assures that all edges in {@code graph} is covered in {@code dvc}
