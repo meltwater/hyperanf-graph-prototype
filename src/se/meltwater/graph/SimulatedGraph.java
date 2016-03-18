@@ -24,6 +24,20 @@ public class SimulatedGraph extends IGraph implements  Cloneable {
 
     private long numArcs = 0;
 
+    public SimulatedGraph() {
+        successors = new Iterator<Long>() {
+            @Override
+            public boolean hasNext() {
+                return false;
+            }
+
+            @Override
+            public Long next() {
+                return null;
+            }
+        };
+    }
+
     @Override
     public Object clone() throws CloneNotSupportedException {
         SimulatedGraph clone = (SimulatedGraph) super.clone();
