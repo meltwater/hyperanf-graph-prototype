@@ -92,29 +92,36 @@ public class TestDynamicVertexCover {
             DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
             SimulatedGraph graphToMerge = TestUtils.genRandomGraph(maxNumNodes);
+
+            // TODO Use Simons soon-to-be-pushed simulated-graph-contains-all-nodes-up-to-max commit instead
+            for(int i = 0; i < graphToMerge.getNumberOfNodes(); i++){
+                graph.addNode(i);
+            }
+
             Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap = new HashMap<>();
-            graphToMerge.iterateAllEdges(edge -> {
-                graph.addEdge(edge);
-                Map<Long, IDynamicVertexCover.AffectedState> currentAffectedStateMap = dvc.insertEdge(edge);
-                for (Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : currentAffectedStateMap.entrySet()) {
-                    DynamicVertexCover.updateAffectedNodes(entry.getKey(), entry.getValue(), affectedStateMap);
-                }
-                return null;
-            });
-
-
-
-
-            //insertEdgesIntoVCAndUpdateAffected(graphToMerge, dvc, affectedStateMap);
+            insertEdgesIntoVCAndUpdateAffected(graphToMerge, graph, dvc, affectedStateMap);
 
             /* Make sure there are affected nodes */
             assertTrue(affectedStateMap.size() > 0);
 
             deleteEdgesFromVCAndUpdateAffected(graph, dvc, affectedStateMap);
-
             /* After all have been inserted and deleted we should not have any affected nodes left */
             assertTrue(affectedStateMap.size() == 0);
         }
+    }
+
+    private void insertEdgesIntoVCAndUpdateAffected(SimulatedGraph from, SimulatedGraph to, DynamicVertexCover dvc, Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap) {
+        from.iterateAllEdges(edge -> {
+            to.addEdge(edge);
+
+            Map<Long, IDynamicVertexCover.AffectedState> currentAffectedStateMap = dvc.insertEdge(edge);
+
+            for (Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : currentAffectedStateMap.entrySet()) {
+                DynamicVertexCover.updateAffectedNodes(entry.getKey(), entry.getValue(), affectedStateMap);
+            }
+
+            return null;
+        });
     }
 
     private void deleteEdgesFromVCAndUpdateAffected(SimulatedGraph graph, DynamicVertexCover dvc, Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap) {
@@ -128,14 +135,6 @@ public class TestDynamicVertexCover {
             return null;
         });
     }
-
-    private void insertEdgesIntoVCAndUpdateAffected(SimulatedGraph graph, DynamicVertexCover dvc, Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap) {
-        graph.iterateAllEdges(edge -> {
-
-            return null;
-        });
-    }
-
 
     @Test
     /**
@@ -281,7 +280,7 @@ public class TestDynamicVertexCover {
     @Test
     public void testVertexCoverIterator(){
         int nodes = new Random().nextInt(1000);
-        DynamicVertexCover vc = TestUtils.setupDVC(TestUtils.genRandomGraph(nodes));
+        DynamicVertexCover vc = new DynamicVertexCover(TestUtils.genRandomGraph(nodes));
         long[] nodesInVC = vc.getNodesInVertexCover();
         LazyLongIterator vcIterator = vc.getNodesInVertexCoverIterator();
         for (long node: nodesInVC ) {

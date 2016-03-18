@@ -57,7 +57,9 @@ public class SimulatedGraph extends IGraph implements  Cloneable {
     }
 
     public void addNode(long node) {
-        iteratorNeighbors.put(node, new HashSet<>());
+        if(iteratorNeighbors.get(node) == null) {
+            iteratorNeighbors.put(node, new HashSet<>());
+        }
     }
 
     public void addEdge(Edge edge){

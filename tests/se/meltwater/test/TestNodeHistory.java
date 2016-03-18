@@ -60,7 +60,7 @@ public class TestNodeHistory {
         setupRandomParameters();
 
         IGraph graph = createGraphWithCircles();
-        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
         NodeHistory nodeHistory = runHyperBall(graph, dvc, h);
         assertCurrentCountIsSameAsRecalculatedCount(nodeHistory,dvc);
@@ -114,7 +114,6 @@ public class TestNodeHistory {
             Set<Long> addedNodes = addRandomEdgesWithUniqueFromNodes(graph, nodeHistory);
 
             assertNodesCanBeAccessed(nodeHistory, dvc, addedNodes);
-
         }
     }
 

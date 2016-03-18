@@ -21,6 +21,7 @@ public class NodeHistory {
 
     private IDynamicVertexCover vc;
     private HashMap<Long,Long> counterIndex;
+    private long nextFreeCounterIndex = 0;
     public HyperLolLolCounterArray[] history;
     private int h;
     private IGraph graph;
@@ -34,10 +35,9 @@ public class NodeHistory {
         history = new HyperLolLolCounterArray[historyRecords];
         this.graph = graph;
 
-        long i = 0;
         counterIndex = new HashMap<>();
         for(long node : vc.getNodesInVertexCover()) {
-            counterIndex.put(node, i++);
+            counterIndex.put(node, nextFreeCounterIndex++);
         }
     }
 
@@ -48,20 +48,26 @@ public class NodeHistory {
 
         Map<Long, IDynamicVertexCover.AffectedState> affectedNodes = vc.insertEdge(edge);
 
-        // TODO this should be inside the Added case when the mapping is completed
-        for (int i = 0; i < history.length; i++) {
-            history[i].addCounters(1);
-        }
-
         for(Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : affectedNodes.entrySet()) {
+            for (int i = 0; i < history.length; i++) {
+                history[i].addCounters(1);
+            }
+
+            long node = entry.getKey();
+            insertNodeToCounterIndex(node);
+
             if(entry.getValue() == IDynamicVertexCover.AffectedState.Added) {
-                recalculateHistory(entry.getKey());
+                recalculateHistory(node);
             }
         }
     }
 
     private long getNodeIndex(long node){
         return counterIndex.get(node);
+    }
+
+    private void insertNodeToCounterIndex(long node) {
+        counterIndex.put(node, nextFreeCounterIndex++);
     }
 
     public void addHistory(HyperLolLolCounterArray counter, int h){
