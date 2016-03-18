@@ -1,6 +1,5 @@
 package se.meltwater;
 
-import org.apache.commons.lang.ObjectUtils;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.graph.SimulatedGraph;
@@ -18,13 +17,15 @@ import java.util.Map;
  * // TODO class description
  */
 public class NodeHistory {
-
+    private IGraph graph;
     private IDynamicVertexCover vc;
+
     private HashMap<Long,Long> counterIndex;
     private long nextFreeCounterIndex = 0;
+
     public HyperLolLolCounterArray[] history;
+
     private int h;
-    private IGraph graph;
     private int historyRecords;
 
     public NodeHistory(IDynamicVertexCover vertexCover, int h, IGraph graph){
@@ -37,10 +38,17 @@ public class NodeHistory {
 
         counterIndex = new HashMap<>();
         for(long node : vc.getNodesInVertexCover()) {
-            counterIndex.put(node, nextFreeCounterIndex++);
+            insertNodeToCounterIndex(node);
         }
     }
 
+    /**
+     * Adds an edge into the NodeHistory. If the nodes of the edge are added to
+     * the VC, we allocate memory in the history counters and calculate their history.
+     *
+     * @param edge The new edge
+     * @throws InterruptedException
+     */
     public void addEdge(Edge edge) throws InterruptedException {
         // TODO Must implement addEdge to immutableGraph
         SimulatedGraph sgraph = (SimulatedGraph) graph;
@@ -48,11 +56,12 @@ public class NodeHistory {
 
         Map<Long, IDynamicVertexCover.AffectedState> affectedNodes = vc.insertEdge(edge);
 
-        for(Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : affectedNodes.entrySet()) {
-            for (int i = 0; i < history.length; i++) {
-                history[i].addCounters(1);
-            }
+        /* As inserting edges can only result in nodes being added
+         * to the VC, all affected nodes will be of type AffectedState.Added
+         * and will need new memory for all of these */
+        allocateMemoryInAllHistoryCounters(affectedNodes.size());
 
+        for(Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : affectedNodes.entrySet()) {
             long node = entry.getKey();
             insertNodeToCounterIndex(node);
 
@@ -62,14 +71,38 @@ public class NodeHistory {
         }
     }
 
+    /**
+     * Allocates {@code newCounters} new counters in all history counters.
+     * @param newCounters The number of counters to allocate
+     */
+    private void allocateMemoryInAllHistoryCounters(int newCounters) {
+        for (int i = 0; i < history.length; i++) {
+            history[i].addCounters(newCounters);
+        }
+    }
+
+    /**
+     * Returns the index of {@code node} in the HyperLolLol counters
+     * @param node
+     * @return
+     */
     private long getNodeIndex(long node){
         return counterIndex.get(node);
     }
 
+    /**
+     * Assigns {@code node} to a new unique index in the HyperLolLol counters
+     * @param node
+     */
     private void insertNodeToCounterIndex(long node) {
         counterIndex.put(node, nextFreeCounterIndex++);
     }
 
+    /**
+     * Sets the history of a specific level
+     * @param counter
+     * @param h The level to set
+     */
     public void addHistory(HyperLolLolCounterArray counter, int h){
         history[h-1] = counter.extract(vc.getNodesInVertexCoverIterator(),vc.getVertexCoverSize());
     }
