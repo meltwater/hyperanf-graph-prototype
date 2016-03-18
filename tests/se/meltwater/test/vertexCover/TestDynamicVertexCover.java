@@ -1,7 +1,10 @@
 package se.meltwater.test.vertexCover;
 
+import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import org.junit.Test;
 import static org.junit.Assert.*;
+
+import se.meltwater.examples.VertexCover;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
@@ -273,5 +276,16 @@ public class TestDynamicVertexCover {
         }
 
         return false;
+    }
+
+    @Test
+    public void testVertexCoverIterator(){
+        int nodes = new Random().nextInt(1000);
+        DynamicVertexCover vc = TestUtils.setupDVC(TestUtils.genRandomGraph(nodes));
+        long[] nodesInVC = vc.getNodesInVertexCover();
+        LazyLongIterator vcIterator = vc.getNodesInVertexCoverIterator();
+        for (long node: nodesInVC ) {
+            assertEquals(node,vcIterator.nextLong());
+        }
     }
 }

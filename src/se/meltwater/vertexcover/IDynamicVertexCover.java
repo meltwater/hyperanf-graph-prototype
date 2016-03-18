@@ -1,5 +1,6 @@
 package se.meltwater.vertexcover;
 
+import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import se.meltwater.graph.Edge;
 
 import java.util.Map;
@@ -20,6 +21,7 @@ public interface IDynamicVertexCover {
     boolean isInVertexCover(long node);
 
     long[] getNodesInVertexCover();
+    LazyLongIterator getNodesInVertexCoverIterator();
 
     int getVertexCoverSize();
 
