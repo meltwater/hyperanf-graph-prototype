@@ -9,29 +9,32 @@ import java.util.function.Function;
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
  *
+ * Abstract class that implements functions that
+ * are common among all types of graphs.
+ *
  * IGraphs purpose is to abstract what type of
  * graph the test suite is testing. In some cases
  * it is appropriate to use a physical file and in
  * other cases its not.
  */
-public abstract class IGraph {
+public interface IGraph {
 
-    abstract public IGraph copy();
+    IGraph copy();
 
-    abstract public void setNodeIterator(long node);
-    abstract public long  getNextNode();
+    void setNodeIterator(long node);
+    long  getNextNode();
 
-    abstract public long getNextNeighbor();
-    abstract public LazyLongIterator getSuccessors(long node);
-    abstract public long getOutdegree();
+    long getNextNeighbor();
+    LazyLongIterator getSuccessors(long node);
+    long getOutdegree();
 
-    abstract public long getOutdegree(long node);
+    long getOutdegree(long node);
 
-    abstract public NodeIterator getNodeIterator();
-    abstract public NodeIterator getNodeIterator(long node);
+    NodeIterator getNodeIterator();
+    NodeIterator getNodeIterator(long node);
 
-    abstract public long getNumberOfNodes();
-    abstract public long getNumberOfArcs();
+    long getNumberOfNodes();
+    long getNumberOfArcs();
 
 
     /**
@@ -42,27 +45,7 @@ public abstract class IGraph {
      * @param <T> Return type
      * @return null if no error occurred, the error Object otherwise.
      */
-    public <T> T iterateAllEdges(Function<Edge, T> function) {
-        long n = getNumberOfNodes();
-        for(int i = 0; i < n; i++) {
-            setNodeIterator(i);
-            long outdegree = getOutdegree();
-
-            while(outdegree != 0) {
-                long neighbor = getNextNeighbor();
-                Edge currentEdge = new Edge(i, neighbor);
-                T returnedValue = function.apply(currentEdge);
-                if(returnedValue != null) {
-                    return returnedValue;
-                }
-
-                outdegree--;
-            }
-        }
-        return null;
-    }
-
-
-
+    <T> T iterateAllEdges(Function<Edge, T> function);
 
 }
+

@@ -16,7 +16,7 @@ import java.util.*;
  * not feasable to create a physical file for
  * each test case.
  */
-public class SimulatedGraph extends IGraph implements  Cloneable {
+public class SimulatedGraph extends AGraph implements  Cloneable {
 
     private long nodeIterator = 0;
     private Iterator<Long> successors;
@@ -49,6 +49,7 @@ public class SimulatedGraph extends IGraph implements  Cloneable {
         return clone;
     }
 
+    @Override
     public IGraph copy(){
         SimulatedGraph copy = new SimulatedGraph();
         copy.iteratorNeighbors = (TreeMap<Long, HashSet<Long>>) iteratorNeighbors.clone();
