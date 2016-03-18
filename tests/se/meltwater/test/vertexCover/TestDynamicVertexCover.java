@@ -30,7 +30,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[1], nodes[2]),
                 new Edge(nodes[2], nodes[0])};
 
-        SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
+        SimulatedGraph graph = new SimulatedGraph();
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
         Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap = dvc.insertEdge(edges[0]);
 
@@ -58,7 +58,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[1], nodes[2])};
 
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
-        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
         Edge removedEdge = edges[0];
         graph.deleteEdge(removedEdge);
@@ -85,12 +85,24 @@ public class TestDynamicVertexCover {
         final int maxNumNodes = 100;
 
         while(iteration++ < nrTestIterations) {
-            SimulatedGraph graph = TestUtils.genRandomGraph(maxNumNodes);
-
+            SimulatedGraph graph = new SimulatedGraph();
             DynamicVertexCover dvc = new DynamicVertexCover(graph);
-            Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap = new HashMap<>();
 
-            insertEdgesIntoVCAndUpdateAffected(graph, dvc, affectedStateMap);
+            SimulatedGraph graphToMerge = TestUtils.genRandomGraph(maxNumNodes);
+            Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap = new HashMap<>();
+            graphToMerge.iterateAllEdges(edge -> {
+                graph.addEdge(edge);
+                Map<Long, IDynamicVertexCover.AffectedState> currentAffectedStateMap = dvc.insertEdge(edge);
+                for (Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : currentAffectedStateMap.entrySet()) {
+                    DynamicVertexCover.updateAffectedNodes(entry.getKey(), entry.getValue(), affectedStateMap);
+                }
+                return null;
+            });
+
+
+
+
+            //insertEdgesIntoVCAndUpdateAffected(graphToMerge, dvc, affectedStateMap);
 
             /* Make sure there are affected nodes */
             assertTrue(affectedStateMap.size() > 0);
@@ -116,10 +128,7 @@ public class TestDynamicVertexCover {
 
     private void insertEdgesIntoVCAndUpdateAffected(SimulatedGraph graph, DynamicVertexCover dvc, Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap) {
         graph.iterateAllEdges(edge -> {
-            Map<Long, IDynamicVertexCover.AffectedState> currentAffectedStateMap = dvc.insertEdge(edge);
-            for (Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : currentAffectedStateMap.entrySet()) {
-                DynamicVertexCover.updateAffectedNodes(entry.getKey(), entry.getValue(), affectedStateMap);
-            }
+
             return null;
         });
     }
@@ -138,7 +147,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[2], nodes[0])};
 
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
-        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
         assertTrue(isVertexCover(graph, dvc));
 
@@ -161,7 +170,7 @@ public class TestDynamicVertexCover {
         Edge[] edges = TestUtils.generateEdges(n, m);
 
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, new Edge[0]);
-        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
         /*TODO Possible improvement: Calculate a random permutation of edges and insert them in that order
         and the same for deletion */
@@ -190,7 +199,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[1], nodes[2])};
 
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
-        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
         graph.deleteEdge(edges[0]);
         dvc.deleteEdge(edges[0]);
@@ -210,7 +219,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[2], nodes[0])};
 
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
-        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
         graph.deleteEdge(edges[1]);
         dvc.deleteEdge(edges[1]);
@@ -231,7 +240,7 @@ public class TestDynamicVertexCover {
                 new Edge(nodes[2], nodes[0])};
 
         SimulatedGraph graph = TestUtils.setupSGraph(nodes, edges);
-        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
         for(Edge edge : edges ) {
             graph.deleteEdge(edge);
