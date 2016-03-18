@@ -23,9 +23,14 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
     private TreeMap<Long, HashSet<Long>> iteratorNeighbors = new TreeMap<>();
 
     private long numArcs = 0;
+    private long numNodes = 0;
 
     public SimulatedGraph() {
-        successors = new Iterator<Long>() {
+        successors = emptyLongIterator();
+    }
+
+    private Iterator<Long> emptyLongIterator(){
+        return new Iterator<Long>() {
             @Override
             public boolean hasNext() {
                 return false;
@@ -54,21 +59,25 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
         SimulatedGraph copy = new SimulatedGraph();
         copy.iteratorNeighbors = (TreeMap<Long, HashSet<Long>>) iteratorNeighbors.clone();
         copy.numArcs = numArcs;
+        copy.numNodes = numNodes;
         return copy;
     }
 
     public void addNode(long node) {
-        if(iteratorNeighbors.get(node) == null) {
+
+        if(!iteratorNeighbors.containsKey(node)) {
+            numNodes = Math.max(node+1,numNodes);
             iteratorNeighbors.put(node, new HashSet<>());
         }
+
     }
 
     public void addEdge(Edge edge){
         HashSet<Long> neighbors = iteratorNeighbors.get(edge.from);
 
         if(neighbors == null) {
-            neighbors = new HashSet<>();
-            iteratorNeighbors.put(edge.from, neighbors);
+            addNode(edge.from);
+            neighbors = iteratorNeighbors.get(edge.from);
         }
 
         neighbors.add(edge.to);
@@ -82,15 +91,25 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
         numArcs--;
     }
 
+    public Iterator<Long> getLongIterator(long node){
+
+        HashSet<Long> neighbor = iteratorNeighbors.get(node);
+        if(neighbor == null)
+            return emptyLongIterator();
+        else
+            return neighbor.iterator();
+
+    }
+
     @Override
     public void setNodeIterator(long node) {
         nodeIterator = node;
-        successors = iteratorNeighbors.get(node).iterator();
+        successors = getLongIterator(node);
     }
 
     @Override
     public long getNextNode() {
-        long nextNode = iteratorNeighbors.higherKey(nodeIterator);
+        long nextNode = nodeIterator+1;
         setNodeIterator(nextNode);
         return nextNode;
     }
@@ -102,12 +121,12 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
 
     @Override
     public long getOutdegree() {
-        return iteratorNeighbors.get(nodeIterator).size();
+        return getOutdegree(nodeIterator);
     }
 
     @Override
     public long getNumberOfNodes() {
-        return iteratorNeighbors.size();
+        return numNodes;
     }
 
     @Override
@@ -116,12 +135,13 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
     }
 
     public NodeIterator getNodeIterator(){
-        return new SimulatedGraphNodeIterator(iteratorNeighbors.firstKey(),this);
+        return getNodeIterator(0);
     }
 
     @Override
     public long getOutdegree(long node){
-        return iteratorNeighbors.get(node).size();
+        HashSet<Long> neighbors = iteratorNeighbors.get(node);
+        return neighbors == null ? 0 : neighbors.size();
     }
 
     @Override
@@ -143,7 +163,7 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
         public SimulatedGraphNodeIterator(long startAt, SimulatedGraph graph){
             currentIndex = startAt-1;
             this.graph = graph;
-            outdegree = graph.iteratorNeighbors.get(startAt).size();
+            outdegree = graph.getOutdegree(startAt);
         }
 
         @Override
@@ -153,26 +173,21 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
 
         @Override
         public boolean hasNext() {
-            return currentIndex < graph.iteratorNeighbors.lastKey();
+            return currentIndex+1 < graph.numNodes;
         }
 
         @Override
         public long nextLong() {
             if(!hasNext())
                 throw new IllegalStateException("No more nodes");
-            currentIndex = graph.iteratorNeighbors.higherKey(currentIndex);
-            outdegree = graph.iteratorNeighbors.get(currentIndex).size();
+            currentIndex++;
+            outdegree = graph.getOutdegree(currentIndex);
             return currentIndex;
         }
 
         @Override
-        public long[][] successorBigArray() {
-            HashSet<Long> succs = graph.iteratorNeighbors.get(currentIndex);
-            long[][] arr = LongBigArrays.newBigArray(succs.size());
-            int i = 0;
-            for(long succ : succs)
-                LongBigArrays.add(arr,i++,succ);
-            return arr;
+        public LazyLongIterator successors(){
+            return graph.getSuccessors(currentIndex);
         }
 
     }

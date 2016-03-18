@@ -55,6 +55,12 @@ public class TestNodeHistory {
     }
 
     @Test
+    /**
+     * Tests that a node which previously didn't have any edges
+     */
+    public void historyIncreaseOnAddedEdge(){}
+
+    @Test
     public void historyUnchangedCircleReference() throws IOException, InterruptedException {
 
         setupRandomParameters();
