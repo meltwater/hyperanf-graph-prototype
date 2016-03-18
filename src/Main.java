@@ -9,6 +9,7 @@ import se.meltwater.GraphReader;
 import se.meltwater.examples.VertexCover;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -53,13 +54,34 @@ public class Main {
             case "-bfs":
                 doBFS(argsWithoutFirstFlag);
                 break;
+            case "-a":
+                doBVGraphFromAscii(argsWithoutFirstFlag);
+                break;
             default:
                 printUsages();
                 System.exit(0);
         }
     }
 
-    private static void doBFS(String[] args) throws JSAPException, IOException {
+    private static void doBVGraphFromAscii(String[] args) throws JSAPException, IllegalAccessException, IOException, InstantiationException, NoSuchMethodException, InvocationTargetException, ClassNotFoundException {
+
+        SimpleJSAP jsap = new SimpleJSAP(jarName, jarDescription,
+                new Parameter[] {
+                        new FlaggedOption("arc-list path",JSAP.STRING_PARSER,null,JSAP.REQUIRED,'a',"arc-list path", pathDescription),
+                        new FlaggedOption("output bvgraph path",JSAP.STRING_PARSER,null,JSAP.REQUIRED,'b',"output bvgraph path", pathDescription),
+
+                }
+        );
+
+        JSAPResult result = jsap.parse(args);
+        checkErrorFlags(jsap,result);
+
+        String[] bvArgs = new String[]{"-g", "ArcListASCIIGraph", result.getString("arc-list path"), result.getString("output bvgraph path")};
+        BVGraph.main(bvArgs);
+
+    }
+
+    private static void doBFS(String[] args) throws Exception {
         SimpleJSAP jsap = new SimpleJSAP(jarName, jarDescription,
                 new Parameter[] {
                         new UnflaggedOption("filename", JSAP.STRING_PARSER, true,
@@ -79,16 +101,13 @@ public class Main {
             bfsSources[i] = (int)(rand.nextFloat()*(float)graph.numNodes());
 
         MSBreadthFirst MSBFS = new MSBreadthFirst(bfsSources,new ImmutableGraphWrapper(graph));
-        try {
-            MSBFS.breadthFirstSearch();
-        } catch (InterruptedException e) {
-            System.err.println("The breadth first search was interrupted.");
-            e.printStackTrace();
-        }
+
+        MSBFS.breadthFirstSearch();
 
     }
 
     private static void doUnion(String[] args) throws Exception {
+
         SimpleJSAP jsap = new SimpleJSAP(jarName, jarDescription,
                 new Parameter[] {
                         new Switch("webgraph", 'w', "webgraph", "Specify to use webgraphs original union"),
@@ -205,6 +224,7 @@ public class Main {
         System.out.println("-u   : Join two graphs to one");
         System.out.println("-vc  : Calculate a 2-approximate vertex cover in graph");
         System.out.println("-bfs : Do a random Multi-Source Breadth-First search");
+        System.out.println("-a   : Generate BVGraph from Ascii graph");
     }
 
 }

@@ -123,6 +123,12 @@ public class NodeHistory {
         return ret;
     }
 
+    /**
+     *
+     * @param node
+     * @throws InterruptedException If the parallell breadth-first search reached time-out
+     * @throws Exception
+     */
     public void recalculateHistory(long node) throws InterruptedException {
         if(vc.isInVertexCover(node)) {
             long counterInd = getNodeIndex(node);

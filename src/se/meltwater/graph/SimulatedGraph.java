@@ -146,7 +146,7 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
 
     @Override
     public LazyLongIterator getSuccessors(long node){
-        return new SimulatedGraphSuccessorsIterator(iteratorNeighbors.get(node).iterator());
+        return new SimulatedGraphSuccessorsIterator(getLongIterator(node));
     }
 
     @Override

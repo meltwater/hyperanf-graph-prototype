@@ -1,10 +1,13 @@
 package se.meltwater.test;
 
 import it.unimi.dsi.big.webgraph.BVGraph;
+import it.unimi.dsi.big.webgraph.LazyLongIterator;
+import it.unimi.dsi.fastutil.*;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import se.meltwater.NodeHistory;
 import se.meltwater.algo.HyperBoll;
+import se.meltwater.examples.VertexCover;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.graph.ImmutableGraphWrapper;
@@ -14,9 +17,8 @@ import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
+import java.util.Arrays;
 
 /**
  * @author Simon Lindhén
@@ -56,9 +58,51 @@ public class TestNodeHistory {
 
     @Test
     /**
-     * Tests that a node which previously didn't have any edges
+     * Tests that a node which previously didn't have any edges has some history after
+     * adding edges
      */
-    public void historyIncreaseOnAddedEdge(){}
+    public void historyIncreaseOnAddedEdge() throws IOException, InterruptedException {
+
+        setupRandomParameters();
+
+        SimulatedGraph graph = TestUtils.genRandomGraph(100);
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+        NodeHistory nodeHistory = runHyperBall(graph, dvc, h);
+        addEdgeAndAssertIncreasedCount(nodeHistory,dvc,graph);
+
+    }
+
+    public void addEdgeAndAssertIncreasedCount(NodeHistory nh, IDynamicVertexCover vc, SimulatedGraph graph) throws InterruptedException {
+
+        double[] history, history2;
+        graph.setNodeIterator(0);
+        Random rand = new Random();
+        LazyLongIterator it = vc.getNodesInVertexCoverIterator();
+        for (long i = 0; i < vc.getVertexCoverSize() ; i++) {
+            long node = it.nextLong();
+            if(graph.getOutdegree(node) == 0) {
+                history = nh.count(node);
+                assertArrayEquals(repeat(1.0,history.length),history,0.01);
+                nh.addEdge(new Edge(node, rand.nextInt()));
+                nh.recalculateHistory(node);
+                history2 = nh.count(node);
+                for (int j = 0; j < history.length; j++) {
+                    assertTrue(history[j]+0.5 < history2[j]);
+                }
+
+            }
+        }
+
+    }
+
+    public double[] repeat(double number, int times){
+        double[] ret = new double[times];
+        for (int i = 0; i < times ; i++) {
+            ret[i] = number;
+        }
+        return ret;
+    }
 
     @Test
     public void historyUnchangedCircleReference() throws IOException, InterruptedException {
@@ -129,7 +173,7 @@ public class TestNodeHistory {
      * @throws InterruptedException
      * @return A list of all new nodes created
      */
-    private Set<Long> addRandomEdgesWithUniqueFromNodes(IGraph graph, NodeHistory nodeHistory) throws InterruptedException {
+    private Set<Long> addRandomEdgesWithUniqueFromNodes(IGraph graph, NodeHistory nodeHistory) throws InterruptedException{
         Set<Long> addedNodes = new HashSet<>();
         int edgesAdded = 0;
         long n = graph.getNumberOfNodes();
