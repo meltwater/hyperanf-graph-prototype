@@ -21,7 +21,7 @@ public class NodeHistory {
 
     private IDynamicVertexCover vc;
     private HashMap<Long,Long> counterIndex;
-    private HyperLolLolCounterArray[] history;
+    public HyperLolLolCounterArray[] history;
     private int h;
     private IGraph graph;
     private int historyRecords;
@@ -61,11 +61,11 @@ public class NodeHistory {
     }
 
     private long getNodeIndex(long node){
-        return node;
+        return counterIndex.get(node);
     }
 
     public void addHistory(HyperLolLolCounterArray counter, int h){
-        history[h-1] = (HyperLolLolCounterArray) counter.clone();
+        history[h-1] = counter.extract(vc.getNodesInVertexCoverIterator(),vc.getVertexCoverSize());
     }
 
     public double count(long node, int h){
@@ -94,7 +94,7 @@ public class NodeHistory {
             MSBreadthFirst msbfs = new MSBreadthFirst(new int[]{(int) node}, graph, recalculateVisitor(node,counterInd));
             msbfs.breadthFirstSearch();
             for(int i = 1; i < historyRecords; i++)
-                history[i].union(node,history[i-1],node);
+                history[i].union(counterInd,history[i-1],counterInd);
         }
 
     }
@@ -107,6 +107,7 @@ public class NodeHistory {
 
     public MSBreadthFirst.Visitor recalculateVisitor(long node, long nodeIndex){
         return (long visitNode, BitSet bfsVisits, BitSet seen, int depth) -> {
+
             if(depth > 0){
                 synchronized (this) {
                     if (vc.isInVertexCover(visitNode)) {

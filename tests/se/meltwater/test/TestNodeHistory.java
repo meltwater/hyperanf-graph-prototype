@@ -8,6 +8,8 @@ import se.meltwater.algo.HyperBoll;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.graph.ImmutableGraphWrapper;
+import se.meltwater.graph.SimulatedGraph;
+import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
@@ -29,7 +31,7 @@ public class TestNodeHistory {
     final int nrTestIterations = 100;
     final int maxStartNodes = 100;
     final int minLog2m = 4;
-    final int minH = 2;
+    final int minH = 4;
     final int edgesToAdd = 100;
 
     int log2m;
@@ -48,7 +50,37 @@ public class TestNodeHistory {
         DynamicVertexCover dvc = TestUtils.setupDVC(graph);
 
         NodeHistory nodeHistory = runHyperBall(graph, dvc, h);
-        assertCurrentCountIsSameAsRecalculatedCount(nodeHistory, dvc);
+        assertCurrentCountIsSameAsRecalculatedCount(nodeHistory,dvc);
+
+    }
+
+    @Test
+    public void historyUnchangedCircleReference() throws IOException, InterruptedException {
+
+        setupRandomParameters();
+
+        IGraph graph = createGraphWithCircles();
+        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
+
+        NodeHistory nodeHistory = runHyperBall(graph, dvc, h);
+        assertCurrentCountIsSameAsRecalculatedCount(nodeHistory,dvc);
+
+    }
+
+    private IGraph createGraphWithCircles(){
+        SimulatedGraph g = new SimulatedGraph();
+        g.addNode(1);
+        g.addNode(4);
+        g.addNode(0);
+        g.addNode(2);
+        g.addNode(3);
+        g.addEdge(new Edge(0,1));
+        g.addEdge(new Edge(0,2));
+        g.addEdge(new Edge(0,3));
+        g.addEdge(new Edge(0,4));
+        g.addEdge(new Edge(2,0));
+        g.addEdge(new Edge(3,4));
+        return g;
     }
 
     /**
@@ -60,6 +92,7 @@ public class TestNodeHistory {
         for(long node : dvc.getNodesInVertexCover()){
             history = nodeHistory.count(node);
             nodeHistory.recalculateHistory(node);
+
             assertArrayEquals("Failed for node " + node,history,nodeHistory.count(node), 0.01);
         }
     }
@@ -81,6 +114,7 @@ public class TestNodeHistory {
             Set<Long> addedNodes = addRandomEdgesWithUniqueFromNodes(graph, nodeHistory);
 
             assertNodesCanBeAccessed(nodeHistory, dvc, addedNodes);
+
         }
     }
 

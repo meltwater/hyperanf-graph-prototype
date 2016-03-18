@@ -1,5 +1,6 @@
 package se.meltwater.vertexcover;
 
+import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 
@@ -233,6 +234,11 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     @Override
+    public LazyLongIterator getNodesInVertexCoverIterator(){
+        return new VertexCoverIterator();
+    }
+
+    @Override
     public int getVertexCoverSize() {
         return vertexCover.cardinality();
     }
@@ -240,4 +246,21 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     public int getMaximalMatchingSize() {
         return maximalMatching.size();
     }
+
+    private class VertexCoverIterator implements LazyLongIterator{
+        private int last = -1;
+
+        @Override
+        public long nextLong() {
+            return last = vertexCover.nextSetBit(last+1);
+        }
+
+        @Override
+        public long skip(long l) {
+            long num = 0;
+            while (nextLong() != -1 && num < l) num++;
+            return num;
+        }
+    }
+
 }

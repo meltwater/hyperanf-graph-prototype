@@ -1,11 +1,12 @@
 package se.meltwater.test.hllresize;
 
+import it.unimi.dsi.big.webgraph.LazyLongIterators;
 import javafx.util.Pair;
 import org.junit.Test;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 
 import java.io.IOException;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -29,6 +30,38 @@ public class TestHyperLolol {
     private int increaseSize;
     private HyperLolLolCounterArray counter;
 
+    @Test
+    public void testExtract(){
+        int iteration = 0;
+        while (iteration++ < nrTestIterations){
+            setupParameters();
+
+            counter.addCounters(increaseSize);
+            randomlyAddHashesToCounters(arraySize+increaseSize);
+
+            long[] extracts = generateNonDuplicateList(arraySize+increaseSize);
+            HyperLolLolCounterArray extracted = counter.extract(LazyLongIterators.wrap(extracts), extracts.length);
+
+            int i = 0;
+            for (long l : extracts) {
+                assertEquals(counter.count(l),extracted.count(i++),0.01);
+            }
+        }
+    }
+
+    private long[] generateNonDuplicateList(int maxSize){
+        HashSet<Long> extracts = new HashSet<>();
+        int len = rand.nextInt(maxSize);
+        for (int i = 0; i < len ; i++) {
+            extracts.add((long)rand.nextInt(maxSize));
+        }
+        long[] t = new long[extracts.size()];
+        int i = 0;
+        for (Long l : extracts) {
+            t[i++] = l;
+        }
+        return t;
+    }
 
     @Test
     /**

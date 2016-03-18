@@ -21,6 +21,7 @@ package se.meltwater.hyperlolol;
  */
 
 import it.unimi.dsi.Util;
+import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongBigList;
@@ -370,6 +371,20 @@ public class HyperLolLolCounterArray implements Serializable, Cloneable {
         }
     }
 
+    public HyperLolLolCounterArray extract(LazyLongIterator indices, long numberOfIndices){
+        HyperLolLolCounterArray extracted = new HyperLolLolCounterArray(numberOfIndices,numberOfIndices,log2m,seed);
+        if(numberOfIndices == 0)
+            return extracted;
+
+        long[] temp = new long[extracted.counterLongwords];
+        for (int i = 0; i < numberOfIndices ; i++) {
+            long index = indices.nextLong();
+            getCounter(index,temp);
+            extracted.setCounter(temp,i);
+        }
+        return extracted;
+    }
+
     public long getJenkinsSeed(){
         return seed;
     }
@@ -655,11 +670,13 @@ public class HyperLolLolCounterArray implements Serializable, Cloneable {
             final int last = counterLongwords - 1;
 
             if ( bitOffset == 0 ) {
-                for( int i = last; i-- != 0; ) dest[ i ] = chunkBits[ longwordOffset + i ];
+                for( int i = last; i-- != 0; )
+                    dest[ i ] = chunkBits[ longwordOffset + i ];
                 dest[ last ] = chunkBits[ longwordOffset + last ] & counterResidualMask;
             }
             else {
-                for( int i = 0; i < last; i++ ) dest[ i ] = chunkBits[ longwordOffset + i ] >>> bitOffset | chunkBits[ longwordOffset + i + 1 ] << Long.SIZE - bitOffset;
+                for( int i = 0; i < last; i++ )
+                    dest[ i ] = chunkBits[ longwordOffset + i ] >>> bitOffset | chunkBits[ longwordOffset + i + 1 ] << Long.SIZE - bitOffset;
                 dest[ last ] = chunkBits[ longwordOffset + last ] >>> bitOffset & counterResidualMask;
             }
         }
