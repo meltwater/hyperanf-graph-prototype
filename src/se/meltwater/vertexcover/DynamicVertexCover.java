@@ -27,6 +27,11 @@ public class DynamicVertexCover implements IDynamicVertexCover {
 
     public DynamicVertexCover(IGraph graph) {
         this.graph = graph;
+
+        graph.iterateAllEdges(edge -> {
+            insertEdge(edge);
+            return null;
+        });
     }
 
     @Override

@@ -45,7 +45,7 @@ public class TestNodeHistory {
 
         BVGraph bvGraph = BVGraph.load("testGraphs/wordassociationNoBlocks");
         IGraph graph = new ImmutableGraphWrapper(bvGraph);
-        DynamicVertexCover dvc = TestUtils.setupDVC(graph);
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
         NodeHistory nodeHistory = runHyperBall(graph, dvc, h);
         assertCurrentCountIsSameAsRecalculatedCount(nodeHistory, dvc);
@@ -75,7 +75,7 @@ public class TestNodeHistory {
             setupRandomParameters();
 
             IGraph graph = setupRandomGraph();
-            DynamicVertexCover dvc = TestUtils.setupDVC(graph);
+            DynamicVertexCover dvc = new DynamicVertexCover(graph);
             NodeHistory nodeHistory = runHyperBall(graph, dvc, h);
 
             Set<Long> addedNodes = addRandomEdgesWithUniqueFromNodes(graph, nodeHistory);

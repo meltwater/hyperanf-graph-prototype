@@ -97,19 +97,4 @@ public class TestUtils {
         return setupSGraph(nodes, edges);
     }
 
-    /**
-     * Inserts all edges in the graph into a dynamic vertex cover
-     * @param graph
-     * @return The created vertex cover
-     */
-    public static DynamicVertexCover setupDVC(IGraph graph) {
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
-
-        graph.iterateAllEdges(edge -> {
-            dvc.insertEdge(edge);
-            return null;
-        });
-
-        return dvc;
-    }
 }
