@@ -163,7 +163,7 @@ public class TestDynamicVertexCover {
      * one by one and assure that it still is a VC.
      */
     public void testRandomInsertionsAndDeletions() {
-        final int maxNumNodes = 500;
+        final int maxNumNodes = 100;
         Random rand = new Random();
         int n = rand.nextInt(maxNumNodes);
         int m = rand.nextInt((int)Math.pow(n, 2));
