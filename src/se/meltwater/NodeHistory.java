@@ -51,9 +51,7 @@ public class NodeHistory {
     public void addEdge(Edge edge) throws InterruptedException {
         addNewNodes(edge);
 
-        // TODO Must implement addEdge to immutableGraph
-        SimulatedGraph sgraph = (SimulatedGraph) graph;
-        sgraph.addEdge(edge);
+        graph.addEdge(edge);
 
         Map<Long, IDynamicVertexCover.AffectedState> affectedNodes = vc.insertEdge(edge);
 
@@ -66,7 +64,6 @@ public class NodeHistory {
     }
 
 
-
     /**
      * Adds new nodes in the edge to the graph.
      * This will also allocate memory in the top counterArray
@@ -75,10 +72,10 @@ public class NodeHistory {
      */
     private void addNewNodes(Edge edge) {
         if(!graph.containsNode(edge.from)) { /* Check for readability purpose, not actually necessary */
-            addNode(edge.from);
+            addNodeToTopLevel(edge.from);
         }
         if(!graph.containsNode(edge.to)) {
-            addNode(edge.to);
+            addNodeToTopLevel(edge.to);
         }
     }
 
@@ -103,10 +100,9 @@ public class NodeHistory {
             if (entry.getValue() == IDynamicVertexCover.AffectedState.Added) {
                 recalculateHistory(node);
             } else if (entry.getValue() == IDynamicVertexCover.AffectedState.Removed) {
+                // TODO When deleteEdge is added there should be a case here
                 throw new RuntimeException("Removed nodes not supported in NodeHistory.updateAffectedNodes");
             }
-
-            // TODO When deleteEdge is added there should be a case here
         }
     }
 
@@ -116,16 +112,10 @@ public class NodeHistory {
      * If the node already exists in the graph, nothing is done.
      * @param node
      */
-    public void addNode(long node) {
-        if(graph.containsNode(node)) {
-            return;
+    public void addNodeToTopLevel(long node) {
+        if(!graph.containsNode(node)) {
+            history[h-1].addCounters(1);
         }
-
-        // TODO Must implement addNode to immutableGraph
-        SimulatedGraph sgraph = (SimulatedGraph) graph;
-        sgraph.addNode(node);
-
-        history[h-1].addCounters(1);
     }
 
     /**
