@@ -77,6 +77,14 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
     }
 
     public boolean addEdge(Edge edge){
+        if(!containsNode(edge.from)) {
+            addNode(edge.from);
+        }
+        if(!containsNode(edge.to)) {
+            addNode(edge.to);
+        }
+
+
         Set<Long> neighbors = iteratorNeighbors.get(edge.from);
 
         if(neighbors == null) {
@@ -200,6 +208,26 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
             while(it.hasNext() && i++ < l) it.next();
             return i;
         }
+    }
+
+    /**
+     * Returns an array of all the edges in the graph.
+     * Mainly used for testing purposes as it is slow
+     * to iterate through all edges, return them and then
+     * iterate them again.
+     * Works in O(m)
+     * @return List of all edges
+     */
+    public Edge[] getAllEdges() {
+        ArrayList<Edge> edges = new ArrayList<>();
+        this.iterateAllEdges(edge -> {
+            edges.add(edge);
+            return null;
+        });
+
+        Edge[] edgeArray = new Edge[edges.size()];
+        edges.toArray(edgeArray);
+        return edgeArray;
     }
 
 }
