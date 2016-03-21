@@ -27,26 +27,16 @@ public class TestUtils {
      * @return
      */
     public static Edge[] generateEdges(int n, int m) {
-        HashMap<Long, Long> edgesMap = new HashMap<>();
-        ArrayList<Edge> edges = new ArrayList<>();
+        Edge[] edges = new Edge[m];
 
+        Random rand = new Random();
         for(int i = 0; i < m; i++) {
-            Random rand = new Random();
             long to   = rand.nextInt(n);
             long from = rand.nextInt(n);
-            if(to != from) {
-                edgesMap.put(to, from);
-            } else {
-                i--; //Try again to add an edge
-            }
+            edges[i] = new Edge(to, from);
         }
 
-        for(Map.Entry<Long, Long> edge : edgesMap.entrySet()) {
-            edges.add(new Edge(edge.getKey(), edge.getValue()));
-        }
-
-        Edge[] edgeArray = new Edge[edges.size()];
-        return edges.toArray(edgeArray);
+        return edges;
     }
 
     public static Edge generateEdge(long minFrom, long maxFrom, long minTo, long maxTo) {

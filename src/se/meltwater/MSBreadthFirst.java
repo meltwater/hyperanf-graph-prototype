@@ -32,6 +32,8 @@ public class MSBreadthFirst {
     private TimeUnit waitTimeUnit;
     private final static int DEFAULT_WAIT_TIME = 1;
     private final static TimeUnit DEFAULT_WAIT_TIME_UNIT = TimeUnit.HOURS;
+    private Exception threadException = null;
+    private boolean controlledInterrupt = false;
 
     /**
      * Initialize a Breadth-first search in {@code graph} from the nodes in {@code bfsSources}
@@ -107,17 +109,18 @@ public class MSBreadthFirst {
      * @return An array of BitSets where the index in the list specifies the node and the
      * set bits indicate which bfs's that reached it.
      * @throws InterruptedException
+     * @throws Exception May throw any exception raised by any of the threads
      */
     public BitSet[] breadthFirstSearch() throws InterruptedException {
 
+        threadException = null;
+        controlledInterrupt = false;
         BitSet[] visit = createBitsets(), seen = createBitsets();
 
         for(int bfs = 0; bfs < numSources; bfs++){
             visit[bfsSources[bfs]].set(bfs);
             seen[bfsSources[bfs]].set(bfs);
         }
-
-        long time = System.currentTimeMillis();
 
         MSBFS(visit,seen);
 
@@ -135,7 +138,7 @@ public class MSBreadthFirst {
 
         BitSet[] visitNext = createBitsets();
         BoolWrapper visitHadContent = new BoolWrapper(true);
-        int processors = 1;//Runtime.getRuntime().availableProcessors();
+        int processors = Runtime.getRuntime().availableProcessors();
         System.err.println("MSBreadthFirst: Running on one processor only");
         int iteration = 0;
         while(visitHadContent.theBool){
@@ -170,18 +173,25 @@ public class MSBreadthFirst {
         pool.shutdown();
         boolean normalTermination = pool.awaitTermination(waitTime,waitTimeUnit);
         if(!normalTermination){
+            controlledInterrupt = true;
             for(Future<?> future : futures)
                 future.cancel(true);
             throw new InterruptedException("The time ran out");
         }
+        if(threadException != null) {
+            throw new RuntimeException("One of the breadth-first search threads threw an Exception",threadException);
+        }
     }
 
-    private synchronized void synchronize() throws InterruptedException {
+    private synchronized boolean synchronize() throws InterruptedException {
+        if(threadException == null)
+            return false;
         if(--threadsLeft == 0)
             this.notifyAll();
         else{
             this.wait();
         }
+        return threadException == null;
     }
 
     /**
@@ -202,13 +212,16 @@ public class MSBreadthFirst {
         return () -> {
             try {
                 firstPhaseIterator(endNode, visit, visitNext, seen, visitHadContent, nodeIt, iteration);
-                synchronize();
-                if(visitHadContent.theBool)
+                if(synchronize() && visitHadContent.theBool)
                     secondPhaseIterator(startNode, endNode, visitNext, seen);
             }catch (InterruptedException e){
-                System.err.println("Thread was interrupted");
-                e.printStackTrace();
-
+                if(!controlledInterrupt) {
+                    threadException = e;
+                    this.notifyAll();
+                }
+            }catch (Exception e){
+                threadException = e;
+                this.notifyAll();
             }
         };
     }
