@@ -62,6 +62,7 @@ public class NodeHistory {
          * and will need new memory for all of these */
         allocateMemoryInAllHistoryCounters(affectedNodes.size());
 
+
         updateAffectedNodes(affectedNodes);
     }
 
@@ -94,6 +95,11 @@ public class NodeHistory {
         for(Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : affectedNodes.entrySet()) {
             long node = entry.getKey();
             insertNodeToCounterIndex(node);
+        }
+
+
+        for(Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : affectedNodes.entrySet()) {
+            long node = entry.getKey();
 
             if (entry.getValue() == IDynamicVertexCover.AffectedState.Added) {
                 recalculateHistory(node);
