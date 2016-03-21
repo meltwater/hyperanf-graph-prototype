@@ -138,7 +138,7 @@ public class MSBreadthFirst {
 
         BitSet[] visitNext = createBitsets();
         BoolWrapper visitHadContent = new BoolWrapper(true);
-        int processors = Runtime.getRuntime().availableProcessors();
+        int processors = 1;//Runtime.getRuntime().availableProcessors();
         System.err.println("MSBreadthFirst: Running on one processor only");
         int iteration = 0;
         while(visitHadContent.theBool){
@@ -168,7 +168,8 @@ public class MSBreadthFirst {
         for(int i = 0; i < threads; i++) {
             int start = i*nodesPerProcessor;
             int end = i == threads-1 ? (int)graph.getNumberOfNodes() : start + nodesPerProcessor;
-             futures.add(pool.submit(bothPhasesIterator(start,end,visit,visitNext,seen,visitHadContent, graph.getNodeIterator(start),iteration)));
+            futures.add(pool.submit(bothPhasesIterator(start,end,visit,visitNext,seen,visitHadContent, graph.getNodeIterator(start),iteration)));
+
         }
         pool.shutdown();
         boolean normalTermination = pool.awaitTermination(waitTime,waitTimeUnit);
@@ -184,7 +185,7 @@ public class MSBreadthFirst {
     }
 
     private synchronized boolean synchronize() throws InterruptedException {
-        if(threadException == null)
+        if(threadException != null)
             return false;
         if(--threadsLeft == 0)
             this.notifyAll();

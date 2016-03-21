@@ -20,7 +20,7 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
 
     private long nodeIterator = 0;
     private Iterator<Long> successors;
-    private TreeMap<Long, HashSet<Long>> iteratorNeighbors = new TreeMap<>();
+    private TreeMap<Long, TreeSet<Long>> iteratorNeighbors = new TreeMap<>();
 
     private long numArcs = 0;
     private long numNodes = 0;
@@ -44,20 +44,24 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
     }
 
     @Override
-    public Object clone() throws CloneNotSupportedException {
-        SimulatedGraph clone = (SimulatedGraph) super.clone();
-        clone.iteratorNeighbors = new TreeMap<>();
-        for(Map.Entry<Long, HashSet<Long>> entry : iteratorNeighbors.entrySet()) {
-            clone.iteratorNeighbors.put(entry.getKey(), (HashSet<Long>) entry.getValue().clone());
-        }
+    public Object clone() {
+        try {
+            SimulatedGraph clone = (SimulatedGraph) super.clone();
+            clone.iteratorNeighbors = new TreeMap<>();
+            for (Map.Entry<Long, TreeSet<Long>> entry : iteratorNeighbors.entrySet()) {
+                clone.iteratorNeighbors.put(entry.getKey(), (TreeSet<Long>) entry.getValue().clone());
+            }
 
-        return clone;
+            return clone;
+        }catch(CloneNotSupportedException e){
+            throw new RuntimeException("Simulated graph should never throw this",e);
+        }
     }
 
     @Override
     public IGraph copy(){
         SimulatedGraph copy = new SimulatedGraph();
-        copy.iteratorNeighbors = (TreeMap<Long, HashSet<Long>>) iteratorNeighbors.clone();
+        copy.iteratorNeighbors = (TreeMap<Long, TreeSet<Long>>) iteratorNeighbors.clone();
         copy.numArcs = numArcs;
         copy.numNodes = numNodes;
         return copy;
@@ -67,33 +71,40 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
 
         if(!iteratorNeighbors.containsKey(node)) {
             numNodes = Math.max(node+1,numNodes);
-            iteratorNeighbors.put(node, new HashSet<>());
+            iteratorNeighbors.put(node, new TreeSet<>());
         }
 
     }
 
-    public void addEdge(Edge edge){
-        HashSet<Long> neighbors = iteratorNeighbors.get(edge.from);
+    public boolean addEdge(Edge edge){
+        Set<Long> neighbors = iteratorNeighbors.get(edge.from);
 
         if(neighbors == null) {
             addNode(edge.from);
             neighbors = iteratorNeighbors.get(edge.from);
         }
 
-        neighbors.add(edge.to);
+        boolean wasAdded = neighbors.add(edge.to);
 
-        numArcs++;
+        if(wasAdded)
+            numArcs++;
+        return wasAdded;
     }
 
-    public void deleteEdge(Edge edge) {
-        HashSet neighbors = iteratorNeighbors.get(edge.from);
-        neighbors.remove(edge.to);
-        numArcs--;
+    public boolean deleteEdge(Edge edge) {
+        Set<Long> neighbors = iteratorNeighbors.get(edge.from);
+        if(neighbors != null) {
+            boolean wasRemoved = neighbors.remove(edge.to);
+            if(wasRemoved)
+                numArcs--;
+            return wasRemoved;
+        }else
+            return false;
     }
 
     public Iterator<Long> getLongIterator(long node){
 
-        HashSet<Long> neighbor = iteratorNeighbors.get(node);
+        Set<Long> neighbor = iteratorNeighbors.get(node);
         if(neighbor == null)
             return emptyLongIterator();
         else
@@ -140,7 +151,7 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
 
     @Override
     public long getOutdegree(long node){
-        HashSet<Long> neighbors = iteratorNeighbors.get(node);
+        Set<Long> neighbors = iteratorNeighbors.get(node);
         return neighbors == null ? 0 : neighbors.size();
     }
 

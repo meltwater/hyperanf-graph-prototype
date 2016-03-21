@@ -85,10 +85,10 @@ public class TestSimulatedGraph {
     private void testSameIterators(IGraph bvGraphWrapper, IGraph simulatedGraph){
 
         for (int i = 0; i < bvGraphWrapper.getNumberOfNodes(); i++) {
-            ArrayList<Long> bvNeighborList  = getNeighborList(bvGraphWrapper, i);
-            ArrayList<Long> simNeighborList = getNeighborList(simulatedGraph, i);
+            long[] bvNeighborList  = getNeighborList(bvGraphWrapper, i);
+            long[] simNeighborList = getNeighborList(simulatedGraph, i);
 
-            assertSameNeighbors(bvNeighborList, simNeighborList);
+            assertArrayEquals(bvNeighborList, simNeighborList);
         }
 
     }
@@ -109,29 +109,19 @@ public class TestSimulatedGraph {
      * @param nodeIndex
      * @return
      */
-    public ArrayList<Long> getNeighborList(IGraph graph, long nodeIndex) {
+    public long[] getNeighborList(IGraph graph, long nodeIndex) {
         NodeIterator nodeIterator  = graph.getNodeIterator(nodeIndex);
         nodeIterator.nextLong();
 
-        ArrayList<Long> neighborList  = new ArrayList<>();
-        LazyLongIterator neighbors  = nodeIterator.successors();
         long degree = nodeIterator.outdegree();
+        long[] neighborList  = new long[(int)degree];
+        LazyLongIterator neighbors  = nodeIterator.successors();
 
-        while(degree-- > 0 ) {
-            neighborList.add(neighbors.nextLong());
+        for(int i=0; i < degree; i++ ) {
+            neighborList[i] = neighbors.nextLong();
         }
 
         return neighborList;
-    }
-
-    /**
-     * Asserts that both lists include the same elements
-     * @param neighborList1
-     * @param neighborList2
-     */
-    private void assertSameNeighbors(ArrayList<Long> neighborList1, ArrayList<Long> neighborList2) {
-        assertTrue(neighborList1.size() == neighborList2.size());
-        assertTrue(neighborList1.containsAll(neighborList2));
     }
 
 
