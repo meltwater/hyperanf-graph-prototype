@@ -23,7 +23,7 @@ public class NodeHistory {
     private HashMap<Long,Long> counterIndex;
     private long nextFreeCounterIndex = 0;
 
-    public HyperLolLolCounterArray[] history;
+    private HyperLolLolCounterArray[] history;
 
     private int h;
 
@@ -61,7 +61,6 @@ public class NodeHistory {
          * to the VC, all affected nodes will be of type AffectedState.Added
          * and will need new memory for all of these */
         allocateMemoryInAllHistoryCounters(affectedNodes.size());
-
 
         updateAffectedNodes(affectedNodes);
     }
@@ -230,7 +229,7 @@ public class NodeHistory {
                     if (vc.isInVertexCover(visitNode)) {
                         for (int i = h - 1; i >= depth; i--) {
                             long counterInd = getNodeIndex(node, i + 1);
-                            history[i].union(counterInd, history[i - depth], getNodeIndex(visitNode, i - depth));
+                            history[i].union(counterInd, history[i - depth], getNodeIndex(visitNode, i - depth + 1));
                         }
                         history[depth - 1].add(getNodeIndex(node, depth), visitNode);
                         bfsVisits.clear();
