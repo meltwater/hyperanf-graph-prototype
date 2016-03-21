@@ -113,29 +113,6 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
     }
 
     @Override
-    public void setNodeIterator(long node) {
-        nodeIterator = node;
-        successors = getLongIterator(node);
-    }
-
-    @Override
-    public long getNextNode() {
-        long nextNode = nodeIterator+1;
-        setNodeIterator(nextNode);
-        return nextNode;
-    }
-
-    @Override
-    public long getNextNeighbor() throws NoSuchElementException{
-        return successors.next();
-    }
-
-    @Override
-    public long getOutdegree() {
-        return getOutdegree(nodeIterator);
-    }
-
-    @Override
     public long getNumberOfNodes() {
         return numNodes;
     }
@@ -145,6 +122,7 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
         return new SimulatedGraphNodeIterator(node,this);
     }
 
+    @Override
     public NodeIterator getNodeIterator(){
         return getNodeIterator(0);
     }

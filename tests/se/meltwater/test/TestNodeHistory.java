@@ -76,7 +76,6 @@ public class TestNodeHistory {
     public void addEdgeAndAssertIncreasedCount(NodeHistory nh, IDynamicVertexCover vc, SimulatedGraph graph) throws InterruptedException {
 
         double[] history, history2;
-        graph.setNodeIterator(0);
         Random rand = new Random();
         LazyLongIterator it = vc.getNodesInVertexCoverIterator();
         for (long i = 0; i < vc.getVertexCoverSize() ; i++) {

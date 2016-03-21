@@ -1,8 +1,11 @@
 package se.meltwater.vertexcover;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
+import it.unimi.dsi.big.webgraph.NodeIterator;
+import it.unimi.dsi.fastutil.objects.Object2BooleanArrayMap;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
+import se.meltwater.graph.SimulatedGraph;
 
 import java.util.*;
 
@@ -71,7 +74,8 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         removedNodes.add(edge.to);
 
         checkOutgoingEdgesFromDeletedEndpoint(edge.from, addedNodes);
-        checkOutgoingEdgesFromDeletedEndpoint(edge.to, addedNodes);
+        if(edge.from != edge.to)
+            checkOutgoingEdgesFromDeletedEndpoint(edge.to, addedNodes);
         checkIncomingEdgesToDeletedEndpoints(edge, addedNodes);
 
         affectedNodes = createAffectedNodes(removedNodes, addedNodes);
@@ -124,18 +128,18 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     /**
-     * Takes an node that was deleted from the Vertex Cover.
+     * Takes a node that was deleted from the Vertex Cover.
      * Neighbors of this node might now be uncovered, and we must
      * check every outgoing edge to determine if it needs to be added
      * to the maximal matching.
      * @param currentNode A node deleted from the Vertex Cover
      */
     public void checkOutgoingEdgesFromDeletedEndpoint(long currentNode, Set<Long> addedNodes) {
-        graph.setNodeIterator(currentNode);
-        long degree = graph.getOutdegree();
+        LazyLongIterator succ = graph.getSuccessors(currentNode);
+        long degree = graph.getOutdegree(currentNode);
 
         while( degree != 0 ) {
-            long successorOfCurrentNode = graph.getNextNeighbor();
+            long successorOfCurrentNode = succ.nextLong();
 
             if(!isInVertexCover(successorOfCurrentNode)){
                 Edge edge = new Edge(currentNode, successorOfCurrentNode);
@@ -160,15 +164,17 @@ public class DynamicVertexCover implements IDynamicVertexCover {
      * @param edge An edge deleted from the Maximal Matching
      */
     public void checkIncomingEdgesToDeletedEndpoints(Edge edge, Set<Long> addedNodes) {
+        NodeIterator nodeIt = graph.getNodeIterator();
         for(int currentNode = 0; currentNode < graph.getNumberOfNodes(); currentNode++) {
+            nodeIt.nextLong();
             if(isInVertexCover((long)currentNode)) {
                 continue;
             }
 
-            graph.setNodeIterator(currentNode);
-            long degree = graph.getOutdegree();
+            LazyLongIterator succ = nodeIt.successors();
+            long degree = nodeIt.outdegree();
             while( degree-- != 0 ) {
-                long successorOfCurrentNode = graph.getNextNeighbor();
+                long successorOfCurrentNode = succ.nextLong();
 
                 if(!(successorOfCurrentNode == edge.from) && !(successorOfCurrentNode == edge.to)) {
                     continue;

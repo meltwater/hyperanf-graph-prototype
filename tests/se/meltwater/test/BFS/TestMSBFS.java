@@ -1,5 +1,7 @@
 package se.meltwater.test.BFS;
 
+import it.unimi.dsi.big.webgraph.LazyLongIterator;
+import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import org.junit.Test;
@@ -146,12 +148,12 @@ public class TestMSBFS {
 
                         visitedBy.clear();
                     } else {
-                        graph.setNodeIterator(node);
-                        long out = (int) graph.getOutdegree(), neigh;
+                        LazyLongIterator succ = graph.getSuccessors(node);
+                        long out = (int) graph.getOutdegree(node), neigh;
                         alreadySeen[(int) node].or(visitedBy);
 
                         for (int neighI = 0; neighI < out; neighI++) {
-                            neigh = graph.getNextNeighbor();
+                            neigh = succ.nextLong();
                             shouldHave[(int) neigh].or(visitedBy);
                         }
                     }
@@ -204,12 +206,12 @@ public class TestMSBFS {
             /* Do bfs from current node */
             while (!queue.isEmpty()) {
                 int curr = queue.dequeueInt();
-                graph.setNodeIterator(curr);
-                int d = (int)graph.getOutdegree();
+                LazyLongIterator succs = graph.getSuccessors(curr);
+                int d = (int)graph.getOutdegree(curr);
 
                 /* Visit all neighbors */
                 while (d-- != 0) {
-                    int succ = (int)graph.getNextNeighbor();
+                    int succ = (int)succs.nextLong();
 
                     if (!nodesChecked.get(succ)) {
                         nodesChecked.set(succ);

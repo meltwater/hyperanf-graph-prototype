@@ -93,7 +93,6 @@ public class TestDynamicVertexCover {
 
             SimulatedGraph graphToMerge = TestUtils.genRandomGraph(maxNumNodes);
 
-            // TODO Use Simons soon-to-be-pushed simulated-graph-contains-all-nodes-up-to-max commit instead
             for(int i = 0; i < graphToMerge.getNumberOfNodes(); i++){
                 graph.addNode(i);
             }
@@ -106,7 +105,7 @@ public class TestDynamicVertexCover {
 
             deleteEdgesFromVCAndUpdateAffected(graph, dvc, affectedStateMap);
             /* After all have been inserted and deleted we should not have any affected nodes left */
-            assertTrue(affectedStateMap.size() == 0);
+            assertEquals(0, affectedStateMap.size());
         }
     }
 
@@ -125,15 +124,20 @@ public class TestDynamicVertexCover {
     }
 
     private void deleteEdgesFromVCAndUpdateAffected(SimulatedGraph graph, DynamicVertexCover dvc, Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap) {
-        graph.iterateAllEdges(edge -> {
-            graph.deleteEdge(edge);
 
-            Map<Long, IDynamicVertexCover.AffectedState> currentAffectedStateMap = dvc.deleteEdge(edge);
-            for (Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : currentAffectedStateMap.entrySet()) {
-                DynamicVertexCover.updateAffectedNodes(entry.getKey(), entry.getValue(), affectedStateMap);
+        long numNodes = graph.getNumberOfNodes();
+        for (int i = 0; i < numNodes ; i++) {
+            for (int j = 0; j < numNodes ; j++) {
+                Edge edge = new Edge(i,j);
+                boolean existed = graph.deleteEdge(edge);
+                if(existed) {
+                    Map<Long, IDynamicVertexCover.AffectedState> currentAffectedStateMap = dvc.deleteEdge(edge);
+                    for (Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : currentAffectedStateMap.entrySet()) {
+                        DynamicVertexCover.updateAffectedNodes(entry.getKey(), entry.getValue(), affectedStateMap);
+                    }
+                }
             }
-            return null;
-        });
+        }
     }
 
     @Test

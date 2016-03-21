@@ -16,12 +16,7 @@ public abstract class AGraph implements IGraph {
 
     abstract public IGraph copy();
 
-    abstract public void setNodeIterator(long node);
-    abstract public long  getNextNode();
-
-    abstract public long getNextNeighbor();
     abstract public LazyLongIterator getSuccessors(long node);
-    abstract public long getOutdegree();
 
     abstract public long getOutdegree(long node);
 
@@ -32,7 +27,7 @@ public abstract class AGraph implements IGraph {
     abstract public long getNumberOfArcs();
 
     public boolean containsNode(long node) {
-        return node > getNumberOfNodes();
+        return node < getNumberOfNodes();
     }
 
     /**
@@ -44,15 +39,16 @@ public abstract class AGraph implements IGraph {
      * @return null if no error occurred, the error Object otherwise.
      */
     public <T> T iterateAllEdges(Function<Edge, T> function) {
-        long n = getNumberOfNodes();
-        for(int i = 0; i < n; i++) {
-            setNodeIterator(i);
-            long outdegree = getOutdegree();
+        NodeIterator nodeIt = getNodeIterator();
+        long numNodes = getNumberOfNodes();
+        for(long node = 0; node < numNodes; node++) {
+            nodeIt.nextLong();
+            long outdegree = nodeIt.outdegree();
+            LazyLongIterator neighbors = nodeIt.successors();
 
             while(outdegree != 0) {
-                long neighbor = getNextNeighbor();
-                Edge currentEdge = new Edge(i, neighbor);
-                T returnedValue = function.apply(currentEdge);
+                long neighbor = neighbors.nextLong();
+                T returnedValue = function.apply(new Edge(node, neighbor));
                 if(returnedValue != null) {
                     return returnedValue;
                 }
