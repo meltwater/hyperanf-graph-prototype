@@ -14,18 +14,29 @@ import java.util.function.Function;
  */
 public abstract class AGraph implements IGraph {
 
+    @Override
     abstract public IGraph copy();
 
+    @Override
     abstract public LazyLongIterator getSuccessors(long node);
 
+    @Override
+    abstract public boolean addEdge(Edge edge);
+
+    @Override
     abstract public long getOutdegree(long node);
 
+    @Override
     abstract public NodeIterator getNodeIterator();
+    @Override
     abstract public NodeIterator getNodeIterator(long node);
 
+    @Override
     abstract public long getNumberOfNodes();
+    @Override
     abstract public long getNumberOfArcs();
 
+    @Override
     public boolean containsNode(long node) {
         return node < getNumberOfNodes();
     }
@@ -38,6 +49,7 @@ public abstract class AGraph implements IGraph {
      * @param <T> Return type
      * @return null if no error occurred, the error Object otherwise.
      */
+    @Override
     public <T> T iterateAllEdges(Function<Edge, T> function) {
         NodeIterator nodeIt = getNodeIterator();
         long numNodes = getNumberOfNodes();

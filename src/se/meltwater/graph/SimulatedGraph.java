@@ -76,6 +76,7 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
 
     }
 
+    @Override
     public boolean addEdge(Edge edge){
         Set<Long> neighbors = iteratorNeighbors.get(edge.from);
 

@@ -13,6 +13,18 @@ public class Edge {
         this.to = to;
     }
 
+    @Override
+    public boolean equals(Object other){
+        if(other == null)
+            return false;
+
+        if(!(other instanceof Edge))
+            return false;
+
+        Edge edge = (Edge)other;
+        return edge.from == from && edge.to == to;
+    }
+
     public long from;
     public long to;
 }

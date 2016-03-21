@@ -23,6 +23,8 @@ public interface IGraph {
 
     LazyLongIterator getSuccessors(long node);
 
+    boolean addEdge(Edge edge);
+
     long getOutdegree(long node);
 
     NodeIterator getNodeIterator();

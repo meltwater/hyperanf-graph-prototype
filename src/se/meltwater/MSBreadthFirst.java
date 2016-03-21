@@ -2,6 +2,7 @@ package se.meltwater;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
+import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import se.meltwater.graph.IGraph;
 
 import java.util.ArrayList;

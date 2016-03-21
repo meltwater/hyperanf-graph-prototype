@@ -233,7 +233,10 @@ public class TestSimulatedGraph {
     }
 
 
-
+    /**
+     * Returns a Simulated graph which is the same as testGraph/SameAsSimulated
+     * @return
+     */
     public SimulatedGraph createSimulatedGraph(){
         SimulatedGraph graph = new SimulatedGraph();
         graph.addNode(29);
