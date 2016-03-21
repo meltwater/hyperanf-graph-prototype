@@ -32,7 +32,7 @@ public abstract class AGraph implements IGraph {
     abstract public long getNumberOfArcs();
 
     public boolean containsNode(long node) {
-        return node > getNumberOfNodes();
+        return node < getNumberOfNodes();
     }
 
     /**
