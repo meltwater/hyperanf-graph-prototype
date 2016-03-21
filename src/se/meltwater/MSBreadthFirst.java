@@ -7,11 +7,7 @@ import se.meltwater.graph.IGraph;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.concurrent.*;
-
-
-
-
-
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -137,15 +133,15 @@ public class MSBreadthFirst {
     private void MSBFS(BitSet[] visit, BitSet[] seen) throws InterruptedException {
 
         BitSet[] visitNext = createBitsets();
-        BoolWrapper visitHadContent = new BoolWrapper(true);
+        AtomicBoolean visitHadContent = new AtomicBoolean(true);
         int processors = 1;//Runtime.getRuntime().availableProcessors();
         System.err.println("MSBreadthFirst: Running on one processor only");
         int iteration = 0;
-        while(visitHadContent.theBool){
+        while(visitHadContent.get()){
 
             iterate(visitHadContent,processors,visit,seen,visitNext,iteration++);
 
-            if(visitHadContent.theBool) {
+            if(visitHadContent.get()) {
 
                 visit = visitNext;
                 visitNext = createBitsets();
@@ -156,12 +152,12 @@ public class MSBreadthFirst {
 
 
 
-    private void iterate(BoolWrapper visitHadContent, int threads,BitSet[] visit, BitSet[] seen,BitSet[] visitNext,
+    private void iterate(AtomicBoolean visitHadContent, int threads,BitSet[] visit, BitSet[] seen,BitSet[] visitNext,
                          int iteration) throws InterruptedException {
 
         ExecutorService pool = Executors.newFixedThreadPool(threads);
         int nodesPerProcessor = (int)graph.getNumberOfNodes() / threads;
-        visitHadContent.theBool = false;
+        visitHadContent.set(false);
         threadsLeft = threads;
         ArrayList<Future<?>> futures = new ArrayList<>(threads);
 
@@ -209,11 +205,11 @@ public class MSBreadthFirst {
      * @return
      */
     private Runnable bothPhasesIterator(int startNode, int endNode, BitSet[] visit, BitSet[] visitNext,
-                                        BitSet[] seen, BoolWrapper visitHadContent, NodeIterator nodeIt, int iteration){
+                                        BitSet[] seen, AtomicBoolean visitHadContent, NodeIterator nodeIt, int iteration){
         return () -> {
             try {
                 firstPhaseIterator(endNode, visit, visitNext, seen, visitHadContent, nodeIt, iteration);
-                if(synchronize() && visitHadContent.theBool)
+                if(synchronize() && visitHadContent.get())
                     secondPhaseIterator(startNode, endNode, visitNext, seen);
             }catch (InterruptedException e){
                 if(!controlledInterrupt) {
@@ -228,7 +224,7 @@ public class MSBreadthFirst {
     }
 
     private void firstPhaseIterator(int endNode, BitSet[] visit, BitSet[] visitNext, BitSet[] seen,
-                                        BoolWrapper visitHadContent, NodeIterator nodeIt, int iteration){
+                                        AtomicBoolean visitHadContent, NodeIterator nodeIt, int iteration){
         int node;
         while(nodeIt.hasNext() && (node = (int)nodeIt.nextLong()) < endNode) {
             if (visit[node].cardinality() == 0) continue;
@@ -239,7 +235,7 @@ public class MSBreadthFirst {
             }
 
 
-            visitHadContent.theBool = true;
+            visitHadContent.set(true);
             LazyLongIterator neighbors = nodeIt.successors();
             long degree = nodeIt.outdegree();
             int neighbor;
@@ -260,12 +256,6 @@ public class MSBreadthFirst {
             visitNext[node].andNot(seen[node]);
             seen[node].or(visitNext[node]);
         }
-    }
-
-    class BoolWrapper{
-        public boolean theBool = false;
-        public BoolWrapper(boolean initialValue){ theBool = initialValue; }
-        public BoolWrapper(){this(false);}
     }
 
     /**

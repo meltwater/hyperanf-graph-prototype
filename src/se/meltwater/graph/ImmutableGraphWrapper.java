@@ -25,20 +25,6 @@ public class ImmutableGraphWrapper extends AGraph{
     }
 
     @Override
-    public void setNodeIterator(long node) {
-        nodeIterator = graph.nodeIterator(node);
-        nodeIterator.nextLong();
-        successors = nodeIterator.successors();
-    }
-
-    @Override
-    public long getNextNode() {
-        long node = nodeIterator.nextLong();
-        successors = nodeIterator.successors();
-        return node;
-    }
-
-    @Override
     public IGraph copy(){
         return new ImmutableGraphWrapper(graph.copy());
     }
@@ -54,16 +40,6 @@ public class ImmutableGraphWrapper extends AGraph{
     }
 
     @Override
-    public long getNextNeighbor() {
-        return successors.nextLong();
-    }
-
-    @Override
-    public long getOutdegree() {
-        return nodeIterator.outdegree();
-    }
-
-    @Override
     public long getNumberOfNodes() {
         return graph.numNodes();
     }
@@ -71,6 +47,7 @@ public class ImmutableGraphWrapper extends AGraph{
     @Override
     public long getNumberOfArcs() { return graph.numArcs(); }
 
+    @Override
     public NodeIterator getNodeIterator(long node){
         return graph.nodeIterator(node);
     }

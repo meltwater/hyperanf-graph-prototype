@@ -21,12 +21,7 @@ public interface IGraph {
 
     IGraph copy();
 
-    void setNodeIterator(long node);
-    long  getNextNode();
-
-    long getNextNeighbor();
     LazyLongIterator getSuccessors(long node);
-    long getOutdegree();
 
     long getOutdegree(long node);
 
