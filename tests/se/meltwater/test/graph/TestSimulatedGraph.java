@@ -10,9 +10,11 @@ import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graph.SimulatedGraph;
+import se.meltwater.test.TestUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.*;
+import java.util.stream.LongStream;
 
 /**
  * @author Simon Lindhén
@@ -22,6 +24,112 @@ import java.util.ArrayList;
  * gives the same results as {@link ImmutableGraphWrapper}
  */
 public class TestSimulatedGraph {
+
+    final int nrTestIterations = 100;
+
+    @Test
+    /**
+     * Generates a random graph and tests that Simulated Graph
+     * returns the correct number of arcs.
+     */
+    public void testSimulatedGraphCorrectNumArcs() {
+        int iteration = 0;
+
+        while(iteration++ < nrTestIterations) {
+            final int maxNumNodes = 100;
+            Set<Long> nodesSet = new HashSet<>();
+            Map<Long, Set<Long>> edges = new HashMap<>();
+
+
+            IGraph graph = TestUtils.genRandomGraph(maxNumNodes);
+            buildNodeAndEdgeSetFromGraph(nodesSet, edges, graph);
+
+            long edgeCount = 0;
+            for (Map.Entry<Long, Set<Long>> entry : edges.entrySet()) {
+                edgeCount += entry.getValue().size();
+            }
+
+            assertEquals(graph.getNumberOfArcs(), edgeCount);
+        }
+    }
+
+    /**
+     * Iterates the graph and calculates the unique set of nodes and the unique
+     * edges present in the graph.
+     * @param nodesSet An empty set that later will include all unique nodes
+     * @param edges An emtpy map that later will include a mapping between nodes and their neighbors (calculated from outgoing edges)
+     * @param graph The graph to build from
+     */
+    private void buildNodeAndEdgeSetFromGraph(Set<Long> nodesSet, Map<Long, Set<Long>> edges, IGraph graph) {
+        graph.iterateAllEdges(edge -> {
+            nodesSet.add(edge.from);
+            nodesSet.add(edge.to);
+
+            Set<Long> outEdges = edges.get(edge.from);
+            if(outEdges == null) {
+                outEdges = new HashSet<>();
+                edges.put(edge.from, outEdges);
+            }
+
+            outEdges.add(edge.to);
+
+            return null;
+        });
+    }
+
+    @Test
+    /**
+     * Tests that an emptry graph returns the correct numNodes
+     * and numArcs
+     */
+    public void testSimulatedGraphCorrectNumNodesZero() {
+        IGraph graph = new SimulatedGraph();
+        assertEquals(0, graph.getNumberOfNodes());
+        assertEquals(0, graph.getNumberOfArcs());
+    }
+
+    @Test
+    /**
+     * Tests that after inserting a node larger than MAX_INT
+     * simulated graph returns the correct value of nodes.
+     */
+    public void testSimulatedGraphCorrectNumNodesLarge() {
+        int iteration = 0;
+
+        while(iteration++ < nrTestIterations) {
+            SimulatedGraph graph = new SimulatedGraph();
+
+            Random rand = new Random();
+            int exponent = rand.nextInt(32) ;
+            long longLargerThanInt = Integer.MAX_VALUE + (long) Math.pow(2, exponent);
+            graph.addNode(longLargerThanInt);
+
+            assertEquals(longLargerThanInt + 1, graph.getNumberOfNodes());
+            assertEquals(0, graph.getNumberOfArcs());
+        }
+    }
+
+    @Test
+    /**
+     * Test that after some node insertions the graph gives the correct number
+     * of nodes and arcs.
+     */
+    public void testSimulatedGraphCorrectNumNodesSmall() {
+        int iteration = 0;
+
+        while(iteration++ < nrTestIterations) {
+            final int maxNumNodes = 100;
+            Random rand = new Random();
+            int n = rand.nextInt(maxNumNodes);
+            long[] nodes = LongStream.rangeClosed(0, n).toArray();
+            Edge[] edges = new Edge[0];
+
+            IGraph graph = TestUtils.setupSGraph(nodes, edges);
+
+            assertEquals(nodes.length, graph.getNumberOfNodes());
+            assertEquals(0, graph.getNumberOfArcs());
+        }
+    }
 
     @Test
     /**
