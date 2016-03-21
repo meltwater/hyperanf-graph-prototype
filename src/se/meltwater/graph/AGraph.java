@@ -31,6 +31,9 @@ public abstract class AGraph implements IGraph {
     abstract public long getNumberOfNodes();
     abstract public long getNumberOfArcs();
 
+    public boolean containsNode(long node) {
+        return node > getNumberOfNodes();
+    }
 
     /**
      * Iterates all edges in the graph and calls the lambda function for each edge.

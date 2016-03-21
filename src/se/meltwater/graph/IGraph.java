@@ -36,6 +36,8 @@ public interface IGraph {
     long getNumberOfNodes();
     long getNumberOfArcs();
 
+    boolean containsNode(long node);
+
 
     /**
      * Iterates all edges in the graph and calls the lambda function for each edge.

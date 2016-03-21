@@ -141,12 +141,15 @@ public class TestNodeHistory {
             n++;
             Edge generatedEdge = new Edge(from, to);
 
+
             nodeHistory.addEdge(generatedEdge);
             addedNodes.add(generatedEdge.from);
         }
 
         return addedNodes;
     }
+
+
 
     /**
      * Tests that all nodes in the list can be accessed.
@@ -173,7 +176,7 @@ public class TestNodeHistory {
     }
 
     /**
-     * Runs hyperBoll on the graph and returns the calculated NodeHistory
+     * Runs hyperBoll on the graph and returns the calculated initial NodeHistory
      * @param graph
      * @param dvc
      * @param h
@@ -184,7 +187,7 @@ public class TestNodeHistory {
         NodeHistory nodeHistory = new NodeHistory(dvc, h, graph);
         HyperBoll hyperBoll = new HyperBoll(graph, log2m);
         hyperBoll.init();
-        for (int i = 1; i < h; i++) {
+        for (int i = 1; i <= h; i++) {
             hyperBoll.iterate();
             nodeHistory.addHistory(hyperBoll.getCounter(), i);
         }
