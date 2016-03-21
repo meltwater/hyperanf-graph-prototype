@@ -3,6 +3,7 @@ package se.meltwater.test;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.fastutil.*;
+import javafx.util.Pair;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import se.meltwater.NodeHistory;
@@ -51,7 +52,7 @@ public class TestNodeHistory {
         IGraph graph = new ImmutableGraphWrapper(bvGraph);
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        NodeHistory nodeHistory = runHyperBall(graph, dvc, h);
+        NodeHistory nodeHistory = runHyperBall(graph, dvc, h).getKey();
         assertCurrentCountIsSameAsRecalculatedCount(nodeHistory,dvc);
 
     }
@@ -62,18 +63,22 @@ public class TestNodeHistory {
      * adding edges
      */
     public void historyIncreaseOnAddedEdge() throws IOException, InterruptedException {
+        int iteration = 0;
 
-        setupRandomParameters();
+        while(iteration++ < nrTestIterations) {
+            setupRandomParameters();
 
-        SimulatedGraph graph = TestUtils.genRandomGraph(100);
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+            SimulatedGraph graph = TestUtils.genRandomGraph(100);
+            DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        NodeHistory nodeHistory = runHyperBall(graph, dvc, h);
-        addEdgeAndAssertIncreasedCount(nodeHistory,dvc,graph);
+            Pair<NodeHistory, HyperBoll> pair = runHyperBall(graph, dvc, h);
 
+            addEdgeAndAssertIncreasedCount(pair.getKey(), pair.getValue(), dvc, graph);
+        }
     }
 
-    public void addEdgeAndAssertIncreasedCount(NodeHistory nh, IDynamicVertexCover vc, SimulatedGraph graph) throws InterruptedException {
+    public void addEdgeAndAssertIncreasedCount(NodeHistory nh, HyperBoll boll, IDynamicVertexCover vc, SimulatedGraph graph) throws InterruptedException {
+
 
         double[] history, history2;
         graph.setNodeIterator(0);
@@ -83,17 +88,21 @@ public class TestNodeHistory {
             long node = it.nextLong();
             if(graph.getOutdegree(node) == 0) {
                 history = nh.count(node);
-                assertArrayEquals(repeat(1.0,history.length),history,0.01);
-                nh.addEdge(new Edge(node, rand.nextInt()));
+                assertArrayEquals(repeat(1.0,history.length),history,0.05);
+                long neighbor;
+
+                do {
+                    neighbor = rand.nextInt((int)graph.getNumberOfNodes());
+                } while(boll.getCounter().hasSameRegisters(node, neighbor));
+
+                nh.addEdge(new Edge(node, neighbor));
                 nh.recalculateHistory(node);
                 history2 = nh.count(node);
                 for (int j = 0; j < history.length; j++) {
-                    assertTrue(history[j]+0.5 < history2[j]);
+                    assertTrue(history[j]+0.05 < history2[j]);
                 }
-
             }
         }
-
     }
 
     public double[] repeat(double number, int times){
@@ -112,7 +121,7 @@ public class TestNodeHistory {
         IGraph graph = createGraphWithCircles();
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        NodeHistory nodeHistory = runHyperBall(graph, dvc, h);
+        NodeHistory nodeHistory = runHyperBall(graph, dvc, h).getKey();
         assertCurrentCountIsSameAsRecalculatedCount(nodeHistory,dvc);
 
     }
@@ -159,7 +168,7 @@ public class TestNodeHistory {
 
             IGraph graph = setupRandomGraph();
             DynamicVertexCover dvc = new DynamicVertexCover(graph);
-            NodeHistory nodeHistory = runHyperBall(graph, dvc, h);
+            NodeHistory nodeHistory = runHyperBall(graph, dvc, h).getKey();
 
             Set<Long> addedNodes = addRandomEdgesWithUniqueFromNodes(graph, nodeHistory);
 
@@ -227,7 +236,7 @@ public class TestNodeHistory {
      * @return
      * @throws IOException
      */
-    private NodeHistory runHyperBall(IGraph graph, DynamicVertexCover dvc, int h) throws IOException {
+    private Pair<NodeHistory, HyperBoll> runHyperBall(IGraph graph, DynamicVertexCover dvc, int h) throws IOException {
         NodeHistory nodeHistory = new NodeHistory(dvc, h, graph);
         HyperBoll hyperBoll = new HyperBoll(graph, log2m);
         hyperBoll.init();
@@ -237,7 +246,7 @@ public class TestNodeHistory {
         }
 
         hyperBoll.close();
-        return nodeHistory;
+        return new Pair<>(nodeHistory, hyperBoll);
     }
 }
 

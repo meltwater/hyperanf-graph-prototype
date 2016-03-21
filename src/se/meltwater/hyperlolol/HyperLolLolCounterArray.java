@@ -128,6 +128,14 @@ public class HyperLolLolCounterArray implements Serializable, Cloneable {
     private String exceptionString = "Exception in " + HyperLolLolCounterArray.class + ". ";
     private final float resizeFactor = 1.1f;
 
+
+    public boolean hasSameRegisters(long index1, long index2) {
+        final int register1 = (int)( jenkins( index1, seed ) & mMinus1 );
+        final int register2 = (int)( jenkins( index2, seed ) & mMinus1 );
+
+        return register1 == register2;
+    }
+
     /**
      * Returns the logarithm of the number of registers per counter that are necessary to attain a
      * given relative standard deviation.
