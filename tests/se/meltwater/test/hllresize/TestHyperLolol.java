@@ -65,6 +65,33 @@ public class TestHyperLolol {
 
     @Test
     /**
+     * Tests if {@link HyperLolLolCounterArray#wouldChange(long, long)} is correct
+     */
+    public void testWouldChange(){
+        int iteration = 0;
+        while(++iteration < nrTestIterations){
+            setupParameters();
+
+            int maxAddedValues = 100;
+            long[] count = new long[counter.counterLongwords];
+            long[] countAfter = new long[counter.counterLongwords];
+            for (int i = 0; i < arraySize; i++) {
+                for(int j = 0; j < maxAddedValues; j++) {
+                    counter.getCounter(i,count);
+                    int addedValue = rand.nextInt();
+                    boolean shouldChange = counter.wouldChange(i,addedValue);
+                    counter.add(i, addedValue);
+                    counter.getCounter(i,countAfter);
+                    assertNotEquals(shouldChange,Arrays.equals(count,countAfter));
+                }
+            }
+
+
+        }
+    }
+
+    @Test
+    /**
      * Tests that we can add values to newly allocated parts
      * of the counter and that they after insertions all have
      * values != 0.

@@ -18,16 +18,12 @@ import java.util.*;
  */
 public class SimulatedGraph extends AGraph implements  Cloneable {
 
-    private long nodeIterator = 0;
-    private Iterator<Long> successors;
     private TreeMap<Long, TreeSet<Long>> iteratorNeighbors = new TreeMap<>();
 
     private long numArcs = 0;
     private long numNodes = 0;
 
-    public SimulatedGraph() {
-        successors = emptyLongIterator();
-    }
+    public SimulatedGraph() {}
 
     private Iterator<Long> emptyLongIterator(){
         return new Iterator<Long>() {

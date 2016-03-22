@@ -25,6 +25,7 @@ import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongBigList;
+import javafx.util.Pair;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -521,6 +522,28 @@ public class HyperLolLolCounterArray implements Serializable, Cloneable {
         final long offset = ( ( k << log2m ) + j ) & CHUNK_MASK;
         l.set( offset, Math.max( r + 1, l.getLong( offset ) ) );
     }
+
+    //TODO Code duplication add() and wouldChange()
+    /**
+     * Determines if any register would change if the given value would be added.
+     *
+     * @param k the index of the counter.
+     * @param v the element to be added.
+     * @return true if adding the given value {@code v} to index {@code k}
+     * would change the value of any register.
+     */
+    public boolean wouldChange(final long k, final long v){
+        final long x = jenkins( v, seed );
+        final int j = (int)( x & mMinus1 );
+        final int r = Long.numberOfTrailingZeros( x >>> log2m | sentinelMask );
+        if ( ASSERTS ) assert r < ( 1 << registerSize ) - 1;
+        if ( ASSERTS ) assert r >= 0;
+        final LongBigList l = registers[ chunk( k ) ];
+        final long offset = ( ( k << log2m ) + j ) & CHUNK_MASK;
+        return r+1 > l.getLong(offset);
+    }
+
+
 
     /** Returns the array of big lists of registers underlying this array of counters.
      *

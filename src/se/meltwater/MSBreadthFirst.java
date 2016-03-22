@@ -135,8 +135,7 @@ public class MSBreadthFirst {
 
         BitSet[] visitNext = createBitsets();
         AtomicBoolean visitHadContent = new AtomicBoolean(true);
-        int processors = 1;//Runtime.getRuntime().availableProcessors();
-        System.err.println("MSBreadthFirst: Running on one processor only");
+        int processors = Runtime.getRuntime().availableProcessors();
         int iteration = 0;
         while(visitHadContent.get()){
 

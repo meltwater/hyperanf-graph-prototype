@@ -1,10 +1,12 @@
 package se.meltwater;
 
+import javafx.util.Pair;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +17,7 @@ import java.util.Map;
  *
  * // TODO class description
  */
-public class NodeHistory {
+public class DANF {
     private IGraph graph;
     private IDynamicVertexCover vc;
 
@@ -26,7 +28,7 @@ public class NodeHistory {
 
     private int h;
 
-    public NodeHistory(IDynamicVertexCover vertexCover, int h, IGraph graph){
+    public DANF(IDynamicVertexCover vertexCover, int h, IGraph graph){
 
         vc = vertexCover;
         this.h = h;
@@ -58,7 +60,7 @@ public class NodeHistory {
     }
 
     /**
-     * Adds an edge into the NodeHistory. If the nodes of the edge are added to
+     * Adds an edge into the DANF. If the nodes of the edge are added to
      * the VC, we allocate memory in the lower history counters and calculate their history.
      * Always allocates memory to the top history counter if any node in the edge is new.
      *
@@ -117,7 +119,7 @@ public class NodeHistory {
                 recalculateHistory(node);
             } else if (entry.getValue() == IDynamicVertexCover.AffectedState.Removed) {
                 // TODO When deleteEdge is added there should be a case here
-                throw new RuntimeException("Removed nodes not supported in NodeHistory.updateAffectedNodes");
+                throw new RuntimeException("Removed nodes not supported in DANF.updateAffectedNodes");
             }
         }
     }
@@ -200,7 +202,7 @@ public class NodeHistory {
     /**
      *
      * @param node
-     * @throws InterruptedException If the parallell breadth-first search reached time-out
+     * @throws InterruptedException If the parallel breadth-first search reached time-out
      * @throws Exception
      */
     public void recalculateHistory(long node) throws InterruptedException {
@@ -213,8 +215,63 @@ public class NodeHistory {
                 counter.add(counterInd,node);
             }
 
-            MSBreadthFirst msbfs = new MSBreadthFirst(new int[]{(int) node}, graph, recalculateVisitor(node));
-            msbfs.breadthFirstSearch();
+            ArrayList<Pair<BitSet,Long>> calculations = new ArrayList<>();
+
+            int[] sources = new int[]{(int) node};
+            MSBreadthFirst msbfs = new MSBreadthFirst(sources, graph, recalculateVisitor(node, getNodeIndex(node,0), calculations));
+            BitSet[] seen = msbfs.breadthFirstSearch();
+            int[] sourceIndices = new int[sources.length];
+            for (int i = 0; i < sources.length; i++) {
+                sourceIndices[i] = (int)getNodeIndex(sources[i],0);
+            }
+
+            for (int i = 1; i < h; i++) {
+                int[] trueSourceIndices = i+1 == h ? sources : sourceIndices;
+                if(i >= 2) {
+                    for (int visitNode = 0; visitNode < seen.length; visitNode++) {
+                        if (seen[visitNode].cardinality() > 0 && vc.isInVertexCover(visitNode)) {
+                            int bfs = -1;
+                            long visitIndex = getNodeIndex(visitNode, i - 1);
+                            while ((bfs = seen[visitNode].nextSetBit(bfs+1)) != -1) {
+                                history[i].union(trueSourceIndices[bfs], history[i - 2], visitIndex);
+                            }
+                        }
+                    }
+                }
+                if(i >= 1) {
+                    for (Pair<BitSet, Long> calc : calculations) {
+                        int bfs = -1;
+                        long visitIndex = getNodeIndex(calc.getValue(), i);
+                        while ((bfs = calc.getKey().nextSetBit(bfs + 1)) != -1) {
+                            history[i].union(trueSourceIndices[bfs], history[i - 1], visitIndex);
+                        }
+                    }
+                }
+            }
+
+    /*
+    Recalculate R ⊆ VC
+Global i=1
+Do BFS from all v ∊ R
+   At depth d for node u with visits b:
+       if(i==1 && d==1)
+           Hv(1)∪{u}
+           if(u ∊ VC)
+               copyHistory.add(b.clone(),u,1)
+               Break BFS
+           synchronize()
+       else if(d==2)
+           copyHistory(v,u,2)
+
+copyHistory(v,u,distance)
+    while(i ≤ h)
+        Hv(i) ∪ Hu(i-distance) ∪ Hv(i-1)
+        synchronize()
+
+synchronize()
+    Wait for all threads to finish
+    i = i+1
+     */
             for(int i = 1; i < h; i++) {
                 long counterInd = getNodeIndex(node, i + 1);
                 long counterLower = getNodeIndex(node, i );
@@ -229,23 +286,48 @@ public class NodeHistory {
         }
     }
 
-    public MSBreadthFirst.Visitor recalculateVisitor(long node){
+    private void propagate(long node){
+
+        /*
+        if reg(u,index(v)) > hash(v) //Our added node (v) isn’t max
+             if u is in vertex cover
+                set H = registry history of u
+             else
+                set H_0 = this node
+                set H_x = union of H_{x-1} from all incoming neighbors
+             check which level i in H that reg(u,index(v)) first appears.
+             if(i <= l) // reg(u,index(v)) reaches further than hash(v)
+                prune this DFS
+
+          if u is in vertex cover
+             forall k: h>k>=l; H_k.reg(u,index(v)) := hash(v)
+          else
+             reg(u,index(v)) := hash(v)
+
+        reg(u,i) = register of u at index i
+         */
+    }
+
+    private MSBreadthFirst.Visitor propagateVisitor(){
         return (long visitNode, BitSet bfsVisits, BitSet seen, int depth) -> {
 
-            if(depth > 0){
-                synchronized (this) {
-                    if (vc.isInVertexCover(visitNode)) {
-                        for (int i = h - 1; i >= depth; i--) {
-                            long counterInd = getNodeIndex(node, i + 1);
-                            history[i].union(counterInd, history[i - depth], getNodeIndex(visitNode, i - depth + 1));
-                        }
-                        history[depth - 1].add(getNodeIndex(node, depth), visitNode);
-                        bfsVisits.clear();
-                    } else {
-                        history[depth - 1].add(getNodeIndex(node, depth), visitNode);
-                    }
-                }
-            }
         };
     }
+
+    private MSBreadthFirst.Visitor recalculateVisitor(long node, long counterInd, ArrayList<Pair<BitSet,Long>> calculations){
+        return (long visitNode, BitSet bfsVisits, BitSet seen, int depth) -> {
+
+            if(depth == 1){
+                synchronized (counterIndex.get(node)) {
+                    history[0].add(counterInd,visitNode);
+                    if(vc.isInVertexCover(visitNode)) {
+                        calculations.add(new Pair<>((BitSet) bfsVisits.clone(), visitNode));
+                        bfsVisits.clear();
+                    }
+                }
+            }else if(depth == 2)
+                bfsVisits.clear();
+        };
+    }
+
 }
