@@ -1,4 +1,4 @@
-package se.meltwater.test;
+package se.meltwater.test.history;
 
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
@@ -14,6 +14,7 @@ import se.meltwater.graph.IGraph;
 import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
+import se.meltwater.test.TestUtils;
 import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
@@ -39,6 +40,7 @@ public class TestNodeHistory {
 
     int log2m;
     int h;
+
 
     @Test
     /**

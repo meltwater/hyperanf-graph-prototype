@@ -114,7 +114,9 @@ public class NodeHistory {
      */
     public void addNodeToTopLevel(long node) {
         if(!graph.containsNode(node)) {
-            history[h-1].addCounters(1);
+            long previousHighestNode = graph.getNumberOfNodes();
+            long nodesToAdd = node - previousHighestNode + 1;
+            history[h-1].addCounters(nodesToAdd);
         }
     }
 
@@ -162,7 +164,7 @@ public class NodeHistory {
     }
 
     public double count(long node, int h){
-        if(!vc.isInVertexCover(node))
+        if(!vc.isInVertexCover(node) && h != this.h)
             throw new IllegalArgumentException("Node " + node + " wasn't in the vertex cover.");
         return history[h-1].count(getNodeIndex(node, h));
     }
