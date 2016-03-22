@@ -12,6 +12,8 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.LongStream;
 
+import static org.junit.Assert.*;
+
 /**
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
@@ -85,6 +87,20 @@ public class TestUtils {
         Edge[] edges = generateEdges(n, m);
 
         return setupSGraph(nodes, edges);
+    }
+
+    /**
+     *
+     * @param runnable
+     */
+    public static void assertGivesException(Runnable runnable) {
+        boolean hadException = false;
+        try {
+            runnable.run();
+        } catch (IllegalStateException e) {
+            hadException = true;
+        }
+        assertTrue(hadException);
     }
 
 }

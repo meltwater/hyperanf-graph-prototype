@@ -53,7 +53,7 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
             }
 
             return clone;
-        }catch(CloneNotSupportedException e){
+        } catch(CloneNotSupportedException e) {
             throw new RuntimeException("Simulated graph should never throw this",e);
         }
     }
@@ -74,6 +74,17 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
             iteratorNeighbors.put(node, new TreeSet<>());
         }
 
+    }
+
+    @Override
+    public boolean addEdges(Edge ... edges){
+        boolean allInserted = true;
+
+        for (int i = 0; i < edges.length; i++) {
+            allInserted &= addEdge(edges[i]);
+        }
+
+        return allInserted;
     }
 
     @Override
@@ -200,7 +211,10 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
 
         @Override
         public long nextLong() {
-            return it.hasNext() ? it.next() : -1;
+            if(!it.hasNext()) {
+                throw new IllegalStateException("No more nodes");
+            }
+            return it.next();
         }
 
         @Override

@@ -1,12 +1,5 @@
 package se.meltwater.algo;
 
-/**
- * @author Simon Lindhén
- * @author Johan Nilsson Hansen
- *         <p>
- *         // TODO Class description
- */
-
 import it.unimi.dsi.bits.BitVector;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.bits.LongArrayBitVector;

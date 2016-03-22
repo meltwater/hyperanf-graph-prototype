@@ -2,7 +2,6 @@ package se.meltwater;
 
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
-import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
@@ -40,6 +39,24 @@ public class NodeHistory {
         }
     }
 
+
+    public void addEdges(Edge ... edges) throws InterruptedException {
+        Map<Long, IDynamicVertexCover.AffectedState> affectedNodes = new HashMap<>();
+        for(Edge edge : edges) {
+            addNewNodes(edge);
+            affectedNodes.putAll(vc.insertEdge(edge));
+        }
+
+        graph.addEdges(edges);
+
+        /* As inserting edges can only result in nodes being added
+         * to the VC, all affected nodes will be of type AffectedState.Added
+         * and will need new memory for all of these */
+        allocateMemoryInBottomHistoryCounters(affectedNodes.size());
+
+        updateAffectedNodes(affectedNodes); //TODO FIX THEZ
+    }
+
     /**
      * Adds an edge into the NodeHistory. If the nodes of the edge are added to
      * the VC, we allocate memory in the lower history counters and calculate their history.
@@ -50,15 +67,14 @@ public class NodeHistory {
      */
     public void addEdge(Edge edge) throws InterruptedException {
         addNewNodes(edge);
+        Map<Long, IDynamicVertexCover.AffectedState> affectedNodes = vc.insertEdge(edge);
 
         graph.addEdge(edge);
-
-        Map<Long, IDynamicVertexCover.AffectedState> affectedNodes = vc.insertEdge(edge);
 
         /* As inserting edges can only result in nodes being added
          * to the VC, all affected nodes will be of type AffectedState.Added
          * and will need new memory for all of these */
-        allocateMemoryInAllHistoryCounters(affectedNodes.size());
+        allocateMemoryInBottomHistoryCounters(affectedNodes.size());
 
         updateAffectedNodes(affectedNodes);
     }
@@ -124,7 +140,7 @@ public class NodeHistory {
      * Allocates {@code newCounters} new counters in all history counters.
      * @param newCounters The number of counters to allocate
      */
-    private void allocateMemoryInAllHistoryCounters(int newCounters) {
+    private void allocateMemoryInBottomHistoryCounters(int newCounters) {
         for (int i = 0; i < history.length - 1; i++) {
             history[i].addCounters(newCounters );
         }

@@ -21,6 +21,9 @@ public abstract class AGraph implements IGraph {
     abstract public LazyLongIterator getSuccessors(long node);
 
     @Override
+    abstract public boolean addEdges(Edge ... edges);
+
+    @Override
     abstract public boolean addEdge(Edge edge);
 
     @Override

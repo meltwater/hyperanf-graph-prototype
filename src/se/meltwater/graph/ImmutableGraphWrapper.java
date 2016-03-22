@@ -29,6 +29,11 @@ public class ImmutableGraphWrapper extends AGraph{
     }
 
     @Override
+    public boolean addEdges(Edge ... edges){
+        throw new RuntimeException("SimulatedGraph.addEdges() NOT IMPLEMENTED YET");
+    }
+
+    @Override
     public boolean addEdge(Edge edge){
         if(containsNode(edge.from) && containsNode(edge.to)) {
             LazyLongIterator nodeIt = getSuccessors(edge.from);

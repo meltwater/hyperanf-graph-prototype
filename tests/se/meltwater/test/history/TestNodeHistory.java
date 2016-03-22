@@ -2,25 +2,21 @@ package se.meltwater.test.history;
 
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.fastutil.*;
 import javafx.util.Pair;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import se.meltwater.NodeHistory;
 import se.meltwater.algo.HyperBoll;
-import se.meltwater.examples.VertexCover;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graph.SimulatedGraph;
-import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 import se.meltwater.test.TestUtils;
 import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.Arrays;
 
 /**
  * @author Simon Lindhén
@@ -32,15 +28,108 @@ import java.util.Arrays;
  */
 public class TestNodeHistory {
 
+    final float epsilon = 0.05f;
+
     final int nrTestIterations = 100;
     final int maxStartNodes = 100;
     final int minLog2m = 4;
     final int minH = 4;
     final int edgesToAdd = 100;
 
+    /* For some tests its necessary to have a static seed to
+     * make sure we always get the same result from HyperBoll */
+    final long fixedSeed = 8516942932596937874L;
+
     int log2m;
     int h;
 
+    @Test
+    public void testNewNodeGetsCorrectRecalculation() throws IOException, InterruptedException {
+        log2m = 10;
+        h = 3;
+
+        final int newNode = 3;
+
+        SimulatedGraph graph = new SimulatedGraph();
+        graph.addNode(0);
+        graph.addNode(1);
+        graph.addNode(2);
+        graph.addEdge(new Edge(0,1));
+
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+        Pair<NodeHistory, HyperBoll> pair = runHyperBall(graph, dvc, h, fixedSeed);
+
+        NodeHistory nodeHistory = pair.getKey();
+
+        nodeHistory.addEdges(new Edge(newNode, 0), new Edge(newNode, 2));
+
+        final double expectedValue = 4.0;
+        final double counterValue = nodeHistory.count(newNode, h);
+
+        assertEquals(expectedValue, counterValue , epsilon);
+    }
+
+    @Test
+    public void testTwoNewNodes() throws IOException, InterruptedException {
+        log2m = 10;
+        h = 3;
+
+        SimulatedGraph graph = new SimulatedGraph();
+        graph.addNode(0);
+
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+        Pair<NodeHistory, HyperBoll> pair = runHyperBall(graph, dvc, h, fixedSeed);
+
+        NodeHistory nodeHistory = pair.getKey();
+
+        nodeHistory.addEdges(new Edge(2, 0), new Edge(1, 2));
+
+        assertEquals(2.0, nodeHistory.count(2, h), epsilon);
+        assertEquals(3.0, nodeHistory.count(1, h), epsilon);
+    }
+
+    @Test
+    public void testTwoNewNodesWithNeighbors() throws IOException, InterruptedException {
+        log2m = 10;
+        h = 3;
+
+        SimulatedGraph graph = new SimulatedGraph();
+        graph.addNode(0);
+        graph.addNode(1);
+
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+        Pair<NodeHistory, HyperBoll> pair = runHyperBall(graph, dvc, h, fixedSeed);
+
+        NodeHistory nodeHistory = pair.getKey();
+
+        nodeHistory.addEdges(new Edge(2, 3), new Edge(3, 1), new Edge(2, 0)  );
+
+        assertEquals(4.0, nodeHistory.count(2, h), epsilon);
+        assertEquals(2.0, nodeHistory.count(3, h), epsilon);
+    }
+
+    @Test
+    public void testTwoNewNodesCircleReference() throws IOException, InterruptedException {
+        log2m = 10;
+        h = 3;
+
+        SimulatedGraph graph = new SimulatedGraph();
+        graph.addNode(0); /* Must be a node in the graph for HBoll */
+
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+        Pair<NodeHistory, HyperBoll> pair = runHyperBall(graph, dvc, h, fixedSeed);
+
+        NodeHistory nodeHistory = pair.getKey();
+
+        nodeHistory.addEdges(new Edge(1, 2), new Edge(2, 1));
+
+        assertEquals(2.0, nodeHistory.count(1, h), epsilon);
+        assertEquals(2.0, nodeHistory.count(2, h), epsilon);
+    }
 
     @Test
     /**
@@ -238,8 +327,26 @@ public class TestNodeHistory {
      * @throws IOException
      */
     private Pair<NodeHistory, HyperBoll> runHyperBall(IGraph graph, DynamicVertexCover dvc, int h) throws IOException {
-        NodeHistory nodeHistory = new NodeHistory(dvc, h, graph);
         HyperBoll hyperBoll = new HyperBoll(graph, log2m);
+
+        NodeHistory nodeHistory = iterateHyperBallAndSaveHistory(graph, dvc, h, hyperBoll);
+
+        return new Pair<>(nodeHistory, hyperBoll);
+    }
+
+
+
+    private Pair<NodeHistory, HyperBoll> runHyperBall(IGraph graph, DynamicVertexCover dvc, int h, long seed) throws IOException {
+        HyperBoll hyperBoll = new HyperBoll(graph, log2m, seed);
+
+        NodeHistory nodeHistory = iterateHyperBallAndSaveHistory(graph, dvc, h, hyperBoll);
+
+        return new Pair<>(nodeHistory, hyperBoll);
+    }
+
+    private NodeHistory iterateHyperBallAndSaveHistory( IGraph graph, DynamicVertexCover dvc, int h, HyperBoll hyperBoll) throws IOException {
+        NodeHistory nodeHistory = new NodeHistory(dvc, h, graph);
+
         hyperBoll.init();
         for (int i = 1; i <= h; i++) {
             hyperBoll.iterate();
@@ -247,7 +354,8 @@ public class TestNodeHistory {
         }
 
         hyperBoll.close();
-        return new Pair<>(nodeHistory, hyperBoll);
+
+        return nodeHistory;
     }
 }
 
