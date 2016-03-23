@@ -28,14 +28,17 @@ public class TestEffectPropagation {
 
     final float epsilon = 0.05f;
 
+    int log2m;
+    int h;
+
     @Test
     /**
      * 0 -> 2 -> N3
-     * 1 ---∧
+     * 1 -刁
      */
     public void testOnlyIncomingEdgesSingleNewNode() throws InterruptedException, IOException {
-        final int h = 4;
-        final int log2m = 7;
+        h = 4;
+        log2m = 7;
 
         DANF danf = setupGraphAndRunHyperBall(h, log2m, 2, new Edge(0,2), new Edge(1,2));
 
@@ -55,11 +58,12 @@ public class TestEffectPropagation {
     @Test
     /**
      * 0 -> N4 -> 2
-     * 1 --∧ v--> 3
+     *    刁 \
+     * 1-/   \-> 3
      */
     public void testIncomingAndOutgoingEdgesSingleNewNode() throws IOException, InterruptedException {
-        final int h = 4;
-        final int log2m = 7;
+        h = 4;
+        log2m = 7;
 
         DANF danf = setupGraphAndRunHyperBall(h, log2m, 3);
 
@@ -81,8 +85,8 @@ public class TestEffectPropagation {
      * 1 -> 3 -> N5
      */
     public void testOnlyIncomingEdgesMultipleNewNodes() throws IOException, InterruptedException {
-        final int h = 4;
-        final int log2m = 7;
+        h = 4;
+        log2m = 7;
 
         DANF danf = setupGraphAndRunHyperBall(h, log2m, 3, new Edge(0, 2), new Edge(1, 3));
 
@@ -107,8 +111,8 @@ public class TestEffectPropagation {
      * 1 -> N3
      */
     public void testIncomingAndOutgoingEdgesMultipleNewNodes() throws IOException, InterruptedException {
-        final int h = 4;
-        final int log2m = 7;
+        h = 4;
+        log2m = 7;
 
         DANF danf = setupGraphAndRunHyperBall(h, log2m, 1);
 
@@ -121,6 +125,56 @@ public class TestEffectPropagation {
         assertEquals(2.0f, danf.count(1, h), epsilon);
         assertEquals(2.0f, danf.count(newNode1, h), epsilon);
         assertEquals(1.0f, danf.count(newNode2, h), epsilon);
+    }
+
+    @Test
+    /**
+     * N1 -> N2 -> 0
+     */
+    public void testTwoNewNodes() throws IOException, InterruptedException {
+        log2m = 10;
+        h = 3;
+
+        SimulatedGraph graph = new SimulatedGraph();
+        graph.addNode(0);
+
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
+
+        DANF danf = pair.getKey();
+
+        danf.addEdges(new Edge(2, 0), new Edge(1, 2));
+
+        assertEquals(2.0, danf.count(2, h), epsilon);
+        assertEquals(3.0, danf.count(1, h), epsilon);
+    }
+
+    @Test
+    /**
+     * N2 -> 0
+     * |
+     * v
+     * N3 -> 1
+     */
+    public void testTwoNewNodesWithNeighbors() throws IOException, InterruptedException {
+        log2m = 10;
+        h = 3;
+
+        SimulatedGraph graph = new SimulatedGraph();
+        graph.addNode(0);
+        graph.addNode(1);
+
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
+
+        DANF danf = pair.getKey();
+
+        danf.addEdges(new Edge(2, 3), new Edge(3, 1), new Edge(2, 0)  );
+
+        assertEquals(4.0, danf.count(2, h), epsilon);
+        assertEquals(2.0, danf.count(3, h), epsilon);
     }
 
     private DANF setupGraphAndRunHyperBall( int h, int log2m, long maxStartNode, Edge ... edges) throws IOException {

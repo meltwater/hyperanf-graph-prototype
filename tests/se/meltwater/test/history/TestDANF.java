@@ -45,6 +45,10 @@ public class TestDANF {
     int h;
 
     @Test
+    /**
+     * N3 -> 0 -> 1
+     * v --> 2
+     */
     public void testNewNodeGetsCorrectRecalculation() throws IOException, InterruptedException {
         log2m = 10;
         h = 3;
@@ -72,47 +76,9 @@ public class TestDANF {
     }
 
     @Test
-    public void testTwoNewNodes() throws IOException, InterruptedException {
-        log2m = 10;
-        h = 3;
-
-        SimulatedGraph graph = new SimulatedGraph();
-        graph.addNode(0);
-
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
-
-        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
-
-        DANF danf = pair.getKey();
-
-        danf.addEdges(new Edge(2, 0), new Edge(1, 2));
-
-        assertEquals(2.0, danf.count(2, h), epsilon);
-        assertEquals(3.0, danf.count(1, h), epsilon);
-    }
-
-    @Test
-    public void testTwoNewNodesWithNeighbors() throws IOException, InterruptedException {
-        log2m = 10;
-        h = 3;
-
-        SimulatedGraph graph = new SimulatedGraph();
-        graph.addNode(0);
-        graph.addNode(1);
-
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
-
-        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
-
-        DANF danf = pair.getKey();
-
-        danf.addEdges(new Edge(2, 3), new Edge(3, 1), new Edge(2, 0)  );
-
-        assertEquals(4.0, danf.count(2, h), epsilon);
-        assertEquals(2.0, danf.count(3, h), epsilon);
-    }
-
-    @Test
+    /**
+     * N1 <-> N2
+     */
     public void testTwoNewNodesCircleReference() throws IOException, InterruptedException {
         log2m = 10;
         h = 3;
