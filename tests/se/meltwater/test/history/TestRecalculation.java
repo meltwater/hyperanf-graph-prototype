@@ -6,7 +6,7 @@ import javafx.util.Pair;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import se.meltwater.DANF;
+import se.meltwater.algo.DANF;
 import se.meltwater.algo.HyperBoll;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;

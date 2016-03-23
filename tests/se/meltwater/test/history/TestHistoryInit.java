@@ -1,8 +1,7 @@
 package se.meltwater.test.history;
 
-import javafx.util.Pair;
 import org.junit.Test;
-import se.meltwater.DANF;
+import se.meltwater.algo.DANF;
 import se.meltwater.algo.HyperBoll;
 import se.meltwater.graph.IGraph;
 import se.meltwater.graph.SimulatedGraph;

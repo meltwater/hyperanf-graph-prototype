@@ -56,6 +56,13 @@ public class TestImmutableGraphWrapper {
         }
     }
 
+    @Test
+    public void testTranspose() throws IOException {
+        setupGraph();
+        assertNotEquals(graph, graph.transpose());
+        assertEquals(graph, graph.transpose().transpose());
+    }
+
     public Edge randomEdgeToAdd(){
         long numNodes = graph.getNumberOfNodes();
         long nodeLessThanNumNodes = ThreadLocalRandom.current().nextLong(numNodes);

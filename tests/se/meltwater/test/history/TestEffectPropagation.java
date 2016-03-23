@@ -1,9 +1,8 @@
 package se.meltwater.test.history;
 
-import it.unimi.dsi.big.webgraph.NodeIterator;
 import javafx.util.Pair;
 import org.junit.Test;
-import se.meltwater.DANF;
+import se.meltwater.algo.DANF;
 import se.meltwater.algo.HyperBoll;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.SimulatedGraph;

@@ -1,6 +1,7 @@
-package se.meltwater;
+package se.meltwater.algo;
 
 import javafx.util.Pair;
+import se.meltwater.MSBreadthFirst;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;

@@ -4,6 +4,7 @@ import it.unimi.dsi.big.webgraph.LazyLongIterators;
 import javafx.util.Pair;
 import org.junit.Test;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
+import se.meltwater.test.TestUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -87,6 +88,20 @@ public class TestHyperLolol {
             }
 
 
+        }
+    }
+
+    @Test
+    /**
+     * Adding negative counters should not be possible
+     */
+    public void testAddingNegativeCounters() {
+        int iteration = 0;
+
+        while(iteration++ < nrTestIterations) {
+            setupParameters();
+
+            TestUtils.assertGivesException(() -> counter.addCounters(-1));
         }
     }
 
