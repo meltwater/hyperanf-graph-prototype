@@ -130,7 +130,7 @@ public class DANF {
      * If the node already exists in the graph, nothing is done.
      * @param node
      */
-    public void addNodeToTopLevel(long node) {
+    private void addNodeToTopLevel(long node) {
         if(!graph.containsNode(node)) {
             long previousHighestNode = graph.getNumberOfNodes();
             long nodesToAdd = node - previousHighestNode + 1;

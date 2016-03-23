@@ -141,7 +141,7 @@ public class TestUtils {
         boolean hadException = false;
         try {
             runnable.run();
-        } catch (IllegalStateException e) {
+        } catch (Exception e) {
             hadException = true;
         }
         assertTrue(hadException);
