@@ -1,10 +1,14 @@
 package se.meltwater.test;
 
+import javafx.util.Pair;
+import se.meltwater.DANF;
+import se.meltwater.algo.HyperBoll;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.vertexcover.DynamicVertexCover;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -87,6 +91,46 @@ public class TestUtils {
         Edge[] edges = generateEdges(n, m);
 
         return setupSGraph(nodes, edges);
+    }
+
+    /**
+     * Runs hyperBoll on the graph and returns the calculated initial DANF
+     * @param graph
+     * @param dvc
+     * @param h
+     * @return
+     * @throws IOException
+     */
+    public static Pair<DANF, HyperBoll> runHyperBall(IGraph graph, DynamicVertexCover dvc, int h, int log2m) throws IOException {
+
+        HyperBoll hyperBoll = new HyperBoll(graph, log2m);
+
+        DANF danf = iterateHyperBallAndSaveHistory(graph, dvc, h, hyperBoll);
+
+        return new Pair<>(danf, hyperBoll);
+    }
+
+
+
+    public static Pair<DANF, HyperBoll> runHyperBall(IGraph graph, DynamicVertexCover dvc, int h, int log2m, long seed) throws IOException {
+        HyperBoll hyperBoll = new HyperBoll(graph, log2m, seed);
+
+        DANF danf = iterateHyperBallAndSaveHistory(graph, dvc, h, hyperBoll);
+
+        return new Pair<>(danf, hyperBoll);
+    }
+
+    private static DANF iterateHyperBallAndSaveHistory( IGraph graph, DynamicVertexCover dvc, int h, HyperBoll hyperBoll) throws IOException {
+        DANF danf = new DANF(dvc, h, graph);
+
+        hyperBoll.init();
+        for (int i = 1; i <= h; i++) {
+            hyperBoll.iterate();
+            danf.addHistory(hyperBoll.getCounter(), i);
+        }
+
+        hyperBoll.close();
+        return danf;
     }
 
     /**

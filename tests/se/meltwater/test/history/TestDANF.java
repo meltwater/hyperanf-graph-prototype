@@ -59,7 +59,7 @@ public class TestDANF {
 
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        Pair<DANF, HyperBoll> pair = runHyperBall(graph, dvc, h, fixedSeed);
+        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
 
         DANF danf = pair.getKey();
 
@@ -81,7 +81,7 @@ public class TestDANF {
 
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        Pair<DANF, HyperBoll> pair = runHyperBall(graph, dvc, h, fixedSeed);
+        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
 
         DANF danf = pair.getKey();
 
@@ -102,7 +102,7 @@ public class TestDANF {
 
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        Pair<DANF, HyperBoll> pair = runHyperBall(graph, dvc, h, fixedSeed);
+        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
 
         DANF danf = pair.getKey();
 
@@ -122,7 +122,7 @@ public class TestDANF {
 
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        Pair<DANF, HyperBoll> pair = runHyperBall(graph, dvc, h, fixedSeed);
+        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
 
         DANF danf = pair.getKey();
 
@@ -144,7 +144,7 @@ public class TestDANF {
         IGraph graph = new ImmutableGraphWrapper(bvGraph);
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        DANF danf = runHyperBall(graph, dvc, h).getKey();
+        DANF danf = TestUtils.runHyperBall(graph, dvc, h, log2m).getKey();
         assertCurrentCountIsSameAsRecalculatedCount(danf,dvc);
 
     }
@@ -163,7 +163,7 @@ public class TestDANF {
             SimulatedGraph graph = TestUtils.genRandomGraph(100);
             DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-            Pair<DANF, HyperBoll> pair = runHyperBall(graph, dvc, h);
+            Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m);
 
             addEdgeAndAssertIncreasedCount(pair.getKey(), pair.getValue(), dvc, graph);
         }
@@ -212,7 +212,7 @@ public class TestDANF {
         IGraph graph = createGraphWithCircles();
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        DANF danf = runHyperBall(graph, dvc, h).getKey();
+        DANF danf = TestUtils.runHyperBall(graph, dvc, h, log2m).getKey();
         assertCurrentCountIsSameAsRecalculatedCount(danf,dvc);
 
     }
@@ -261,7 +261,7 @@ public class TestDANF {
 
             IGraph graph = setupRandomGraph();
             DynamicVertexCover dvc = new DynamicVertexCover(graph);
-            DANF danf = runHyperBall(graph, dvc, h).getKey();
+            DANF danf = TestUtils.runHyperBall(graph, dvc, h, log2m).getKey();
 
             Set<Long> addedNodes = addRandomEdgesWithUniqueFromNodes(graph, danf);
 
@@ -321,45 +321,7 @@ public class TestDANF {
         h = 5;//rand.nextInt(5) + minH;
     }
 
-    /**
-     * Runs hyperBoll on the graph and returns the calculated initial DANF
-     * @param graph
-     * @param dvc
-     * @param h
-     * @return
-     * @throws IOException
-     */
-    private Pair<DANF, HyperBoll> runHyperBall(IGraph graph, DynamicVertexCover dvc, int h) throws IOException {
 
-        HyperBoll hyperBoll = new HyperBoll(graph, log2m);
-
-        DANF danf = iterateHyperBallAndSaveHistory(graph, dvc, h, hyperBoll);
-
-        return new Pair<>(danf, hyperBoll);
-    }
-
-
-
-    private Pair<DANF, HyperBoll> runHyperBall(IGraph graph, DynamicVertexCover dvc, int h, long seed) throws IOException {
-        HyperBoll hyperBoll = new HyperBoll(graph, log2m, seed);
-
-        DANF danf = iterateHyperBallAndSaveHistory(graph, dvc, h, hyperBoll);
-
-        return new Pair<>(danf, hyperBoll);
-    }
-
-    private DANF iterateHyperBallAndSaveHistory( IGraph graph, DynamicVertexCover dvc, int h, HyperBoll hyperBoll) throws IOException {
-        DANF danf = new DANF(dvc, h, graph);
-
-        hyperBoll.init();
-        for (int i = 1; i <= h; i++) {
-            hyperBoll.iterate();
-            danf.addHistory(hyperBoll.getCounter(), i);
-        }
-
-        hyperBoll.close();
-        return danf;
-    }
 }
 
 
