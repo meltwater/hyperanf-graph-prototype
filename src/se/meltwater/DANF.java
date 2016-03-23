@@ -325,8 +325,12 @@ synchronize()
                         bfsVisits.clear();
                     }
                 }
-            }else if(depth == 2)
-                bfsVisits.clear();
+            }else if(depth == 2) {
+                synchronized (counterIndex.get(node)) {
+                    history[1].add(h == 2 ? node : counterInd, visitNode);
+                    bfsVisits.clear();
+                }
+            }
         };
     }
 
