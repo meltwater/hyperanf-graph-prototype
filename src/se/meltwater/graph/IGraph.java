@@ -36,6 +36,8 @@ public interface IGraph {
 
     boolean containsNode(long node);
 
+    IGraph transpose();
+
 
     /**
      * Iterates all edges in the graph and calls the lambda function for each edge.

@@ -1,6 +1,7 @@
-package se.meltwater;
+package se.meltwater.algo;
 
 import javafx.util.Pair;
+import se.meltwater.MSBreadthFirst;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
@@ -130,7 +131,7 @@ public class DANF {
      * If the node already exists in the graph, nothing is done.
      * @param node
      */
-    public void addNodeToTopLevel(long node) {
+    private void addNodeToTopLevel(long node) {
         if(!graph.containsNode(node)) {
             long previousHighestNode = graph.getNumberOfNodes();
             long nodesToAdd = node - previousHighestNode + 1;

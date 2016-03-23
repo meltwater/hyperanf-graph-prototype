@@ -6,7 +6,7 @@ import javafx.util.Pair;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import se.meltwater.DANF;
+import se.meltwater.algo.DANF;
 import se.meltwater.algo.HyperBoll;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
@@ -27,7 +27,7 @@ import java.util.*;
  * such as its connections with a Dynamic Vertex cover and
  * HyperBoll.
  */
-public class TestDANF {
+public class TestRecalculation {
 
     final float epsilon = 0.05f;
 
@@ -47,7 +47,7 @@ public class TestDANF {
     @Test
     /**
      * N3 -> 0 -> 1
-     * v --> 2
+     *  \--> 2
      */
     public void testNewNodeGetsCorrectRecalculation() throws IOException, InterruptedException {
         log2m = 10;

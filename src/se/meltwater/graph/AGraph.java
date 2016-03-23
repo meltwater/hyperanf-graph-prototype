@@ -3,6 +3,7 @@ package se.meltwater.graph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 
+import java.util.ArrayList;
 import java.util.function.Function;
 
 /**
@@ -44,6 +45,36 @@ public abstract class AGraph implements IGraph {
         return node < getNumberOfNodes();
     }
 
+    @Override
+    /**
+     * Two graphs are equal if they contain the same nodes and the same edges,
+     * regardless their dynamic type class
+     */
+    public boolean equals(Object obj) {
+        if(!(obj instanceof IGraph)) {
+            return false;
+        }
+
+        IGraph otherGraph = (IGraph) obj;
+
+        if(otherGraph.getNumberOfNodes() != this.getNumberOfNodes() ||
+                otherGraph.getNumberOfArcs()  != this.getNumberOfArcs()) {
+            return false;
+        }
+
+        ArrayList<Edge> edges = new ArrayList<>();
+        iterateAllEdges(edge -> {
+            edges.add(edge);
+            return null;
+        });
+
+        otherGraph.iterateAllEdges(edge -> {
+            edges.remove(edge);
+            return null;
+        });
+
+        return edges.size() == 0;
+    }
     /**
      * Iterates all edges in the graph and calls the lambda function for each edge.
      * The lambda function should return null if it should continue iterating
