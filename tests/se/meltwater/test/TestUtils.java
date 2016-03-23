@@ -93,6 +93,29 @@ public class TestUtils {
         return setupSGraph(nodes, edges);
     }
 
+    public static long[] generateRandomNodes(long numNodesInGraph, int maxGeneratedNodes, int minGeneratedNodes){
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
+        int num = rand.nextInt(maxGeneratedNodes-minGeneratedNodes)+minGeneratedNodes;
+        long[] gen = new long[num];
+        for (int i = 0; i < num ; i++) {
+            gen[i] = rand.nextLong(numNodesInGraph);
+        }
+        return gen;
+    }
+
+    public static int[] generateRandomIntNodes(int numNodesInGraph, int maxGeneratedNodes, int minGeneratedNodes){
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
+        int num = rand.nextInt(maxGeneratedNodes-minGeneratedNodes)+minGeneratedNodes;
+        int[] gen = new int[num];
+        for (int i = 0; i < num ; i++) {
+            gen[i] = rand.nextInt(numNodesInGraph);
+        }
+        return gen;
+    }
+
+
+
+
     /**
      * Runs hyperBoll on the graph and returns the calculated initial DANF
      * @param graph

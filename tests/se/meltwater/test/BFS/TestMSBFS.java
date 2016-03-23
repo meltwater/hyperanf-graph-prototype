@@ -4,9 +4,11 @@ import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.big.webgraph.BVGraph;
+import org.apache.commons.collections.ArrayStack;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import se.meltwater.MSBreadthFirst;
+import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graph.SimulatedGraph;
@@ -16,6 +18,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Simon Lindhén
@@ -28,6 +32,121 @@ public class TestMSBFS {
 
     private final int maxIterations = 50;
     private final int maxGraphSize  = 100;
+
+    @Test
+    /**
+     * Tests that the traveler to a visitor is never {@code null}
+     */
+    public void testTravelerNeverNull() throws InterruptedException {
+        int iteration = 0;
+        Random rand = new Random();
+        while (iteration++ < maxIterations){
+            int numNodes = rand.nextInt(maxGraphSize - 1) + 1; /* Make sure numNodes always positive */
+            SimulatedGraph graph = TestUtils.genRandomGraph(numNodes);
+            numNodes = (int)graph.getNumberOfNodes();
+            int sources[] = TestUtils.generateRandomIntNodes(numNodes,numNodes,1);
+            MSBreadthFirst.Traveler t = (MSBreadthFirst.Traveler t1) ->  t1;
+            MSBreadthFirst.Traveler[] travelers = repeat(t,sources.length, new MSBreadthFirst.Traveler[0]);
+            AtomicBoolean noNull = new AtomicBoolean(true);
+            MSBreadthFirst.Visitor v = (long x, BitSet y, BitSet z, int d, MSBreadthFirst.Traveler t2) -> {if(t2 == null) noNull.set(false);};
+            MSBreadthFirst msbfs = new MSBreadthFirst(sources,travelers,graph,v);
+            msbfs.breadthFirstSearch();
+            assertTrue(noNull.get());
+        }
+    }
+
+    /**
+     *
+     * @param elem
+     * @param times
+     * @param dummyArr This is for {@link ArrayList#toArray(Object[])} which needs a dummy array
+     * @param <T>
+     * @return
+     */
+    public static <T> T[] repeat(T elem, int times, T[] dummyArr){
+        ArrayList<T> ret = new ArrayList<>(times);
+        for (int i = 0; i < times ; i++) {
+            ret.add(elem);
+        }
+        return ret.toArray(dummyArr);
+    }
+
+    @Test
+    /**
+     * Tests that a traveler merges once and only once for a graph where that should happen. Starts
+     * at node 0 and 1.
+     * The graph:
+     *
+     *  0
+     *  |
+     *  v
+     *  2-->3
+     *  ^
+     *  |
+     *  1
+     */
+    public void testOneMerge() throws InterruptedException {
+        SimulatedGraph graph = new SimulatedGraph();
+        graph.addNode(3);
+        graph.addEdges(new Edge(0,2),new Edge(1,2), new Edge(2,3));
+        int[] bfsSources = new int[]{0,1};
+        AtomicInteger merges = new AtomicInteger(0);
+        MSBreadthFirst.Traveler[] travs = new CountMergesTraveler[]{new CountMergesTraveler(merges),new CountMergesTraveler(merges)};
+        new MSBreadthFirst(bfsSources,travs,graph,correctMergesVisitor()).breadthFirstSearch();
+        assertEquals(1,merges.get());
+
+    }
+
+    /**
+     * used by {@link TestMSBFS#testOneMerge()} To check that the merge is done at the correct location
+     * @return
+     */
+    private MSBreadthFirst.Visitor correctMergesVisitor(){
+        return (long visitNode, BitSet bfsVisits,BitSet seen, int depth, MSBreadthFirst.Traveler trav) -> {
+            CountMergesTraveler traveler = (CountMergesTraveler) trav;
+            switch ((int)visitNode){
+                case 0:
+                    assertTrue(bfsVisits.get(0));
+                    assertFalse(bfsVisits.get(1));
+                    assertEquals(traveler.merges,0);
+                    break;
+                case 1:
+                    assertTrue(bfsVisits.get(1));
+                    assertFalse(bfsVisits.get(0));
+                    assertEquals(traveler.merges,0);
+                    break;
+                case 2:
+                    assertTrue(bfsVisits.get(1));
+                    assertTrue(bfsVisits.get(0));
+                    assertEquals(traveler.merges,1);
+                    break;
+                case 3:
+                    assertTrue(bfsVisits.get(1));
+                    assertTrue(bfsVisits.get(0));
+                    assertEquals(traveler.merges,1);
+            }
+        };
+    }
+
+    /**
+     * Used by {@link TestMSBFS#testOneMerge()} to keep track of the number of merges.
+     */
+    private class CountMergesTraveler implements MSBreadthFirst.Traveler{
+        private int merges = 0;
+        private AtomicInteger totMerges;
+
+        public CountMergesTraveler(AtomicInteger totMergers){
+            this.totMerges = totMergers;
+        }
+
+        @Override
+        public MSBreadthFirst.Traveler merge(MSBreadthFirst.Traveler mergeWith) {
+            CountMergesTraveler clone = new CountMergesTraveler(totMerges);
+            clone.merges = ((CountMergesTraveler)mergeWith).merges + merges + 1;
+            totMerges.incrementAndGet();
+            return clone;
+        }
+    }
 
     @Test
     /**
@@ -85,7 +204,7 @@ public class TestMSBFS {
      * @return
      */
     public MSBreadthFirst.Visitor onlySourcesVisitor(int[] bfsSources, ArrayList<AssertionError> errors){
-        return (long node, BitSet visitedBy, BitSet seen, int iteration) -> {
+        return (long node, BitSet visitedBy, BitSet seen, int iteration, MSBreadthFirst.Traveler t) -> {
             try {
             /* An iteration > 0 implies a bfs have reached a node != its source */
                 assertEquals("Iteration for node " + node + " should be zero", 0, iteration);
@@ -136,7 +255,7 @@ public class TestMSBFS {
             alreadySeen[node] = new BitSet(bfsSources.length);
         }
 
-        return (long node, BitSet visitedBy, BitSet seen, int iteration) -> {
+        return (long node, BitSet visitedBy, BitSet seen, int iteration, MSBreadthFirst.Traveler t) -> {
             synchronized (this) {
                 try {
                     assertFalse("Iteration should not be more than one", iteration > 1);
