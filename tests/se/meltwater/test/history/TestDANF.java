@@ -240,8 +240,6 @@ public class TestDANF {
     private void assertCurrentCountIsSameAsRecalculatedCount(DANF danf, DynamicVertexCover dvc) throws InterruptedException {
         double[] history;
         for(long node : dvc.getNodesInVertexCover()){
-            if(node == 83)
-                System.out.println("YOYO");
             history = danf.count(node);
             danf.recalculateHistory(node);
 
@@ -317,8 +315,8 @@ public class TestDANF {
 
     private void setupRandomParameters() {
         Random rand = new Random();
-        log2m = 7;//rand.nextInt(10) + minLog2m;
-        h = 5;//rand.nextInt(5) + minH;
+        log2m = rand.nextInt(10) + minLog2m;
+        h = rand.nextInt(5) + minH;
     }
 
 
