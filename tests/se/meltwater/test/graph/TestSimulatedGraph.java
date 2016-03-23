@@ -14,6 +14,7 @@ import se.meltwater.test.TestUtils;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.LongStream;
 
 /**
@@ -79,7 +80,35 @@ public class TestSimulatedGraph {
 
     @Test
     /**
-     * Tests that an emptry graph returns the correct numNodes
+     * Tests that deleting non-existing edges dont affect the graph
+     */
+    public void testDeleteNonExistingEdge() {
+        final int maxNodes = 100;
+        final int maxNewEdges = 100;
+
+        int iteration = 0;
+
+        while(iteration++ < nrTestIterations) {
+            Random rand = new Random();
+            SimulatedGraph graph = TestUtils.genRandomGraph(maxNodes);
+            long arcCountBefore = graph.getNumberOfArcs();
+
+            for (int i = 0; i < maxNewEdges; i++) {
+                long from = rand.nextInt() + graph.getNumberOfNodes() + 1;
+                long to = rand.nextInt() + graph.getNumberOfNodes() + 1;
+                Edge newEdge = new Edge(from, to);
+
+                boolean wasDeleted = graph.deleteEdge(newEdge);
+                assertFalse(wasDeleted);
+            }
+
+            assertEquals(arcCountBefore, graph.getNumberOfArcs());
+        }
+    }
+
+    @Test
+    /**
+     * Tests that an empty graph returns the correct numNodes
      * and numArcs
      */
     public void testSimulatedGraphCorrectNumNodesZero() {
@@ -171,8 +200,83 @@ public class TestSimulatedGraph {
         });
 
         testSameIterators(bvGraphWrapper,simulatedGraph);
-
     }
+
+    @Test
+    /**
+     * Tests that the SimulatedGraphIterator crashes when the graph has
+     * no more nodes to iterate.
+     */
+    public void testSimulatedGraphIteratorCrashWhenNoMoreNodes() {
+        final int maxNodes = 100;
+        SimulatedGraph graph = TestUtils.genRandomGraph(maxNodes);
+        NodeIterator iterator = graph.getNodeIterator();
+
+        int i = 0;
+        while(i++ < graph.getNumberOfNodes()) {
+            iterator.nextLong();
+        }
+
+        boolean hadException = false;
+        try{
+            iterator.nextLong();
+        } catch (IllegalStateException e) {
+            hadException = true;
+        }
+
+        assertTrue(hadException);
+    }
+
+    @Test
+    /**
+     * Tests that the SimulatedGraphNodeIterator skips to the correct node
+     */
+    public void testSimulatedGraphIteratorSkipNodes() {
+        final int maxNodes = 100;
+
+        int iteration = 0;
+        while(iteration++ < nrTestIterations) {
+            SimulatedGraph graph = TestUtils.genRandomGraph(maxNodes);
+            NodeIterator iterator = graph.getNodeIterator();
+
+            Random rand = new Random();
+            long skipTo = rand.nextInt((int) graph.getNumberOfNodes());
+
+            long node = iterator.skip(skipTo);
+
+            assertEquals(node, skipTo);
+        }
+    }
+
+    @Test
+    /**
+     *
+     */
+    public void testSuccessorIterator() {
+        final int maxNodes = 100;
+
+        int iteration = 0;
+        while(iteration++ < nrTestIterations) {
+
+            SimulatedGraph graph = TestUtils.genRandomGraph(maxNodes);
+
+            for (int i = 0; i < graph.getNumberOfNodes(); i++) {
+                long nodeDegree = graph.getOutdegree(i);
+                if (nodeDegree > 0) {
+                    LazyLongIterator successors = graph.getSuccessors(i);
+                    successors.skip(nodeDegree);
+
+                    TestUtils.assertGivesException(() -> successors.nextLong());
+                } else {
+                    LazyLongIterator successors = graph.getSuccessors(i);
+
+                    TestUtils.assertGivesException (() -> successors.nextLong());
+                }
+            }
+        }
+    }
+
+
 
     @Test
     public void testSimulatedGraphSameAsBVGraph() throws IOException {
