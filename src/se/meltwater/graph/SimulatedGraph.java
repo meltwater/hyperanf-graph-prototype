@@ -54,6 +54,8 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
         }
     }
 
+
+
     @Override
     public IGraph copy(){
         SimulatedGraph copy = new SimulatedGraph();
@@ -91,7 +93,6 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
         if(!containsNode(edge.to)) {
             addNode(edge.to);
         }
-
 
         Set<Long> neighbors = iteratorNeighbors.get(edge.from);
 
@@ -157,6 +158,21 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
     @Override
     public long getNumberOfArcs(){
         return numArcs;
+    }
+
+    @Override
+    public IGraph transpose() {
+        SimulatedGraph transpose = new SimulatedGraph();
+        transpose.addNode(this.numNodes - 1); /* -1 as 0-indexed */
+        Edge[] currentEdges = this.getAllEdges();
+
+        for (int i = 0; i < currentEdges.length; i++) {
+            Edge currentEdge = currentEdges[i];
+            Edge flippedEdge = new Edge(currentEdge.to, currentEdge.from);
+            transpose.addEdge(flippedEdge);
+        }
+
+        return transpose;
     }
 
     private static class SimulatedGraphNodeIterator extends NodeIterator{

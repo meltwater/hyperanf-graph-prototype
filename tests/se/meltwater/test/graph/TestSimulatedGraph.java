@@ -27,6 +27,7 @@ import java.util.stream.LongStream;
 public class TestSimulatedGraph {
 
     final int nrTestIterations = 100;
+    final int maxNodes = 100;
 
     @Test
     /**
@@ -334,6 +335,72 @@ public class TestSimulatedGraph {
         }
 
         return neighborList;
+    }
+
+    @Test
+    public void testEquals() {
+        int iteration = 0;
+
+        while(iteration++ < nrTestIterations) {
+            SimulatedGraph graph = TestUtils.genRandomGraph(maxNodes);
+            assertTrue(graph.equals(graph));
+        }
+    }
+
+    @Test
+    /**
+     * Tests that all edges are present and flipped in the transpose
+     */
+    public void testTranspose() {
+        int iteration = 0;
+
+        while(iteration++ < nrTestIterations) {
+
+            SimulatedGraph graph = TestUtils.genRandomGraph(maxNodes);
+
+            IGraph transpose = graph.transpose();
+
+            assertEquals(graph.getNumberOfArcs(), transpose.getNumberOfArcs());
+            assertEquals(graph.getNumberOfNodes(), transpose.getNumberOfNodes());
+
+            ArrayList<Edge> edges = new ArrayList<>(Arrays.asList(graph.getAllEdges()));
+
+            transpose.iterateAllEdges(edge -> {
+                Edge flippedEdge = new Edge(edge.to, edge.from);
+                boolean wasRemoved = edges.remove(flippedEdge);
+                assertTrue(wasRemoved);
+                return null;
+            });
+
+            assertTrue(edges.size() == 0);
+        }
+    }
+
+    @Test
+    /**
+     * Tests that we dont crash when transposing an empty graph
+     */
+    public void testTransposeEmptyGraph() {
+        SimulatedGraph graph = new SimulatedGraph();
+        IGraph tranpose = graph.transpose();
+        assertTrue(tranpose != null);
+    }
+
+    @Test
+    /**
+     * Transposing twice should give back the same graph
+     */
+    public void testTransposeTwice() {
+        int iteration = 0;
+
+        while(iteration++ < nrTestIterations) {
+            IGraph graph = TestUtils.genRandomGraph(maxNodes);
+            IGraph twiceTransposedGraph = graph.transpose().transpose();
+
+            assertEquals(graph.getNumberOfArcs(), twiceTransposedGraph.getNumberOfArcs());
+            assertEquals(graph.getNumberOfNodes(), twiceTransposedGraph.getNumberOfNodes());
+            assertEquals(graph, twiceTransposedGraph);
+        }
     }
 
 
