@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Simon Lindhén
@@ -95,10 +96,10 @@ public class Main {
         String graphName = result.getString("filename");
 
         BVGraph graph = BVGraph.loadMapped(graphName);
-        int[] bfsSources = new int[1000];
-        Random rand = new Random();
+        long[] bfsSources = new long[1000];
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
         for(int i=0; i<1000 ; i++)
-            bfsSources[i] = (int)(rand.nextFloat()*(float)graph.numNodes());
+            bfsSources[i] = rand.nextLong(graph.numNodes());
 
         MSBreadthFirst MSBFS = new MSBreadthFirst(bfsSources,new ImmutableGraphWrapper(graph));
 

@@ -203,14 +203,14 @@ public class DANF {
      * @throws InterruptedException If the parallel breadth-first search reached time-out
      */
     public void recalculateHistory(long ... nodes) throws InterruptedException {
-        IntArrayList inVC = new IntArrayList();
+        LongArrayList inVC = new LongArrayList();
         for (long node : nodes) {
             if(vc.isInVertexCover(node))
-                inVC.add((int)node);
+                inVC.add(node);
             else{
                 LazyLongIterator succs = graph.getSuccessors(node);
                 long out = graph.getOutdegree(node);
-                for (int neighborI = 0; neighborI < out ; neighborI++) {
+                for (long neighborI = 0; neighborI < out ; neighborI++) {
                     long neighbor = succs.nextLong();
                     history[h-1].union(node,history[h-2],getNodeIndex(neighbor,h-1));
                 }
@@ -219,7 +219,7 @@ public class DANF {
         if(inVC.size() == 0)
             return;
 
-        int[] nodesInVc = inVC.toIntArray();
+        long[] nodesInVc = inVC.toLongArray();
         for (int i = 0; i < h; i++) {
             HyperLolLolCounterArray counter = history[i];
             for(long node : nodesInVc) {
@@ -233,7 +233,7 @@ public class DANF {
         msbfs.breadthFirstSearch();
 
         for(int i = 1; i < h; i++) {
-            for (int node : nodesInVc) {
+            for (long node : nodesInVc) {
                 long counterInd = getNodeIndex(node, i + 1);
                 long counterLower = getNodeIndex(node, i);
                 history[i].union(counterInd, history[i - 1], counterLower);
@@ -278,7 +278,7 @@ public class DANF {
         long[][] historyBits = calculateHistory(toNode);
         PropagationTraveler propagationTraveler = new PropagationTraveler(historyBits);
 
-        MSBreadthFirst msbfs = new MSBreadthFirst(new int[]{(int)toNode},
+        MSBreadthFirst msbfs = new MSBreadthFirst(new long[]{toNode},
                 new MSBreadthFirst.Traveler[]{propagationTraveler}, graphTranspose,
                 propagateVisitor());
         msbfs.breadthFirstSearch();
@@ -327,7 +327,6 @@ public class DANF {
         };
     }
 
-
     private class PropagationTraveler implements MSBreadthFirst.Traveler{
         public long[][] bits;
 
@@ -349,7 +348,7 @@ public class DANF {
         }
     }
 
-    private MSBreadthFirst.Visitor recalculateVisitor(int[] bfsSources){
+    private MSBreadthFirst.Visitor recalculateVisitor(long[] bfsSources){
         return (long visitNode, BitSet bfsVisits, BitSet seen, int depth, MSBreadthFirst.Traveler t) -> {
 
             if(depth > 0){

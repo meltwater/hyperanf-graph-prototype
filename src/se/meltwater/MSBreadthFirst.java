@@ -3,6 +3,8 @@ package se.meltwater;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
+import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
+import it.unimi.dsi.fastutil.objects.ObjectBigLists;
 import se.meltwater.graph.IGraph;
 
 import java.util.ArrayList;
@@ -21,12 +23,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MSBreadthFirst {
 
     private IGraph graph;
-    private int[] bfsSources;
+    private long[] bfsSources;
     private int numSources;
     private int threadsLeft;
     private Visitor visitor;
-    private Traveler[] travelers;
-    private Traveler[] travelersNext;
+    private Traveler[][] travelers;
+    private Traveler[][] travelersNext;
     private Traveler[] originalTravelers;
     private long waitTime;
     private TimeUnit waitTimeUnit;
@@ -37,9 +39,9 @@ public class MSBreadthFirst {
 
     private AtomicBoolean visitHadContent;
     private int threads;
-    private BitSet[] visit;
-    private BitSet[] seen;
-    private BitSet[] visitNext;
+    private BitSet[][] visit;
+    private BitSet[][] seen;
+    private BitSet[][] visitNext;
     private int iteration;
     private boolean hasTraveler;
 
@@ -49,7 +51,7 @@ public class MSBreadthFirst {
      *                   the BFS starting at that node.
      * @param graph
      */
-    public MSBreadthFirst(int[] bfsSources, IGraph graph){
+    public MSBreadthFirst(long[] bfsSources, IGraph graph){
         this(bfsSources,graph,null);
     }
 
@@ -63,7 +65,7 @@ public class MSBreadthFirst {
      * @param maxWaitTime  The maximum time the algorithm should wait for the threads to finish (default 1 hour)
      * @param waitTimeUnit The units which {@code maxWaitTime} is expressed in
      */
-    public MSBreadthFirst(int[] bfsSources, Traveler[] travelers, IGraph graph, Visitor visitor, long maxWaitTime, TimeUnit waitTimeUnit){
+    public MSBreadthFirst(long[] bfsSources, Traveler[] travelers, IGraph graph, Visitor visitor, long maxWaitTime, TimeUnit waitTimeUnit){
 
         this.graph = graph;
         numSources = bfsSources.length;
@@ -77,8 +79,8 @@ public class MSBreadthFirst {
             this.travelers = null;
             this.travelersNext = null;
         }else {
-            this.travelers = new Traveler[(int) graph.getNumberOfNodes()];
-            travelersNext = new Traveler[(int) graph.getNumberOfNodes()];
+            this.travelers = ObjectBigArrays.newBigArray(new Traveler[0][0], graph.getNumberOfNodes());
+            travelersNext = ObjectBigArrays.newBigArray(new Traveler[0][0], graph.getNumberOfNodes());
         }
 
     }
@@ -91,7 +93,7 @@ public class MSBreadthFirst {
      * @param graph
      * @param visitor
      * */
-     public MSBreadthFirst(int[] bfsSources, IGraph graph, Visitor visitor){
+     public MSBreadthFirst(long[] bfsSources, IGraph graph, Visitor visitor){
          this(bfsSources, null,graph,visitor);
      }
 
@@ -104,7 +106,7 @@ public class MSBreadthFirst {
      * @param graph
      * @param visitor
      * */
-    public MSBreadthFirst(int[] bfsSources, Traveler[] travelers, IGraph graph, Visitor visitor){
+    public MSBreadthFirst(long[] bfsSources, Traveler[] travelers, IGraph graph, Visitor visitor){
         this(bfsSources, travelers,graph,visitor,DEFAULT_WAIT_TIME,DEFAULT_WAIT_TIME_UNIT);
     }
 
@@ -116,17 +118,21 @@ public class MSBreadthFirst {
      * @param maxWaitTime  The maximum time the algorithm should wait for the threads to finish (default 1 hour)
      * @param waitTimeUnit The units which {@code maxWaitTime} is expressed in
      */
-    public MSBreadthFirst(int[] bfsSources, IGraph graph, long maxWaitTime, TimeUnit waitTimeUnit){
+    public MSBreadthFirst(long[] bfsSources, IGraph graph, long maxWaitTime, TimeUnit waitTimeUnit){
         this(bfsSources, null,graph,null,maxWaitTime,waitTimeUnit);
     }
 
-    private BitSet[] createBitsets(){
-        BitSet[] list = new BitSet[(int)graph.getNumberOfNodes()];
-        for(int node = 0; node < graph.getNumberOfNodes() ; node++)
-            list[node] = new BitSet(bfsSources.length);
+    private BitSet[][] createBitsets(){
+        BitSet[][] list = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.getNumberOfNodes());
+        for(long node = 0; node < graph.getNumberOfNodes() ; node++)
+            ObjectBigArrays.set(list,node,new BitSet(bfsSources.length));
         return list;
     }
 
+    private void fillWithNewBitSets(BitSet[][] bsets){
+        for(long node = 0; node < graph.getNumberOfNodes() ; node++)
+            ObjectBigArrays.set(bsets,node,new BitSet(bfsSources.length));
+    }
 
     /**
      * Performs a Multi-Source Breadth-first search.
@@ -140,7 +146,7 @@ public class MSBreadthFirst {
      * set bits indicate which bfs's that reached it.
      * @throws InterruptedException
      */
-    public BitSet[] breadthFirstSearch() throws InterruptedException {
+    public BitSet[][] breadthFirstSearch() throws InterruptedException {
 
         threadException = null;
         controlledInterrupt = false;
@@ -148,11 +154,12 @@ public class MSBreadthFirst {
         seen = createBitsets();
 
         for(int bfs = 0; bfs < numSources; bfs++){
-            visit[bfsSources[bfs]].set(bfs);
-            seen[bfsSources[bfs]].set(bfs);
+            long node = bfsSources[bfs];
+            ObjectBigArrays.get(visit,node).set(bfs);
+            ObjectBigArrays.get(seen,node).set(bfs);
             if(hasTraveler) {
-                travelers[bfsSources[bfs]] = originalTravelers[bfs];
-                travelersNext[bfsSources[bfs]] = originalTravelers[bfs];
+                ObjectBigArrays.set(travelers,node,originalTravelers[bfs]);
+                ObjectBigArrays.set(travelersNext,node,originalTravelers[bfs]);
             }
         }
 
@@ -178,11 +185,14 @@ public class MSBreadthFirst {
 
             if(visitHadContent.get()) {
 
-                Traveler[] temp = travelers;
+                Traveler[][] temp = travelers;
                 travelers = travelersNext;
                 travelersNext = temp;
+
+                BitSet[][] temp2 = visit;
                 visit = visitNext;
-                visitNext = createBitsets();
+                visitNext = temp2;
+                fillWithNewBitSets(visitNext);
             }
         }
 
@@ -193,14 +203,14 @@ public class MSBreadthFirst {
     private void iterate() throws InterruptedException {
 
         ExecutorService pool = Executors.newFixedThreadPool(threads);
-        int nodesPerProcessor = (int)graph.getNumberOfNodes() / threads;
+        long nodesPerProcessor = graph.getNumberOfNodes() / threads;
         visitHadContent.set(false);
         threadsLeft = threads;
         ArrayList<Future<?>> futures = new ArrayList<>(threads);
 
-        for(int i = 0; i < threads; i++) {
-            int start = i*nodesPerProcessor;
-            int end = i == threads-1 ? (int)graph.getNumberOfNodes() : start + nodesPerProcessor;
+        for(long i = 0; i < threads; i++) {
+            long start = i*nodesPerProcessor;
+            long end = i == threads-1 ? graph.getNumberOfNodes() : start + nodesPerProcessor;
             futures.add(pool.submit(bothPhasesIterator(start,end, graph.getNodeIterator(start))));
 
         }
@@ -248,7 +258,7 @@ public class MSBreadthFirst {
      * @param nodeIt
      * @return
      */
-    private Runnable bothPhasesIterator(int startNode, int endNode, NodeIterator nodeIt){
+    private Runnable bothPhasesIterator(long startNode, long endNode, NodeIterator nodeIt){
         return () -> {
             try {
                 firstPhaseIterator(endNode, nodeIt);
@@ -260,43 +270,46 @@ public class MSBreadthFirst {
         };
     }
 
-    private void firstPhaseIterator(int endNode, NodeIterator nodeIt){
-        int node;
-        while(nodeIt.hasNext() && (node = (int)nodeIt.nextLong()) < endNode) {
-            if (visit[node].cardinality() == 0) continue;
+    private void firstPhaseIterator(long endNode, NodeIterator nodeIt){
+        long node;
+        while(nodeIt.hasNext() && (node = nodeIt.nextLong()) < endNode) {
+            BitSet visitN = ObjectBigArrays.get(visit,node);
+            if (visitN.cardinality() == 0) continue;
 
             if (visitor != null) {
-                visitor.visit(node,visit[node], seen[node],iteration, hasTraveler ? travelers[node] : null);
-                if(visit[node].cardinality() == 0) continue;
+                visitor.visit(node,visitN, ObjectBigArrays.get(seen,node),iteration, hasTraveler ? ObjectBigArrays.get(travelers,node) : null);
+                if(visitN.cardinality() == 0) continue;
             }
 
 
             visitHadContent.set(true);
             LazyLongIterator neighbors = nodeIt.successors();
             long degree = nodeIt.outdegree();
-            int neighbor;
+            long neighbor;
+            BitSet visitNeigh;
             for (long d = 0; d < degree; d++) {
-                neighbor = (int)neighbors.nextLong();
-                synchronized (visitNext[neighbor]) {
+                neighbor = neighbors.nextLong();
+                synchronized (ObjectBigArrays.get(visitNext,neighbor)) {
+                    visitNeigh = ObjectBigArrays.get(visitNext,neighbor);
                     if(hasTraveler) {
-                        if (visitNext[neighbor].cardinality() != 0)
-                            travelersNext[neighbor] = travelersNext[neighbor].merge(travelers[node], iteration + 1);
-                        else
-                            travelersNext[neighbor] = travelers[node];
+                        Traveler toSet = ObjectBigArrays.get(travelers,node);
+                        if (visitNeigh.cardinality() != 0)
+                            toSet = toSet.merge(ObjectBigArrays.get(travelersNext,neighbor),iteration+1);
+                        ObjectBigArrays.set(travelersNext,neighbor,toSet);
                     }
-                    visitNext[neighbor].or(visit[node]);
+                    visitNeigh.or(visitN);
                 }
             }
 
         }
     }
 
-    private void secondPhaseIterator(int startNode, int endNode){
-        for(int node = startNode; node < endNode ; node++) {
-            if(visitNext[node].cardinality() == 0) continue;
+    private void secondPhaseIterator(long startNode, long endNode){
+        for(long node = startNode; node < endNode ; node++) {
+            if(ObjectBigArrays.get(visitNext,node).cardinality() == 0) continue;
 
-            visitNext[node].andNot(seen[node]);
-            seen[node].or(visitNext[node]);
+            ObjectBigArrays.get(visitNext,node).andNot(ObjectBigArrays.get(seen,node));
+            ObjectBigArrays.get(seen,node).or(ObjectBigArrays.get(visitNext,node));
         }
     }
 

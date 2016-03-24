@@ -2,8 +2,11 @@ package se.meltwater.test.BFS;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
+import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.big.webgraph.BVGraph;
+import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
+import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 import org.apache.commons.collections.ArrayStack;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -18,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -39,12 +43,12 @@ public class TestMSBFS {
     @Test
     public void testTravelerNeverNull() throws InterruptedException {
         int iteration = 0;
-        Random rand = new Random();
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
         while (iteration++ < maxIterations){
-            int numNodes = rand.nextInt(maxGraphSize - 1) + 1; /* Make sure numNodes always positive */
-            SimulatedGraph graph = TestUtils.genRandomGraph(numNodes);
-            numNodes = (int)graph.getNumberOfNodes();
-            int sources[] = TestUtils.generateRandomIntNodes(numNodes,numNodes,1);
+            long numNodes = rand.nextLong(maxGraphSize - 1) + 1; /* Make sure numNodes always positive */
+            SimulatedGraph graph = TestUtils.genRandomGraph((int)numNodes);
+            numNodes = graph.getNumberOfNodes();
+            long sources[] = TestUtils.generateRandomNodes(numNodes,(int)numNodes,1);
             MSBreadthFirst.Traveler t = (MSBreadthFirst.Traveler t1, int depth) ->  t1;
             MSBreadthFirst.Traveler[] travelers = repeat(t,sources.length, new MSBreadthFirst.Traveler[0]);
             AtomicBoolean noNull = new AtomicBoolean(true);
@@ -90,7 +94,7 @@ public class TestMSBFS {
         SimulatedGraph graph = new SimulatedGraph();
         graph.addNode(3);
         graph.addEdges(new Edge(0,2),new Edge(1,2), new Edge(2,3));
-        int[] bfsSources = new int[]{0,1};
+        long[] bfsSources = new long[]{0,1};
         AtomicInteger merges = new AtomicInteger(0);
         MSBreadthFirst.Traveler[] travs = new CountMergesTraveler[]{new CountMergesTraveler(merges),new CountMergesTraveler(merges)};
         new MSBreadthFirst(bfsSources,travs,graph,correctMergesVisitor()).breadthFirstSearch();
@@ -179,9 +183,9 @@ public class TestMSBFS {
      * @throws InterruptedException
      */
     public void testGraph(IGraph graph) throws InterruptedException {
-        int[] bfsSources = generateSources((int) graph.getNumberOfNodes());
+        long[] bfsSources = generateSources(graph.getNumberOfNodes());
         MSBreadthFirst msbfs = new MSBreadthFirst(bfsSources, graph);
-        BitSet[] seen = msbfs.breadthFirstSearch();
+        BitSet[][] seen = msbfs.breadthFirstSearch();
         checkValidSeen(bfsSources, seen, graph);
     }
 
@@ -192,7 +196,7 @@ public class TestMSBFS {
     @Test
     public void testBFSVisitorOnlySources() throws IOException, InterruptedException {
         IGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
-        int[] bfsSources = generateSources((int) graph.getNumberOfNodes());
+        long[] bfsSources = generateSources(graph.getNumberOfNodes());
         ArrayList<AssertionError> errors = new ArrayList<>();
         MSBreadthFirst msbfs = new MSBreadthFirst(bfsSources, graph, onlySourcesVisitor(bfsSources, errors));
         msbfs.breadthFirstSearch();
@@ -205,7 +209,7 @@ public class TestMSBFS {
      * @param bfsSources
      * @return
      */
-    public MSBreadthFirst.Visitor onlySourcesVisitor(int[] bfsSources, ArrayList<AssertionError> errors){
+    public MSBreadthFirst.Visitor onlySourcesVisitor(long[] bfsSources, ArrayList<AssertionError> errors){
         return (long node, BitSet visitedBy, BitSet seen, int iteration, MSBreadthFirst.Traveler t) -> {
             try {
             /* An iteration > 0 implies a bfs have reached a node != its source */
@@ -231,7 +235,7 @@ public class TestMSBFS {
     @Test
     public void testBFSVisitorNeighborsCorrect() throws IOException, InterruptedException {
         IGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
-        int[] bfsSources = generateSources((int) graph.getNumberOfNodes());
+        long[] bfsSources = generateSources( graph.getNumberOfNodes());
         ArrayList<AssertionError> errors = new ArrayList<>();
 
         MSBreadthFirst msbfs = new MSBreadthFirst(bfsSources, graph,neighborsCorrect(bfsSources,graph,errors));
@@ -248,13 +252,13 @@ public class TestMSBFS {
      * @param errors
      * @return
      */
-    public MSBreadthFirst.Visitor neighborsCorrect(int[] bfsSources, IGraph graph, ArrayList<AssertionError> errors){
-        BitSet[] shouldHave = new BitSet[(int)graph.getNumberOfNodes()];
-        BitSet[] alreadySeen = new BitSet[(int)graph.getNumberOfNodes()];
+    public MSBreadthFirst.Visitor neighborsCorrect(long[] bfsSources, IGraph graph, ArrayList<AssertionError> errors){
+        BitSet[][] shouldHave = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.getNumberOfNodes());
+        BitSet[][] alreadySeen = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.getNumberOfNodes());
 
-        for(int node = 0; node < graph.getNumberOfNodes() ; node++) {
-            shouldHave[node] = new BitSet(bfsSources.length);
-            alreadySeen[node] = new BitSet(bfsSources.length);
+        for(long node = 0; node < graph.getNumberOfNodes() ; node++) {
+            ObjectBigArrays.set(shouldHave,node,new BitSet(bfsSources.length));
+            ObjectBigArrays.set(alreadySeen,node,new BitSet(bfsSources.length));
         }
 
         return (long node, BitSet visitedBy, BitSet seen, int iteration, MSBreadthFirst.Traveler t) -> {
@@ -262,20 +266,20 @@ public class TestMSBFS {
                 try {
                     assertFalse("Iteration should not be more than one", iteration > 1);
                     if (iteration == 1) {
-                        shouldHave[(int) node].andNot(alreadySeen[(int) node]);
-                        BitSet clonedShouldHave = (BitSet) shouldHave[(int) node].clone();
+                        ObjectBigArrays.get(shouldHave,node).andNot(ObjectBigArrays.get(alreadySeen,node));
+                        BitSet clonedShouldHave = (BitSet) ObjectBigArrays.get(shouldHave,node).clone();
                         clonedShouldHave.and(visitedBy);
-                        assertEquals("Node " + node, clonedShouldHave.cardinality(), shouldHave[(int) node].cardinality());
+                        assertEquals("Node " + node, clonedShouldHave.cardinality(), ObjectBigArrays.get(shouldHave,node).cardinality());
 
                         visitedBy.clear();
                     } else {
                         LazyLongIterator succ = graph.getSuccessors(node);
-                        long out = (int) graph.getOutdegree(node), neigh;
-                        alreadySeen[(int) node].or(visitedBy);
+                        long out = graph.getOutdegree(node), neigh;
+                        ObjectBigArrays.get(alreadySeen,node).or(visitedBy);
 
                         for (int neighI = 0; neighI < out; neighI++) {
                             neigh = succ.nextLong();
-                            shouldHave[(int) neigh].or(visitedBy);
+                            ObjectBigArrays.get(shouldHave,neigh).or(visitedBy);
                         }
                     }
                 } catch (AssertionError e) {
@@ -291,12 +295,12 @@ public class TestMSBFS {
      * @param numNodes
      * @return
      */
-    private int[] generateSources(int numNodes){
-        Random rand = new Random(System.currentTimeMillis());
+    private long[] generateSources(long numNodes){
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
         int numSources = 100;
-        int[] sources = new int[numSources];
+        long[] sources = new long[numSources];
         for(int i = 0; i<numSources; i++)
-            sources[i] = rand.nextInt(numNodes-1);
+            sources[i] = rand.nextLong(numNodes-1);
         return sources;
 
     }
@@ -307,50 +311,49 @@ public class TestMSBFS {
      * @param seen
      * @param graph
      */
-    private void checkValidSeen(int[] sources, BitSet[] seen, IGraph graph){
-        BitSet[] originalSeen = new BitSet[seen.length];
-        int i = 0;
-        for (BitSet bits : seen)
-            originalSeen[i++] = (BitSet)bits.clone();
+    private void checkValidSeen(long[] sources, BitSet[][] seen, IGraph graph){
+        BitSet[][] originalSeen = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.getNumberOfNodes());
+        for (long i = 0; i< graph.getNumberOfNodes(); i++)
+            ObjectBigArrays.set(originalSeen,i,ObjectBigArrays.get(seen,i).clone());
 
         /* Do standard BFS from each source */
         for (int bfs = 0; bfs < sources.length ; bfs++) {
-            IntArrayFIFOQueue queue = new IntArrayFIFOQueue();
+            LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
             queue.enqueue(sources[bfs]);
-            BitSet nodesChecked = new BitSet((int)graph.getNumberOfNodes());
+            LongArrayBitVector nodesChecked = LongArrayBitVector.ofLength(graph.getNumberOfNodes());
             nodesChecked.set(sources[bfs]);
 
-            assertTrue("Source node " + sources[bfs] + " for bfs " + bfs,seen[sources[bfs]].get(bfs));
+            assertTrue("Source node " + sources[bfs] + " for bfs " + bfs,ObjectBigArrays.get(seen,sources[bfs]).get(bfs));
 
-            seen[sources[bfs]].clear(bfs);
+            ObjectBigArrays.get(seen,sources[bfs]).clear(bfs);
 
             /* Do bfs from current node */
             while (!queue.isEmpty()) {
-                int curr = queue.dequeueInt();
+                long curr = queue.dequeueLong();
                 LazyLongIterator succs = graph.getSuccessors(curr);
-                int d = (int)graph.getOutdegree(curr);
+                long d = graph.getOutdegree(curr);
 
                 /* Visit all neighbors */
                 while (d-- != 0) {
-                    int succ = (int)succs.nextLong();
+                    long succ = succs.nextLong();
 
                     if (!nodesChecked.get(succ)) {
                         nodesChecked.set(succ);
                         queue.enqueue(succ);
 
                         /* Make sure the MSBFS also have seen the node */
-                        assertTrue("Node " + succ + " for bfs " + bfs,seen[succ].get(bfs));
+                        assertTrue("Node " + succ + " for bfs " + bfs,ObjectBigArrays.get(seen,succ).get(bfs));
 
                         /* Clearing the bit is used to make sure the MSBFS have not seen to many  */
-                        seen[succ].clear(bfs);
+                        ObjectBigArrays.get(seen,succ).clear(bfs);
                     }
                 }
             }
         }
 
         /* If any MSBFS have any bit still set it means it have seen more than the standard BFS did */
-        for(int node = 0; node<seen.length; node++){
-            assertEquals("Node " + node + " should be clear",0,seen[node].cardinality());
+        for(long node = 0; node<seen.length; node++){
+            assertEquals("Node " + node + " should be clear",0,ObjectBigArrays.get(seen,node).cardinality());
         }
     }
 }
