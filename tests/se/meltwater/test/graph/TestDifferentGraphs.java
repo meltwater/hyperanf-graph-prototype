@@ -44,12 +44,12 @@ public class TestDifferentGraphs {
         assertSameSize(bvGraph,simGraph,bv);
     }
 
-    @Test
     /**
      * Tests that both a real loaded graph and a similated graph clone of it
      * have the same number of arcs and nodes. Also checks that ImmutableGraphWrapper
      * have the same number of arcs and nodes as the un-wrapped graph.
      */
+    @Test
     public void testSimulatedGraphSameAsBVSize() throws IOException {
         BVGraph bvGraph = BVGraph.loadMapped("testGraphs/noBlocksUk");
         ImmutableGraphWrapper bvGraphWrapper = new ImmutableGraphWrapper(bvGraph);
@@ -66,11 +66,11 @@ public class TestDifferentGraphs {
 
     }
 
-    @Test
     /**
      * Tests that iterating both a real loaded graph and simulated graph clone of it
      * yields the same neighbors.
      */
+    @Test
     public void testSimulatedGraphHaveSameIterators() throws IOException {
         BVGraph bvGraph = BVGraph.loadMapped("testGraphs/noBlocksUk");
         ImmutableGraphWrapper bvGraphWrapper = new ImmutableGraphWrapper(bvGraph);

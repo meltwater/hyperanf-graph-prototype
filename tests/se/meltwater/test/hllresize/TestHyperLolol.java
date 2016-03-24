@@ -64,10 +64,10 @@ public class TestHyperLolol {
         return t;
     }
 
-    @Test
     /**
      * Tests if {@link HyperLolLolCounterArray#wouldChange(long, long)} is correct
      */
+    @Test
     public void testWouldChange(){
         int iteration = 0;
         while(++iteration < nrTestIterations){
@@ -91,10 +91,10 @@ public class TestHyperLolol {
         }
     }
 
-    @Test
     /**
      * Adding negative counters should not be possible
      */
+    @Test
     public void testAddingNegativeCounters() {
         int iteration = 0;
 
@@ -105,7 +105,6 @@ public class TestHyperLolol {
         }
     }
 
-    @Test
     /**
      * Tests that we can add values to newly allocated parts
      * of the counter and that they after insertions all have
@@ -114,6 +113,7 @@ public class TestHyperLolol {
      * Randomized tests that performs {@code nrTestIterations} number of
      * tests with random HLLs and random increaseSize;
      */
+    @Test
     public void testNewPartsCanBeUsedOfResize() {
         int iteration = 0;
         while(iteration++ < nrTestIterations) {
@@ -126,7 +126,6 @@ public class TestHyperLolol {
         }
     }
 
-    @Test
     /**
      * Tests that all previous values are kept after increasing the counter
      * size and that the new counters are initiated to zero.
@@ -134,6 +133,7 @@ public class TestHyperLolol {
      * Randomized tests that performs {@code nrTestIterations} number of
      * tests with random HLLs and random increaseSize;
      */
+    @Test
     public void testResizeKeepsPreviousValues() throws IOException {
         int iteration = 0;
         while(iteration++ < nrTestIterations) {
@@ -150,7 +150,6 @@ public class TestHyperLolol {
         }
     }
 
-    @Test
     /**
      * Creates a HLL with random values added to each counter and makes
      * sure that these remain unaffected by a series of random HLL size increases.
@@ -159,6 +158,7 @@ public class TestHyperLolol {
      * tests with random HLLs and random increaseSize;
      *
      */
+    @Test
     public void testManyIncreases() {
         int iteration = 0;
         while(iteration++ < nrTestIterations) {
@@ -178,13 +178,13 @@ public class TestHyperLolol {
         }
     }
 
-    @Test
     /**
      * Tests that clearCounter actually clears a specific counter.
      *
      * Randomized tests that performs {@code nrTestIterations} number of
      * tests with random HLLs and random index to clear.
      */
+    @Test
     public void testClearCounter(){
         int iteration = 0;
         while(iteration++ < nrTestIterations){
@@ -204,7 +204,6 @@ public class TestHyperLolol {
         }
     }
 
-    @Test
     /**
      * Tests that union a node from one HLL to another doesnt affect any other node than
      * the unioned and that the unioned node gets the correct value.
@@ -212,6 +211,7 @@ public class TestHyperLolol {
      * Randomized tests that performs {@code nrTestIterations} number of
      * tests with random HLLs and a random node to union.
      */
+    @Test
     public void testUnion(){
         int iteration = 0;
         while(iteration++ < nrTestIterations){
@@ -343,13 +343,13 @@ public class TestHyperLolol {
         }
     }
 
-    @Test
     /**
      * Tests that a union between two HLL cannot lower the unioned node value.
      *
      * Randomized tests that performs {@code nrTestIterations} number of
      * tests with random HLLs and a random node to union.
      */
+    @Test
     public void testUnionNotSmaller(){
         int iteration = 0;
         while(iteration++ < nrTestIterations) {

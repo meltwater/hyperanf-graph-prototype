@@ -33,10 +33,10 @@ public class TestMSBFS {
     private final int maxIterations = 50;
     private final int maxGraphSize  = 100;
 
-    @Test
     /**
      * Tests that the traveler to a visitor is never {@code null}
      */
+    @Test
     public void testTravelerNeverNull() throws InterruptedException {
         int iteration = 0;
         Random rand = new Random();
@@ -45,7 +45,7 @@ public class TestMSBFS {
             SimulatedGraph graph = TestUtils.genRandomGraph(numNodes);
             numNodes = (int)graph.getNumberOfNodes();
             int sources[] = TestUtils.generateRandomIntNodes(numNodes,numNodes,1);
-            MSBreadthFirst.Traveler t = (MSBreadthFirst.Traveler t1) ->  t1;
+            MSBreadthFirst.Traveler t = (MSBreadthFirst.Traveler t1, int depth) ->  t1;
             MSBreadthFirst.Traveler[] travelers = repeat(t,sources.length, new MSBreadthFirst.Traveler[0]);
             AtomicBoolean noNull = new AtomicBoolean(true);
             MSBreadthFirst.Visitor v = (long x, BitSet y, BitSet z, int d, MSBreadthFirst.Traveler t2) -> {if(t2 == null) noNull.set(false);};
@@ -71,12 +71,11 @@ public class TestMSBFS {
         return ret.toArray(dummyArr);
     }
 
-    @Test
     /**
      * Tests that a traveler merges once and only once for a graph where that should happen. Starts
      * at node 0 and 1.
      * The graph:
-     *
+     * <pre>{@code
      *  0
      *  |
      *  v
@@ -84,7 +83,9 @@ public class TestMSBFS {
      *  ^
      *  |
      *  1
+     *  }</pre>
      */
+    @Test
     public void testOneMerge() throws InterruptedException {
         SimulatedGraph graph = new SimulatedGraph();
         graph.addNode(3);
@@ -140,18 +141,19 @@ public class TestMSBFS {
         }
 
         @Override
-        public MSBreadthFirst.Traveler merge(MSBreadthFirst.Traveler mergeWith) {
+        public MSBreadthFirst.Traveler merge(MSBreadthFirst.Traveler mergeWith, int depth) {
             CountMergesTraveler clone = new CountMergesTraveler(totMerges);
             clone.merges = ((CountMergesTraveler)mergeWith).merges + merges + 1;
             totMerges.incrementAndGet();
+            assertEquals(1,depth);
             return clone;
         }
     }
 
-    @Test
     /**
      * Loads a random simulated graph and tests MSBFS on it.
      */
+    @Test
     public void testOnGeneratedGraph() throws InterruptedException {
         int iteration = 0;
         while(iteration++ < maxIterations ) {
@@ -161,10 +163,10 @@ public class TestMSBFS {
         }
     }
 
-    @Test
     /**
      * Loads a real graph file without blocks and tests MSBFS on it.
      */
+    @Test
     public void testBFSValidity() throws IOException, InterruptedException {
         IGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
         testGraph(graph);
@@ -183,11 +185,11 @@ public class TestMSBFS {
         checkValidSeen(bfsSources, seen, graph);
     }
 
-    @Test
     /**
      * Performs a MSBFS with a visitor on a real graph. The visitor should only visit
      * its source node and then stop the propagation.
      */
+    @Test
     public void testBFSVisitorOnlySources() throws IOException, InterruptedException {
         IGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
         int[] bfsSources = generateSources((int) graph.getNumberOfNodes());
@@ -223,10 +225,10 @@ public class TestMSBFS {
         };
     }
 
-    @Test
     /**
      * Tests a MSBFS with a visitor that should visit itself and all its neighbors.
      */
+    @Test
     public void testBFSVisitorNeighborsCorrect() throws IOException, InterruptedException {
         IGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
         int[] bfsSources = generateSources((int) graph.getNumberOfNodes());

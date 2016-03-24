@@ -33,11 +33,11 @@ public class TestHistoryInit {
     final int minH = 4;
     int h;
 
-    @Test
     /**
      * Tests that after creating a DANF and adding history to it
      * we can access all nodes history properly.
      */
+    @Test
     public void testAddHistory() throws IOException {
         int iteration = 0;
 

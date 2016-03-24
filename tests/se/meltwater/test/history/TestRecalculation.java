@@ -44,11 +44,15 @@ public class TestRecalculation {
     int log2m;
     int h;
 
-    @Test
     /**
+     * <pre>{@code
      * N3 -> 0 -> 1
-     *  \--> 2
+     *  |
+     *  v
+     *  2
+     *  }</pre>
      */
+    @Test
     public void testNewNodeGetsCorrectRecalculation() throws IOException, InterruptedException {
         log2m = 10;
         h = 3;
@@ -75,10 +79,12 @@ public class TestRecalculation {
         assertEquals(expectedValue, counterValue , epsilon);
     }
 
-    @Test
     /**
+     * <pre>{@code
      * N1 <-> N2
+     * }</pre>
      */
+    @Test
     public void testTwoNewNodesCircleReference() throws IOException, InterruptedException {
         log2m = 10;
         h = 3;
@@ -98,11 +104,11 @@ public class TestRecalculation {
         assertEquals(2.0, danf.count(2, h), epsilon);
     }
 
-    @Test
     /**
      * Tests that a complete recalculation of a node gives the same
      * result as HyperBoll would.
      */
+    @Test
     public void historyUnchangedOnRecalculation() throws IOException, InterruptedException {
         setupRandomParameters();
 
@@ -115,11 +121,11 @@ public class TestRecalculation {
 
     }
 
-    @Test
     /**
      * Tests that a node which previously didn't have any edges has some history after
      * adding edges
      */
+    @Test
     public void historyIncreaseOnAddedEdge() throws IOException, InterruptedException {
         int iteration = 0;
 
@@ -213,11 +219,11 @@ public class TestRecalculation {
         }
     }
 
-    @Test
     /**
      * Randomized test that adds edges with one new node in each edge.
      * Tests that each new node gets assigned a counter that can be accessed.
      */
+    @Test
     public void testAddedEdgesGetMemoryInHistory() throws Exception {
         int iteration = 0;
         while(iteration++ < nrTestIterations) {

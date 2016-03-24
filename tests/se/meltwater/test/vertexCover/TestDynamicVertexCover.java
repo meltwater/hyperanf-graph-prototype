@@ -24,11 +24,11 @@ public class TestDynamicVertexCover {
 
     final int nrTestIterations = 100;
 
-    @Test
     /**
      * Tests that inserting nodes return the expected
      * affected nodes.
      */
+    @Test
     public void testInsertAffectedNodes() {
         long[] nodes = {0, 1, 2};
         Edge[] edges = {new Edge(nodes[0], nodes[1]),
@@ -53,10 +53,10 @@ public class TestDynamicVertexCover {
         assertTrue(affectedStateMap.size() == 0);
     }
 
-    @Test
     /**
      * Tests that when we delete edges from the VC we get the correct affected nodes back
      */
+    @Test
     public void testDeleteAffectedNodes() {
         long[] nodes = {0, 1, 2};
         Edge[] edges = {new Edge(nodes[0], nodes[1]),
@@ -80,11 +80,11 @@ public class TestDynamicVertexCover {
         assertTrue(affectedStateMap.size() == 2);
     }
 
-    @Test
     /**
      * Tests that after sequential insertions and then deletions the total number
      * of nodes affected are zero.
      */
+    @Test
     public void testSequentialInsertionsAndDeletions() throws CloneNotSupportedException {
         int iteration = 0;
         final int maxNumNodes = 100;
@@ -151,12 +151,12 @@ public class TestDynamicVertexCover {
         }
     }
 
-    @Test
     /**
      * Small test that inserts a small graph into the dynamic
      * vertex cover and assures that the resulting vertex cover
      * actually is a vertex cover.
      */
+    @Test
     public void testInsertions() {
         long[] nodes = {0, 1, 2};
         Edge[] edges = {new Edge(nodes[0], nodes[1]),
@@ -176,13 +176,13 @@ public class TestDynamicVertexCover {
         assertTrue(isVertexCover(graph, dvc));
     }
 
-    @Test
     /**
      * Randomly generates a graph and sequentially inserts
      * edges into the dynamic vertex cover. After each insertion
      * we assert that it is a VC. Then we delete the edges
      * one by one in a permutated order and assure that it still is a VC.
      */
+    @Test
     public void testRandomInsertionsAndDeletions() {
         int iteration = 0;
 
@@ -214,11 +214,11 @@ public class TestDynamicVertexCover {
         }
     }
 
-    @Test
     /**
      * Tests that after we delete an edge in the Maximal Matching
      * we still have a VC.
      */
+    @Test
     public void testDeletionsInMaximal() {
         long[] nodes = {0, 1, 2, 3};
         Edge[] edges = {new Edge(nodes[0], nodes[2]),
@@ -234,11 +234,11 @@ public class TestDynamicVertexCover {
         assertTrue(isVertexCover(graph, dvc));
     }
 
-    @Test
     /**
      * Tests that after we delete an edge that is NOT in the
      * maximal matching we still have a VC (should be unaffected)
      */
+    @Test
     public void testDeletionsOutsideMaximal() {
         long[] nodes = {0, 1, 2};
         Edge[] edges = {new Edge(nodes[0], nodes[1]),
@@ -254,12 +254,12 @@ public class TestDynamicVertexCover {
         assertTrue(isVertexCover(graph, dvc));
     }
 
-    @Test
     /**
      * Inserts a generated graph into the VC and then deletes all edges.
      * At the end, we should have a VC of size 0 and a Maximal matching
      * of size 0
      */
+    @Test
     public void testDeleteAllEdges() {
         final int maxNumNodes = 100;
         int iteration = 0;
@@ -304,11 +304,12 @@ public class TestDynamicVertexCover {
         return false;
     }
 
-    @Test
+
     /**
      * Tests that the iterator in Vertex Cover returns the
      * correct node
      */
+    @Test
     public void testVertexCoverIterator(){
         int nodes = new Random().nextInt(1000);
         DynamicVertexCover vc = new DynamicVertexCover(TestUtils.genRandomGraph(nodes));

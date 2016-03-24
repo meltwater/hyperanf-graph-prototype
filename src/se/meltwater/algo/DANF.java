@@ -204,7 +204,6 @@ public class DANF {
      *
      * @param node
      * @throws InterruptedException If the parallel breadth-first search reached time-out
-     * @throws Exception
      */
     public void recalculateHistory(long node) throws InterruptedException {
         if(vc.isInVertexCover(node)) {

@@ -26,11 +26,11 @@ public class TestSimulatedGraph {
     final int nrTestIterations = 100;
     final int maxNodes = 100;
 
-    @Test
     /**
      * Generates a random graph and tests that Simulated Graph
      * returns the correct number of arcs.
      */
+    @Test
     public void testSimulatedGraphCorrectNumArcs() {
         int iteration = 0;
 
@@ -76,10 +76,10 @@ public class TestSimulatedGraph {
         });
     }
 
-    @Test
     /**
      * Tests that deleting non-existing edges dont affect the graph
      */
+    @Test
     public void testDeleteNonExistingEdge() {
         final int maxNodes = 100;
         final int maxNewEdges = 100;
@@ -104,22 +104,22 @@ public class TestSimulatedGraph {
         }
     }
 
-    @Test
     /**
      * Tests that an empty graph returns the correct numNodes
      * and numArcs
      */
+    @Test
     public void testSimulatedGraphCorrectNumNodesZero() {
         IGraph graph = new SimulatedGraph();
         assertEquals(0, graph.getNumberOfNodes());
         assertEquals(0, graph.getNumberOfArcs());
     }
 
-    @Test
     /**
      * Tests that after inserting a node larger than MAX_INT
      * simulated graph returns the correct value of nodes.
      */
+    @Test
     public void testSimulatedGraphCorrectNumNodesLarge() {
         int iteration = 0;
 
@@ -136,11 +136,11 @@ public class TestSimulatedGraph {
         }
     }
 
-    @Test
     /**
      * Test that after some node insertions the graph gives the correct number
      * of nodes and arcs.
      */
+    @Test
     public void testSimulatedGraphCorrectNumNodesSmall() {
         int iteration = 0;
 
@@ -160,11 +160,11 @@ public class TestSimulatedGraph {
 
 
 
-    @Test
     /**
      * Tests that the SimulatedGraphIterator crashes when the graph has
      * no more nodes to iterate.
      */
+    @Test
     public void testSimulatedGraphIteratorCrashWhenNoMoreNodes() {
         final int maxNodes = 100;
         SimulatedGraph graph = TestUtils.genRandomGraph(maxNodes);
@@ -185,10 +185,10 @@ public class TestSimulatedGraph {
         assertTrue(hadException);
     }
 
-    @Test
     /**
      * Tests that the SimulatedGraphNodeIterator skips to the correct node
      */
+    @Test
     public void testSimulatedGraphIteratorSkipNodes() {
         final int maxNodes = 100;
 
@@ -206,10 +206,10 @@ public class TestSimulatedGraph {
         }
     }
 
-    @Test
     /**
      *
      */
+    @Test
     public void testSuccessorIterator() {
         final int maxNodes = 100;
 
@@ -256,10 +256,10 @@ public class TestSimulatedGraph {
         }
     }
 
-    @Test
     /**
      * Tests that all edges are present and flipped in the transpose
      */
+    @Test
     public void testTranspose() {
         int iteration = 0;
 
@@ -285,20 +285,20 @@ public class TestSimulatedGraph {
         }
     }
 
-    @Test
     /**
      * Tests that we dont crash when transposing an empty graph
      */
+    @Test
     public void testTransposeEmptyGraph() {
         SimulatedGraph graph = new SimulatedGraph();
         IGraph tranpose = graph.transpose();
         assertTrue(tranpose != null);
     }
 
-    @Test
     /**
      * Transposing twice should give back the same graph
      */
+    @Test
     public void testTransposeTwice() {
         int iteration = 0;
 

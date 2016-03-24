@@ -30,11 +30,15 @@ public class TestEffectPropagation {
     int log2m;
     int h;
 
-    @Test
     /**
+     * <pre>{@code
      * 0 -> 2 -> N3
-     * 1 -刁
+     *      ^
+     *      |
+     *      1
+     * }</pre>
      */
+    @Test
     public void testOnlyIncomingEdgesSingleNewNode() throws InterruptedException, IOException {
         h = 4;
         log2m = 7;
@@ -54,12 +58,18 @@ public class TestEffectPropagation {
         assertEquals(1.0f, danf.count(3, h), epsilon);
     }
 
-    @Test
     /**
+     * <pre>{@code
+     *      1
+     *      |
+     *      v
      * 0 -> N4 -> 2
-     *    刁 \
-     * 1-/   \-> 3
+     *      |
+     *      v
+     *      3
+     * }</pre>
      */
+    @Test
     public void testIncomingAndOutgoingEdgesSingleNewNode() throws IOException, InterruptedException {
         h = 4;
         log2m = 7;
@@ -78,11 +88,13 @@ public class TestEffectPropagation {
         assertEquals(3.0f, danf.count(newNode, h), epsilon);
     }
 
-    @Test
     /**
+     * <pre>{@code
      * 0 -> 2 -> N4
      * 1 -> 3 -> N5
+     * }</pre>
      */
+    @Test
     public void testOnlyIncomingEdgesMultipleNewNodes() throws IOException, InterruptedException {
         h = 4;
         log2m = 7;
@@ -102,13 +114,15 @@ public class TestEffectPropagation {
         assertEquals(1.0f, danf.count(newNode2, h), epsilon);
     }
 
-    @Test
     /**
+     * <pre>{@code
      * 0 -> N2
      *      |
      *      v
      * 1 -> N3
+     * }</pre>
      */
+    @Test
     public void testIncomingAndOutgoingEdgesMultipleNewNodes() throws IOException, InterruptedException {
         h = 4;
         log2m = 7;
@@ -126,10 +140,12 @@ public class TestEffectPropagation {
         assertEquals(1.0f, danf.count(newNode2, h), epsilon);
     }
 
-    @Test
     /**
+     * <pre>{@code
      * N1 -> N2 -> 0
+     * }</pre>
      */
+    @Test
     public void testTwoNewNodes() throws IOException, InterruptedException {
         log2m = 10;
         h = 3;
@@ -149,13 +165,15 @@ public class TestEffectPropagation {
         assertEquals(3.0, danf.count(1, h), epsilon);
     }
 
-    @Test
     /**
+     * <pre>{@code
      * N2 -> 0
      * |
      * v
      * N3 -> 1
+     * }</pre>
      */
+    @Test
     public void testTwoNewNodesWithNeighbors() throws IOException, InterruptedException {
         log2m = 10;
         h = 3;
