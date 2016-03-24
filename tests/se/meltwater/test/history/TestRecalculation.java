@@ -105,6 +105,48 @@ public class TestRecalculation {
     }
 
     /**
+     *
+     * The graph:
+     * <pre>{@code
+     *  4N
+     *  |
+     *  v
+     *  2
+     *  |
+     *  v
+     *  0 --> 1
+     *  ^
+     *  |
+     *  3
+     *  ^
+     *  |
+     *  5N
+     *  }</pre>
+     */
+    @Test
+    public void testTwoNewNodesCorrectRecalculation() throws InterruptedException, IOException {
+        log2m = 10;
+        h = 3;
+
+        SimulatedGraph graph = new SimulatedGraph();
+        graph.addNode(5); /* Must be a node in the graph for HBoll */
+        graph.addEdge(new Edge(0,1));
+        graph.addEdge(new Edge(3,0));
+        graph.addEdge(new Edge(2,0));
+
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
+
+        DANF danf = pair.getKey();
+
+        danf.addEdges(new Edge(5,3),new Edge(4,2));
+
+        assertEquals(4.0, danf.count(5, h), epsilon);
+        assertEquals(4.0, danf.count(4, h), epsilon);
+    }
+
+    /**
      * Tests that a complete recalculation of a node gives the same
      * result as HyperBoll would.
      */
@@ -158,7 +200,7 @@ public class TestRecalculation {
                     neighbor = rand.nextInt((int)graph.getNumberOfNodes());
                 } while(boll.getCounter().hasSameRegisters(node, neighbor));
 
-                nh.addEdge(new Edge(node, neighbor));
+                nh.addEdges(new Edge(node, neighbor));
                 nh.recalculateHistory(node);
                 history2 = nh.count(node);
                 for (int j = 0; j < history.length; j++) {
@@ -258,7 +300,7 @@ public class TestRecalculation {
             Edge generatedEdge = new Edge(from, to);
 
 
-            danf.addEdge(generatedEdge);
+            danf.addEdges(generatedEdge);
             addedNodes.add(generatedEdge.from);
         }
 

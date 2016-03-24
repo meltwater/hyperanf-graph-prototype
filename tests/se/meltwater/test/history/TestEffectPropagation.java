@@ -59,6 +59,41 @@ public class TestEffectPropagation {
     }
 
     /**
+     *
+     * The graph:
+     * <pre>{@code
+     *  0N
+     *  |
+     *  v
+     *  2-->3
+     *  ^
+     *  |
+     *  1N
+     *  }</pre>
+     */
+    @Test
+    public void testTwoNewNodesCorrectRecalculation() throws InterruptedException, IOException {
+        log2m = 10;
+        h = 3;
+
+        SimulatedGraph graph = new SimulatedGraph();
+        graph.addNode(3); /* Must be a node in the graph for HBoll */
+        graph.addEdge(new Edge(2,3));
+
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
+
+        DANF danf = pair.getKey();
+
+        danf.addEdges(new Edge(1, 2));
+        //danf.addEdge(new Edge(0,2));
+
+        //assertEquals(3.0, danf.count(0, h), epsilon);
+        assertEquals(3.0, danf.count(1, h), epsilon);
+    }
+
+    /**
      * <pre>{@code
      *      1
      *      |

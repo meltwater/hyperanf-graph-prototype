@@ -25,6 +25,11 @@ public class Edge {
         return edge.from == from && edge.to == to;
     }
 
+    @Override
+    public String toString(){
+        return "(" + from + ", " + to + ")";
+    }
+
     public long from;
     public long to;
 }
