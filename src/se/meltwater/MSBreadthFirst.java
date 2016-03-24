@@ -139,7 +139,6 @@ public class MSBreadthFirst {
      * @return An array of BitSets where the index in the list specifies the node and the
      * set bits indicate which bfs's that reached it.
      * @throws InterruptedException
-     * @throws Exception May throw any exception raised by any of the threads
      */
     public BitSet[] breadthFirstSearch() throws InterruptedException {
 
@@ -279,10 +278,12 @@ public class MSBreadthFirst {
             for (long d = 0; d < degree; d++) {
                 neighbor = (int)neighbors.nextLong();
                 synchronized (visitNext[neighbor]) {
-                    if(hasTraveler && visitNext[neighbor].cardinality() != 0)
-                        travelersNext[neighbor] = travelersNext[neighbor].merge(travelers[node]);
-                    else if(hasTraveler)
-                        travelersNext[neighbor] = travelers[node];
+                    if(hasTraveler) {
+                        if (visitNext[neighbor].cardinality() != 0)
+                            travelersNext[neighbor] = travelersNext[neighbor].merge(travelers[node], iteration + 1);
+                        else
+                            travelersNext[neighbor] = travelers[node];
+                    }
                     visitNext[neighbor].or(visit[node]);
                 }
             }
@@ -337,9 +338,10 @@ public class MSBreadthFirst {
          * the travelers that are at other nodes as well.
          *
          * @param mergeWith The other traveler arriving at a given node at the same time.
+         * @param depth The current depth of the BFS
          * @return The merged traveler
          */
-        Traveler merge(Traveler mergeWith);
+        Traveler merge(Traveler mergeWith, int depth);
 
     }
 
