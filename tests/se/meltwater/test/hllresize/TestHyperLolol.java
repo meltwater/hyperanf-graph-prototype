@@ -126,6 +126,35 @@ public class TestHyperLolol {
         }
     }
 
+    @Test
+    public void testAddOnRegisters() {
+        int iteration = 0;
+        while(iteration++ < nrTestIterations) {
+            setupParameters();
+
+            int newNode = rand.nextInt(arraySize + 1);
+            long hash = rand.nextLong();
+            counter.addCounters(1);
+
+            long[] currentCounter = new long[counter.counterLongwords];
+            counter.getCounter(newNode, currentCounter);
+
+            counter.add(newNode, hash);
+            counter.add(hash, currentCounter);
+
+            long[] counterAfterInsertion = new long[counter.counterLongwords];
+            counter.getCounter(newNode, counterAfterInsertion);
+
+            boolean allZero = true;
+            for (int i = 0; i < currentCounter.length; i++) {
+                allZero = allZero && (currentCounter[i] == 0);
+            }
+            assertFalse(allZero);
+
+            assertArrayEquals(currentCounter, counterAfterInsertion);
+        }
+    }
+
     /**
      * Tests that all previous values are kept after increasing the counter
      * size and that the new counters are initiated to zero.

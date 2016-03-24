@@ -1,16 +1,16 @@
 package se.meltwater.algo;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
+
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import javafx.util.Pair;
 import se.meltwater.MSBreadthFirst;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
-import java.util.ArrayList;
+
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,14 +23,18 @@ import java.util.Map;
  */
 public class DANF {
     private IGraph graph;
+    private IGraph graphTranspose;
     private IDynamicVertexCover vc;
 
     private HashMap<Long,Long> counterIndex;
     private long nextFreeCounterIndex = 0;
 
     private HyperLolLolCounterArray[] history;
+    private int counterLongWords;
 
     private int h;
+
+    private final int STATIC_LOLOL = 0;
 
     public DANF(IDynamicVertexCover vertexCover, int h, IGraph graph){
 
@@ -38,6 +42,7 @@ public class DANF {
         this.h = h;
         history = new HyperLolLolCounterArray[h];
         this.graph = graph;
+        this.graphTranspose = graph.transpose();
 
         counterIndex = new HashMap<>();
         for(long node : vc.getNodesInVertexCover()) {
@@ -48,21 +53,29 @@ public class DANF {
 
     public void addEdges(Edge ... edges) throws InterruptedException {
         Map<Long, IDynamicVertexCover.AffectedState> affectedNodes = new HashMap<>();
-        for(Edge edge : edges) {
+
+        Edge[] flippedEdges = new Edge[edges.length];
+        for(int i = 0; i < edges.length; i++) {
+            Edge edge = edges[i];
             addNewNodes(edge);
             affectedNodes.putAll(vc.insertEdge(edge));
+            flippedEdges[i] = edge.flip();
         }
 
         graph.addEdges(edges);
+        graphTranspose.addEdges(flippedEdges);
 
         /* As inserting edges can only result in nodes being added
          * to the VC, all affected nodes will be of type AffectedState.Added
          * and will need new memory for all of these */
         allocateMemoryInBottomHistoryCounters(affectedNodes.size());
 
-        updateAffectedNodes(affectedNodes); //TODO FIX THEZ
-    }
+        updateAffectedNodes(affectedNodes);
 
+        for (int i = 0; i < edges.length; i++) {
+            propagate(edges[i]);
+        }
+    }
 
     /**
      * Adds new nodes in the edge to the graph.
@@ -118,6 +131,7 @@ public class DANF {
             long previousHighestNode = graph.getNumberOfNodes();
             long nodesToAdd = node - previousHighestNode + 1;
             history[h-1].addCounters(nodesToAdd);
+            history[h-1].add(node, node);
         }
     }
 
@@ -157,6 +171,7 @@ public class DANF {
      * @param h The level to set
      */
     public void addHistory(HyperLolLolCounterArray counter, int h){
+        counterLongWords = counter.counterLongwords;
         if(h == this.h) {
             history[h-1] = counter;
         } else {
@@ -227,13 +242,47 @@ public class DANF {
 
     }
 
-    public void calculateHistory(long node, HyperLolLolCounterArray addInto){
-        if(vc.isInVertexCover(node)){
+    public long[][] calculateHistory(long node){
+        long[][] historyBits = new long[h + 1][counterLongWords];
+        if(vc.isInVertexCover(node)) {
+            history[STATIC_LOLOL].add(node, historyBits[0]);
+            for (int i = 1; i < h + 1; i++) {
+                history[i-1].getCounter(getNodeIndex(node, i), historyBits[i]);
+            }
+        } else {
+            LazyLongIterator successors = graph.getSuccessors(node);
+            long degree = graph.getOutdegree(node);
 
+            for (int i = 0; i < h + 1; i++) {
+                history[STATIC_LOLOL].add(node, historyBits[i]);
+            }
+
+            while(degree-- > 0 ) {
+                long neighbor = successors.nextLong();
+
+                history[STATIC_LOLOL].add(neighbor, historyBits[1]);
+                for (int i = 1; i < h; i++) {
+                    history[STATIC_LOLOL].add(neighbor, historyBits[i + 1]);
+
+                    long[] neighborBits = new long[counterLongWords];
+                    history[i-1].getCounter(getNodeIndex(neighbor, i), neighborBits);
+                    history[i].max(historyBits[i + 1], neighborBits);
+                }
+            }
         }
+        return historyBits;
     }
 
-    private void propagate(long node){
+    private void propagate(Edge edge) throws InterruptedException {
+        long toNode = edge.to;
+        long[][] historyBits = calculateHistory(toNode);
+        PropagationTraveler propagationTraveler = new PropagationTraveler(historyBits);
+
+        MSBreadthFirst msbfs = new MSBreadthFirst(new int[]{(int)toNode},
+                new MSBreadthFirst.Traveler[]{propagationTraveler}, graphTranspose,
+                propagateVisitor());
+        msbfs.breadthFirstSearch();
+
 
         /*
         if reg(u,index(v)) > hash(v) //Our added node (v) isn’t max
@@ -257,8 +306,47 @@ public class DANF {
 
     private MSBreadthFirst.Visitor propagateVisitor(){
         return (long visitNode, BitSet bfsVisits, BitSet seen, int depth, MSBreadthFirst.Traveler t) -> {
+            PropagationTraveler propTraver = (PropagationTraveler) t;
 
+            if(vc.isInVertexCover(visitNode)) {
+                long[] visitNodeBits = new long[counterLongWords];
+                history[h-1].getCounter(visitNode, visitNodeBits);
+                history[h-1].max(visitNodeBits, propTraver.bits[propTraver.bits.length - 1]);
+                history[h-1].setCounter(visitNodeBits, visitNode);
+            } else {
+                long[] visitNodeBits = new long[counterLongWords];
+                history[h-1].getCounter(visitNode, visitNodeBits);
+                history[h-1].max(visitNodeBits, propTraver.bits[propTraver.bits.length - 1]);
+                history[h-1].setCounter(visitNodeBits, visitNode);
+            }
+
+
+            if(depth == h) {
+                bfsVisits.clear();
+            }
         };
+    }
+
+
+    private class PropagationTraveler implements MSBreadthFirst.Traveler{
+        public long[][] bits;
+
+        public PropagationTraveler(long[][] bits){
+            this.bits = bits;
+        }
+
+        @Override
+        public MSBreadthFirst.Traveler merge(MSBreadthFirst.Traveler mergeWith, int depth) {
+            long[][] clonedBits = new long[h + 1 - depth][counterLongWords];
+            PropagationTraveler otherTraveler = (PropagationTraveler) mergeWith;
+
+            for (int i = 0; i < clonedBits.length; i++) {
+                clonedBits[i] = bits[i].clone();
+                history[STATIC_LOLOL].max(clonedBits[i], otherTraveler.bits[i]);
+            }
+
+            return new PropagationTraveler(clonedBits);
+        }
     }
 
     private MSBreadthFirst.Visitor recalculateVisitor(int[] bfsSources){

@@ -24,6 +24,7 @@ import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.bits.LongArrayBitVector;
+import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.fastutil.longs.LongBigList;
 import javafx.util.Pair;
 
@@ -521,6 +522,15 @@ public class HyperLolLolCounterArray implements Serializable, Cloneable {
         final LongBigList l = registers[ chunk( k ) ];
         final long offset = ( ( k << log2m ) + j ) & CHUNK_MASK;
         l.set( offset, Math.max( r + 1, l.getLong( offset ) ) );
+    }
+
+    public void add(final long v, long[] bits) {
+        final long x = jenkins( v, seed );
+        final int j = (int)( x & mMinus1 );
+        final int r = Long.numberOfTrailingZeros( x >>> log2m | sentinelMask );
+
+        LongBigList asList = LongArrayBitVector.wrap( bits ).asLongBigList( registerSize );
+        asList.set(j, Math.max(r + 1, asList.getLong(j)));
     }
 
     //TODO Code duplication add() and wouldChange()

@@ -25,10 +25,27 @@ public class TestEffectPropagation {
      * make sure we always get the same result from HyperBoll */
     final long fixedSeed = 8516942932596937874L;
 
-    final float epsilon = 0.05f;
+    final float epsilon = 0.1f;
 
     int log2m;
     int h;
+
+    /**
+     * 0 -> N1
+     * @throws IOException
+     */
+    @Test
+    public void testOnlyIncomingEdgeSingleNewNode() throws IOException, InterruptedException {
+        h = 4;
+        log2m = 7;
+
+        DANF danf = setupGraphAndRunHyperBall(h, log2m, 0);
+
+        danf.addEdges(new Edge(0, 1));
+        assertEquals(2.0, danf.count(0, h), epsilon);
+    }
+
+
 
     /**
      * <pre>{@code
@@ -58,40 +75,6 @@ public class TestEffectPropagation {
         assertEquals(1.0f, danf.count(3, h), epsilon);
     }
 
-    /**
-     *
-     * The graph:
-     * <pre>{@code
-     *  0N
-     *  |
-     *  v
-     *  2-->3
-     *  ^
-     *  |
-     *  1N
-     *  }</pre>
-     */
-    @Test
-    public void testTwoNewNodesCorrectRecalculation() throws InterruptedException, IOException {
-        log2m = 10;
-        h = 3;
-
-        SimulatedGraph graph = new SimulatedGraph();
-        graph.addNode(3); /* Must be a node in the graph for HBoll */
-        graph.addEdge(new Edge(2,3));
-
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
-
-        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
-
-        DANF danf = pair.getKey();
-
-        danf.addEdges(new Edge(1, 2));
-        //danf.addEdge(new Edge(0,2));
-
-        //assertEquals(3.0, danf.count(0, h), epsilon);
-        assertEquals(3.0, danf.count(1, h), epsilon);
-    }
 
     /**
      * <pre>{@code
@@ -139,14 +122,19 @@ public class TestEffectPropagation {
         final int newNode1 = 4;
         final int newNode2 = 5;
 
+        assertEquals(1.0f, danf.count(2, h), epsilon);
+
         danf.addEdges(new Edge(2, newNode1), new Edge(3, newNode2));
 
-        assertEquals(3.0f, danf.count(0, h), epsilon);
-        assertEquals(3.0f, danf.count(1, h), epsilon);
-        assertEquals(2.0f, danf.count(2, h), epsilon);
-        assertEquals(2.0f, danf.count(3, h), epsilon);
+
         assertEquals(1.0f, danf.count(newNode1, h), epsilon);
         assertEquals(1.0f, danf.count(newNode2, h), epsilon);
+        assertEquals(2.0f, danf.count(2, h), epsilon);
+        assertEquals(2.0f, danf.count(3, h), epsilon);
+        assertEquals(3.0f, danf.count(0, h), epsilon);
+        assertEquals(3.0f, danf.count(1, h), epsilon);
+
+
     }
 
     /**

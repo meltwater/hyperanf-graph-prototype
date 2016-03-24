@@ -25,6 +25,10 @@ public class Edge {
         return edge.from == from && edge.to == to;
     }
 
+    public Edge flip() {
+        return new Edge(to, from);
+    }
+
     @Override
     public String toString(){
         return "(" + from + ", " + to + ")";
