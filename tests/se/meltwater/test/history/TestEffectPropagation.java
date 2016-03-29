@@ -139,6 +139,30 @@ public class TestEffectPropagation {
 
     /**
      * <pre>{@code
+     * 0 -> 1 -> 2 -> 3N -> 4N
+     * }</pre>
+     */
+    @Test
+    public void checkPropagationToNonVCNode() throws IOException, InterruptedException {
+        h = 3;
+        log2m = 7;
+
+        DANF danf = setupGraphAndRunHyperBall(h,log2m,2,new Edge(1,2));
+        danf.addEdges(new Edge(0,1));
+
+        final int newNode = 3;
+
+        danf.addEdges(new Edge(3,4));
+        danf.addEdges(new Edge(2,3));
+
+        assertArrayEquals(new double[]{2.0,3.0,3.0},danf.count(2),epsilon);
+        assertArrayEquals(new double[]{2.0,3.0,4.0},danf.count(1),epsilon);
+        assertEquals(4.0,danf.count(0,h),epsilon);
+
+    }
+
+    /**
+     * <pre>{@code
      * 0 -> N2
      *      |
      *      v

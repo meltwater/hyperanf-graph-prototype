@@ -241,6 +241,10 @@ public class HyperLolLolCounterArray implements Serializable, Cloneable {
         longwordAligned = counterSize % Long.SIZE == 0;
 
         // We initialise the masks for the broadword code in max().
+        // Note that the bits will be shifted by a multiple of registerSize
+        // times after registerSize long-words. This means that the pattern of the masks
+        // will repeat after that. We only need the first registerSize long-words to
+        // mask an infinite number of counters by modular arithmetic.
         msbMask = new long[ registerSize ];
         lsbMask = new long[ registerSize ];
         for( int i = registerSize - 1; i < msbMask.length * Long.SIZE; i += registerSize )
@@ -524,6 +528,15 @@ public class HyperLolLolCounterArray implements Serializable, Cloneable {
         l.set( offset, Math.max( r + 1, l.getLong( offset ) ) );
     }
 
+    /**
+     * Adds an element to the specified register.
+     *
+     * <p>This is a low-level method that should be used only after having understood in detail
+     * the inner workings of this class.
+     *
+     * @param v
+     * @param bits
+     */
     public void add(final long v, long[] bits) {
         final long x = jenkins( v, seed );
         final int j = (int)( x & mMinus1 );
@@ -570,7 +583,7 @@ public class HyperLolLolCounterArray implements Serializable, Cloneable {
 
     /** Estimates the number of distinct elements that have been added to a given counter so far.
      *
-     * <p>This is an low-level method that should be used only after having understood in detail
+     * <p>This is a low-level method that should be used only after having understood in detail
      * the inner workings of this class.
      *
      * @param bits the bit array containing the counter.
@@ -805,6 +818,8 @@ public class HyperLolLolCounterArray implements Serializable, Cloneable {
 
 
     /** Performs a multiple precision subtraction, leaving the result in the first operand.
+     * When accessing the i:th element of <i>y</i>, then {@code y[i % mod]} will be used where
+     * {@code mod} is the specified parameter.
      *
      * @param x an array of longs.
      * @param y an array of longs that will be subtracted from <code>x</code>.
@@ -830,7 +845,8 @@ public class HyperLolLolCounterArray implements Serializable, Cloneable {
         max( x, y, new long[ x.length ], new long[ y.length ] );
     }
 
-    /** Computes the register-by-register maximum of two counters.
+    /** Computes the register-by-register maximum of two counters or two lists of counters. Note
+     * that the offset to the first counter must be zero bits.
      *
      * @param x a first array of at least {@link #counterLongwords} longs containing a counter.
      * @param y a second array of at least {@link #counterLongwords} longs containing a counter.

@@ -310,6 +310,7 @@ public class DANF {
             travelers[i] = new PropagationTraveler(calculateHistory(toNodes[i]));
         }
 
+        //TODO: Currently a BFS is done on all neighbors of the toNodes but we only need to do it along the added edge.
         MSBreadthFirst msbfs = new MSBreadthFirst(toNodes,travelers, graphTranspose, propagateVisitor());
         msbfs.breadthFirstSearch();
 
@@ -336,7 +337,7 @@ public class DANF {
             } else {
                 long[] visitNodeBits = new long[counterLongWords];
                 history[h-1].getCounter(visitNode, visitNodeBits);
-                history[h-1].max(visitNodeBits, propTraver.bits[propTraver.bits.length - 1]);
+                history[h-1].max(visitNodeBits, propTraver.bits[h-depth]);
                 history[h-1].setCounter(visitNodeBits, visitNode);
             }
 
