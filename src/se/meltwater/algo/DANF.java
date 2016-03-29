@@ -19,7 +19,8 @@ import java.util.Map;
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
  *
- * // TODO class description
+ *
+ *
  */
 public class DANF {
     private IGraph graph;
@@ -72,9 +73,11 @@ public class DANF {
 
         updateAffectedNodes(affectedNodes);
 
-        for (int i = 0; i < edges.length; i++) {
-            propagate(edges[i]);
+        long[] nodes = new long[edges.length];
+        for (int i = 0; i < edges.length ; i++) {
+            nodes[i] = edges[i].to;
         }
+        propagate(nodes);
     }
 
     /**
@@ -242,6 +245,33 @@ public class DANF {
 
     }
 
+    private MSBreadthFirst.Visitor recalculateVisitor(long[] bfsSources){
+        return (long visitNode, BitSet bfsVisits, BitSet seen, int depth, MSBreadthFirst.Traveler t) -> {
+
+            if(depth > 0){
+                synchronized (this) {
+                    if (vc.isInVertexCover(visitNode)) {
+                        for (int i = h - 1; i >= depth; i--) {
+                            long visitIndex = getNodeIndex(visitNode, i - depth + 1);
+                            int bfs = -1;
+                            while((bfs = bfsVisits.nextSetBit(bfs+1)) != -1)
+                                history[i].union(getNodeIndex(bfsSources[bfs],i+1), history[i - depth], visitIndex);
+                        }
+
+                        int bfs = -1;
+                        while((bfs = bfsVisits.nextSetBit(bfs+1)) != -1)
+                            history[depth - 1].add(getNodeIndex(bfsSources[bfs], depth), visitNode);
+                        bfsVisits.clear();
+                    } else {
+                        int bfs = -1;
+                        while((bfs = bfsVisits.nextSetBit(bfs+1)) != -1)
+                            history[depth - 1].add(getNodeIndex(bfsSources[bfs], depth), visitNode);
+                    }
+                }
+            }
+        };
+    }
+
     public long[][] calculateHistory(long node){
         long[][] historyBits = new long[h + 1][counterLongWords];
         if(vc.isInVertexCover(node)) {
@@ -273,46 +303,36 @@ public class DANF {
         return historyBits;
     }
 
-    private void propagate(Edge edge) throws InterruptedException {
-        long toNode = edge.to;
-        long[][] historyBits = calculateHistory(toNode);
-        PropagationTraveler propagationTraveler = new PropagationTraveler(historyBits);
+    private void propagate(long ... toNodes) throws InterruptedException {
 
-        MSBreadthFirst msbfs = new MSBreadthFirst(new long[]{toNode},
-                new MSBreadthFirst.Traveler[]{propagationTraveler}, graphTranspose,
-                propagateVisitor());
+        PropagationTraveler[] travelers = new PropagationTraveler[toNodes.length];
+        for (int i = 0; i < toNodes.length ; i++) {
+            travelers[i] = new PropagationTraveler(calculateHistory(toNodes[i]));
+        }
+
+        MSBreadthFirst msbfs = new MSBreadthFirst(toNodes,travelers, graphTranspose, propagateVisitor());
         msbfs.breadthFirstSearch();
 
-
-        /*
-        if reg(u,index(v)) > hash(v) //Our added node (v) isn’t max
-             if u is in vertex cover
-                set H = registry history of u
-             else
-                set H_0 = this node
-                set H_x = union of H_{x-1} from all incoming neighbors
-             check which level i in H that reg(u,index(v)) first appears.
-             if(i <= l) // reg(u,index(v)) reaches further than hash(v)
-                prune this DFS
-
-          if u is in vertex cover
-             forall k: h>k>=l; H_k.reg(u,index(v)) := hash(v)
-          else
-             reg(u,index(v)) := hash(v)
-
-        reg(u,i) = register of u at index i
-         */
     }
 
     private MSBreadthFirst.Visitor propagateVisitor(){
         return (long visitNode, BitSet bfsVisits, BitSet seen, int depth, MSBreadthFirst.Traveler t) -> {
+
+            if(depth == 0)
+                return;
+
             PropagationTraveler propTraver = (PropagationTraveler) t;
 
             if(vc.isInVertexCover(visitNode)) {
                 long[] visitNodeBits = new long[counterLongWords];
-                history[h-1].getCounter(visitNode, visitNodeBits);
-                history[h-1].max(visitNodeBits, propTraver.bits[propTraver.bits.length - 1]);
-                history[h-1].setCounter(visitNodeBits, visitNode);
+                long visitNodeHistoryIndex = getNodeIndex(visitNode,0);
+                long visitNodeIndex;
+                for (int i = 0; i < h+1-depth ; i++) {
+                    visitNodeIndex = i+depth-1 == h-1 ? visitNode : visitNodeHistoryIndex;
+                    history[i+depth-1].getCounter(visitNodeIndex,visitNodeBits);
+                    history[i+depth-1].max(visitNodeBits,propTraver.bits[i]);
+                    history[i+depth-1].setCounter(visitNodeBits,visitNodeIndex);
+                }
             } else {
                 long[] visitNodeBits = new long[counterLongWords];
                 history[h-1].getCounter(visitNode, visitNodeBits);
@@ -346,33 +366,6 @@ public class DANF {
 
             return new PropagationTraveler(clonedBits);
         }
-    }
-
-    private MSBreadthFirst.Visitor recalculateVisitor(long[] bfsSources){
-        return (long visitNode, BitSet bfsVisits, BitSet seen, int depth, MSBreadthFirst.Traveler t) -> {
-
-            if(depth > 0){
-                synchronized (this) {
-                    if (vc.isInVertexCover(visitNode)) {
-                        for (int i = h - 1; i >= depth; i--) {
-                            long visitIndex = getNodeIndex(visitNode, i - depth + 1);
-                            int bfs = -1;
-                            while((bfs = bfsVisits.nextSetBit(bfs+1)) != -1)
-                                history[i].union(getNodeIndex(bfsSources[bfs],i+1), history[i - depth], visitIndex);
-                        }
-
-                        int bfs = -1;
-                        while((bfs = bfsVisits.nextSetBit(bfs+1)) != -1)
-                            history[depth - 1].add(getNodeIndex(bfsSources[bfs], depth), visitNode);
-                        bfsVisits.clear();
-                    } else {
-                        int bfs = -1;
-                        while((bfs = bfsVisits.nextSetBit(bfs+1)) != -1)
-                            history[depth - 1].add(getNodeIndex(bfsSources[bfs], depth), visitNode);
-                    }
-                }
-            }
-        };
     }
 
 }
