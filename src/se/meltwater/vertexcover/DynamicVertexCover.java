@@ -170,9 +170,9 @@ public class DynamicVertexCover implements IDynamicVertexCover {
      */
     public void checkIncomingEdgesToDeletedEndpoints(Edge edge, Set<Long> addedNodes) {
         NodeIterator nodeIt = graph.getNodeIterator();
-        for(int currentNode = 0; currentNode < graph.getNumberOfNodes(); currentNode++) {
+        for(long currentNode = 0; currentNode < graph.getNumberOfNodes(); currentNode++) {
             nodeIt.nextLong();
-            if(isInVertexCover((long)currentNode)) {
+            if(isInVertexCover(currentNode)) {
                 continue;
             }
 
@@ -276,7 +276,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         return vertexCoverz.count();
     }
 
-    public int getMaximalMatchingSize() {
+    public long getMaximalMatchingSize() {
         return maximalMatching.size();
     }
 
