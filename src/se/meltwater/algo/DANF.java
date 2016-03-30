@@ -73,11 +73,7 @@ public class DANF {
 
         updateAffectedNodes(affectedNodes);
 
-        long[] nodes = new long[edges.length];
-        for (int i = 0; i < edges.length ; i++) {
-            nodes[i] = edges[i].to;
-        }
-        propagate(nodes);
+        propagate(edges);
     }
 
     /**
@@ -303,24 +299,24 @@ public class DANF {
         return historyBits;
     }
 
-    private void propagate(long ... toNodes) throws InterruptedException {
+    private void propagate(Edge ... edges) throws InterruptedException {
 
-        PropagationTraveler[] travelers = new PropagationTraveler[toNodes.length];
-        for (int i = 0; i < toNodes.length ; i++) {
-            travelers[i] = new PropagationTraveler(calculateHistory(toNodes[i]));
+        PropagationTraveler[] travelers = new PropagationTraveler[edges.length];
+        long[] fromNodes = new long[edges.length];
+        for (int i = 0; i < fromNodes.length ; i++) {
+            travelers[i] = new PropagationTraveler(calculateHistory(edges[i].to));
+            fromNodes[i] = edges[i].from;
         }
 
-        //TODO: Currently a BFS is done on all neighbors of the toNodes but we only need to do it along the added edge.
-        MSBreadthFirst msbfs = new MSBreadthFirst(toNodes,travelers, graphTranspose, propagateVisitor());
+        MSBreadthFirst msbfs = new MSBreadthFirst(fromNodes,travelers, graphTranspose, propagateVisitor());
         msbfs.breadthFirstSearch();
 
     }
 
     private MSBreadthFirst.Visitor propagateVisitor(){
-        return (long visitNode, BitSet bfsVisits, BitSet seen, int depth, MSBreadthFirst.Traveler t) -> {
+        return (long visitNode, BitSet bfsVisits, BitSet seen, int d, MSBreadthFirst.Traveler t) -> {
 
-            if(depth == 0)
-                return;
+            int depth = d+1;
 
             PropagationTraveler propTraver = (PropagationTraveler) t;
 
@@ -356,7 +352,8 @@ public class DANF {
         }
 
         @Override
-        public MSBreadthFirst.Traveler merge(MSBreadthFirst.Traveler mergeWith, int depth) {
+        public MSBreadthFirst.Traveler merge(MSBreadthFirst.Traveler mergeWith, int d) {
+            int depth = d+1;
             long[][] clonedBits = new long[h + 1 - depth][counterLongWords];
             PropagationTraveler otherTraveler = (PropagationTraveler) mergeWith;
 
