@@ -2,6 +2,7 @@ package se.meltwater.test.history;
 
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
+import it.unimi.dsi.bits.LongArrayBitVector;
 import javafx.util.Pair;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -253,12 +254,24 @@ public class TestRecalculation {
      */
     private void assertCurrentCountIsSameAsRecalculatedCount(DANF danf, DynamicVertexCover dvc) throws InterruptedException {
         double[] history;
-        for(long node : dvc.getNodesInVertexCover()){
+
+        LongArrayBitVector vcNodes = dvc.getNodesInVertexCover();
+        long node = 0;
+        while((node = vcNodes.nextOne(node)) != -1) {
             history = danf.count(node);
             danf.recalculateHistory(node);
 
             assertArrayEquals("Failed for node " + node,history, danf.count(node), 0.01);
+
+            node = node + 1;
         }
+
+        /*for(long node : dvc.getNodesInVertexCover()){
+            history = danf.count(node);
+            danf.recalculateHistory(node);
+
+            assertArrayEquals("Failed for node " + node,history, danf.count(node), 0.01);
+        }*/
     }
 
     /**

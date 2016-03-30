@@ -2,6 +2,7 @@ package se.meltwater.algo;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 
+import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import se.meltwater.MSBreadthFirst;
@@ -46,9 +47,16 @@ public class DANF {
         this.graphTranspose = graph.transpose();
 
         counterIndex = new HashMap<>();
-        for(long node : vc.getNodesInVertexCover()) {
-            insertNodeToCounterIndex(node);
+
+        LongArrayBitVector vcNodes = vc.getNodesInVertexCover();
+        long nextNode = 0;
+        while((nextNode = vcNodes.nextOne(nextNode)) != -1) {
+            insertNodeToCounterIndex(nextNode);
+            nextNode = nextNode + 1;
         }
+        /*for(long node : vc.getNodesInVertexCover()) {
+            insertNodeToCounterIndex(node);
+        }*/
     }
 
 

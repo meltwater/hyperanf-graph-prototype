@@ -543,6 +543,7 @@ public class HyperLolLolCounterArray implements Serializable, Cloneable {
         final int r = Long.numberOfTrailingZeros( x >>> log2m | sentinelMask );
 
         LongBigList asList = LongArrayBitVector.wrap( bits ).asLongBigList( registerSize );
+
         asList.set(j, Math.max(r + 1, asList.getLong(j)));
     }
 

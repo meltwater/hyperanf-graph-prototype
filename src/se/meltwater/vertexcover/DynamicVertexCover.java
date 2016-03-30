@@ -2,6 +2,8 @@ package se.meltwater.vertexcover;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
+import it.unimi.dsi.bits.LongArrayBitVector;
+import it.unimi.dsi.fastutil.longs.LongBigArrayBigList;
 import it.unimi.dsi.fastutil.objects.Object2BooleanArrayMap;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
@@ -26,10 +28,13 @@ import java.util.*;
 public class DynamicVertexCover implements IDynamicVertexCover {
 
     private HashMap<Long, Long> maximalMatching = new HashMap<>();
-    private BitSet vertexCover = new BitSet();
+    private LongArrayBitVector vertexCoverz;
     private IGraph graph;
+    private float resizeFactor = 1.1f;
 
     public DynamicVertexCover(IGraph graph) {
+        vertexCoverz = LongArrayBitVector.ofLength(1);
+
         this.graph = graph;
 
         graph.iterateAllEdges(edge -> {
@@ -197,7 +202,10 @@ public class DynamicVertexCover implements IDynamicVertexCover {
 
     @Override
     public boolean isInVertexCover(long node) {
-        return vertexCover.get((int)node);
+        if(vertexCoverz.size64() <= node) {
+            return false;
+        }
+        return vertexCoverz.getBoolean(node);
     }
 
     public boolean isInMaximalMatching(Edge edge) {
@@ -218,8 +226,10 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     private void addEdgeToVertexCover(Edge edge) {
-        vertexCover.set((int)edge.from);
-        vertexCover.set((int)edge.to);
+        //vertexCoverz.length(Math.max(edge.from, edge.to) + 1);
+        checkArrayCapacity(edge);
+        vertexCoverz.set(edge.from, true);
+        vertexCoverz.set(edge.to, true);
     }
 
     private void removeEdgeFromMaximalMatching(Edge edge) {
@@ -231,17 +241,29 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     private void removeEdgeFromVertexCover(Edge edge) {
-        vertexCover.set((int)edge.from, false);
-        vertexCover.set((int)edge.to,   false);
+
+        //vertexCoverz.length(Math.max(edge.from, edge.to) + 1);
+        checkArrayCapacity(edge);
+        vertexCoverz.set(edge.from, false);
+        vertexCoverz.set(edge.to,   false);
+    }
+
+    public void checkArrayCapacity(Edge edge) {
+        long largestNode = Math.max(edge.from, edge.to);
+        long limit = vertexCoverz.length();
+
+        if (limit < largestNode + 1) {
+            long minimalIncreaseSize = largestNode + 1 - limit;
+            double resizePow = Math.ceil(Math.log((limit + minimalIncreaseSize) / (float)limit ) * (1/Math.log(resizeFactor)));
+            long newLimit = (long)(limit * Math.pow(resizeFactor, resizePow));
+
+            vertexCoverz.length(newLimit);
+        }
     }
 
     @Override
-    public long[] getNodesInVertexCover(){
-        long[] ret = new long[vertexCover.cardinality()];
-        int node = -1, i = 0;
-        while ((node = vertexCover.nextSetBit(node+1)) != -1)
-            ret[i++] = node;
-        return ret;
+    public LongArrayBitVector getNodesInVertexCover(){
+        return vertexCoverz;
     }
 
     @Override
@@ -250,20 +272,22 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     @Override
-    public int getVertexCoverSize() {
-        return vertexCover.cardinality();
+    public long getVertexCoverSize() {
+        return vertexCoverz.count();
     }
 
     public int getMaximalMatchingSize() {
         return maximalMatching.size();
     }
 
+
+
     private class VertexCoverIterator implements LazyLongIterator{
-        private int last = -1;
+        private long last = -1;
 
         @Override
         public long nextLong() {
-            return last = vertexCover.nextSetBit(last+1);
+            return last = vertexCoverz.nextOne(last+1);
         }
 
         @Override

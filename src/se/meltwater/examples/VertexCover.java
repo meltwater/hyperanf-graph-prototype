@@ -61,7 +61,7 @@ public class VertexCover {
         long end = System.currentTimeMillis();
 
         int maximalMatchingSize = dvc.getMaximalMatchingSize();
-        int vertexCoverSize = dvc.getVertexCoverSize();
+        long vertexCoverSize = dvc.getVertexCoverSize();
         long nodesInGraph = numberOfNodes;
 
         System.out.println("Maximal matching of size: " + maximalMatchingSize);
