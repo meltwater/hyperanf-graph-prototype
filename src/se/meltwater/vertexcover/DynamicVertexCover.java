@@ -24,21 +24,23 @@ import java.util.*;
  *
  */
 public class DynamicVertexCover implements IDynamicVertexCover {
-    private long[][] maximalMatchingz;
+    private long[][] maximalMatching;
+    private long maximalMatchingLength;
 
 
-    private LongArrayBitVector vertexCoverz;
+    private LongArrayBitVector vertexCover;
     private IGraph graph;
     private float resizeFactor = 1.1f;
 
     public DynamicVertexCover(IGraph graph) {
-        vertexCoverz = LongArrayBitVector.ofLength(1);
+        vertexCover = LongArrayBitVector.ofLength(1);
 
         this.graph = graph;
 
         long maxNode = graph.getNumberOfNodes();
-        maximalMatchingz = LongBigArrays.newBigArray(maxNode);
-        LongBigArrays.fill(maximalMatchingz, -1);
+        maximalMatching = LongBigArrays.newBigArray(maxNode);
+        LongBigArrays.fill(maximalMatching, -1);
+        maximalMatchingLength = LongBigArrays.length(maximalMatching);
 
         graph.iterateAllEdges(edge -> {
             insertEdge(edge);
@@ -206,14 +208,14 @@ public class DynamicVertexCover implements IDynamicVertexCover {
 
     @Override
     public boolean isInVertexCover(long node) {
-        if(vertexCoverz.size64() <= node) {
+        if(vertexCover.size64() <= node) {
             return false;
         }
-        return vertexCoverz.getBoolean(node);
+        return vertexCover.getBoolean(node);
     }
 
     public boolean isInMaximalMatching(Edge edge) {
-        long value = LongBigArrays.get(maximalMatchingz, edge.from);
+        long value = LongBigArrays.get(maximalMatching, edge.from);
 
         if(value == -1) {
             return false;
@@ -227,17 +229,20 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     private void addEdgeToMaximalMatching(Edge edge) {
-        long previousSize = LongBigArrays.length(maximalMatchingz);
-        maximalMatchingz = LongBigArrays.grow(maximalMatchingz, (edge.from + 1));
-        long newSize = LongBigArrays.length(maximalMatchingz);
-        LongBigArrays.fill(maximalMatchingz, previousSize, newSize, -1);
-        LongBigArrays.set(maximalMatchingz, edge.from, edge.to);
+        if(edge.from >= maximalMatchingLength) {
+            maximalMatching = LongBigArrays.grow(maximalMatching, (edge.from + 1));
+            long newLength = LongBigArrays.length(maximalMatching);
+            LongBigArrays.fill(maximalMatching, maximalMatchingLength, newLength, -1);
+            maximalMatchingLength = newLength;
+        }
+
+        LongBigArrays.set(maximalMatching, edge.from, edge.to);
     }
 
     private void addEdgeToVertexCover(Edge edge) {
         checkArrayCapacity(edge);
-        vertexCoverz.set(edge.from, true);
-        vertexCoverz.set(edge.to, true);
+        vertexCover.set(edge.from, true);
+        vertexCover.set(edge.to, true);
     }
 
     private void removeEdgeFromMaximalMatching(Edge edge) {
@@ -245,31 +250,31 @@ public class DynamicVertexCover implements IDynamicVertexCover {
             return;
         }
 
-        LongBigArrays.set(maximalMatchingz, edge.from, -1);
+        LongBigArrays.set(maximalMatching, edge.from, -1);
     }
 
     private void removeEdgeFromVertexCover(Edge edge) {
         checkArrayCapacity(edge);
-        vertexCoverz.set(edge.from, false);
-        vertexCoverz.set(edge.to,   false);
+        vertexCover.set(edge.from, false);
+        vertexCover.set(edge.to,   false);
     }
 
     public void checkArrayCapacity(Edge edge) {
         long largestNode = Math.max(edge.from, edge.to);
-        long limit = vertexCoverz.length();
+        long limit = vertexCover.length();
 
         if (limit < largestNode + 1) {
             long minimalIncreaseSize = largestNode + 1 - limit;
             double resizePow = Math.ceil(Math.log((limit + minimalIncreaseSize) / (float)limit ) * (1/Math.log(resizeFactor)));
             long newLimit = (long)(limit * Math.pow(resizeFactor, resizePow));
 
-            vertexCoverz.length(newLimit);
+            vertexCover.length(newLimit);
         }
     }
 
     @Override
     public LongArrayBitVector getNodesInVertexCover(){
-        return vertexCoverz;
+        return vertexCover;
     }
 
     @Override
@@ -279,7 +284,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
 
     @Override
     public long getVertexCoverSize() {
-        return vertexCoverz.count();
+        return vertexCover.count();
     }
 
     /**
@@ -289,10 +294,10 @@ public class DynamicVertexCover implements IDynamicVertexCover {
      */
     public long getMaximalMatchingSize() {
         long count = 0;
-        for (int i = 0; i < maximalMatchingz.length; i++) {
-            for (int j = 0; j < maximalMatchingz[i].length; j++) {
+        for (int i = 0; i < maximalMatching.length; i++) {
+            for (int j = 0; j < maximalMatching[i].length; j++) {
 
-                if(maximalMatchingz[i][j] != -1) {
+                if(maximalMatching[i][j] != -1) {
                     count++;
                 }
             }
@@ -308,7 +313,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
 
         @Override
         public long nextLong() {
-            return last = vertexCoverz.nextOne(last+1);
+            return last = vertexCover.nextOne(last+1);
         }
 
         @Override
