@@ -1,6 +1,7 @@
 package se.meltwater.test.vertexCover;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
+import it.unimi.dsi.bits.LongArrayBitVector;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -209,6 +210,10 @@ public class TestDynamicVertexCover {
                 Edge edge = edgeList.get(i);
                 graph.deleteEdge(edge);
                 dvc.deleteEdge(edge);
+                boolean isgs = isVertexCover(graph, dvc);
+                if(!isgs) {
+                    System.out.println("h");
+                }
                 assertTrue(isVertexCover(graph, dvc));
             }
         }
@@ -261,8 +266,8 @@ public class TestDynamicVertexCover {
      */
     @Test
     public void testDeleteAllEdges() {
-        final int maxNumNodes = 100;
-        int iteration = 0;
+        final int maxNumNodes = 6;
+        int iteration = 99;
 
         while(iteration++ < nrTestIterations) {
             SimulatedGraph graph = TestUtils.genRandomGraph(maxNumNodes);
@@ -276,8 +281,8 @@ public class TestDynamicVertexCover {
                 assertTrue(isVertexCover(graph, dvc));
             }
 
-            assertTrue(dvc.getVertexCoverSize() == 0);
-            assertTrue(dvc.getMaximalMatchingSize() == 0);
+            assertEquals(0, dvc.getVertexCoverSize());
+            assertEquals(0, dvc.getMaximalMatchingSize());
         }
     }
 
@@ -313,10 +318,20 @@ public class TestDynamicVertexCover {
     public void testVertexCoverIterator(){
         int nodes = new Random().nextInt(1000);
         DynamicVertexCover vc = new DynamicVertexCover(TestUtils.genRandomGraph(nodes));
-        long[] nodesInVC = vc.getNodesInVertexCover();
+
+        LazyLongIterator vcIterator = vc.getNodesInVertexCoverIterator();
+        LongArrayBitVector vcNodes = vc.getNodesInVertexCover();
+        long node = 0;
+        while((node = vcNodes.nextOne(node)) != -1) {
+            assertEquals(node,vcIterator.nextLong());
+
+            node = node + 1;
+        }
+
+        /*long[] nodesInVC = vc.getNodesInVertexCover();
         LazyLongIterator vcIterator = vc.getNodesInVertexCoverIterator();
         for (long node: nodesInVC ) {
             assertEquals(node,vcIterator.nextLong());
-        }
+        }*/
     }
 }

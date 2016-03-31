@@ -2,10 +2,10 @@ package se.meltwater.vertexcover;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
-import it.unimi.dsi.fastutil.objects.Object2BooleanArrayMap;
+import it.unimi.dsi.bits.LongArrayBitVector;
+import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
-import se.meltwater.graph.SimulatedGraph;
 
 import java.util.*;
 
@@ -24,19 +24,30 @@ import java.util.*;
  *
  */
 public class DynamicVertexCover implements IDynamicVertexCover {
+    private long[][] maximalMatching;
+    private long maximalMatchingLength;
 
-    private HashMap<Long, Long> maximalMatching = new HashMap<>();
-    private BitSet vertexCover = new BitSet();
+
+    private LongArrayBitVector vertexCover;
     private IGraph graph;
+    private float resizeFactor = 1.1f;
 
     public DynamicVertexCover(IGraph graph) {
+        vertexCover = LongArrayBitVector.ofLength(1);
+
         this.graph = graph;
+
+        long maxNode = graph.getNumberOfNodes();
+        maximalMatching = LongBigArrays.newBigArray(maxNode);
+        LongBigArrays.fill(maximalMatching, -1);
+        maximalMatchingLength = LongBigArrays.length(maximalMatching);
 
         graph.iterateAllEdges(edge -> {
             insertEdge(edge);
             return null;
         });
     }
+
 
     @Override
     public Map<Long, AffectedState> insertEdge(Edge edge) {
@@ -165,9 +176,9 @@ public class DynamicVertexCover implements IDynamicVertexCover {
      */
     public void checkIncomingEdgesToDeletedEndpoints(Edge edge, Set<Long> addedNodes) {
         NodeIterator nodeIt = graph.getNodeIterator();
-        for(int currentNode = 0; currentNode < graph.getNumberOfNodes(); currentNode++) {
+        for(long currentNode = 0; currentNode < graph.getNumberOfNodes(); currentNode++) {
             nodeIt.nextLong();
-            if(isInVertexCover((long)currentNode)) {
+            if(isInVertexCover(currentNode)) {
                 continue;
             }
 
@@ -197,12 +208,16 @@ public class DynamicVertexCover implements IDynamicVertexCover {
 
     @Override
     public boolean isInVertexCover(long node) {
-        return vertexCover.get((int)node);
+        if(vertexCover.size64() <= node) {
+            return false;
+        }
+        return vertexCover.getBoolean(node);
     }
 
     public boolean isInMaximalMatching(Edge edge) {
-        Long value = maximalMatching.get(edge.from);
-        if(value == null) {
+        long value = LongBigArrays.get(maximalMatching, edge.from);
+
+        if(value == -1) {
             return false;
         }
 
@@ -214,12 +229,20 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     private void addEdgeToMaximalMatching(Edge edge) {
-        maximalMatching.put(edge.from, edge.to);
+        if(edge.from >= maximalMatchingLength) {
+            maximalMatching = LongBigArrays.grow(maximalMatching, (edge.from + 1));
+            long newLength = LongBigArrays.length(maximalMatching);
+            LongBigArrays.fill(maximalMatching, maximalMatchingLength, newLength, -1);
+            maximalMatchingLength = newLength;
+        }
+
+        LongBigArrays.set(maximalMatching, edge.from, edge.to);
     }
 
     private void addEdgeToVertexCover(Edge edge) {
-        vertexCover.set((int)edge.from);
-        vertexCover.set((int)edge.to);
+        checkArrayCapacity(edge);
+        vertexCover.set(edge.from, true);
+        vertexCover.set(edge.to, true);
     }
 
     private void removeEdgeFromMaximalMatching(Edge edge) {
@@ -227,21 +250,31 @@ public class DynamicVertexCover implements IDynamicVertexCover {
             return;
         }
 
-        maximalMatching.remove(edge.from);
+        LongBigArrays.set(maximalMatching, edge.from, -1);
     }
 
     private void removeEdgeFromVertexCover(Edge edge) {
-        vertexCover.set((int)edge.from, false);
-        vertexCover.set((int)edge.to,   false);
+        checkArrayCapacity(edge);
+        vertexCover.set(edge.from, false);
+        vertexCover.set(edge.to,   false);
+    }
+
+    public void checkArrayCapacity(Edge edge) {
+        long largestNode = Math.max(edge.from, edge.to);
+        long limit = vertexCover.length();
+
+        if (limit < largestNode + 1) {
+            long minimalIncreaseSize = largestNode + 1 - limit;
+            double resizePow = Math.ceil(Math.log((limit + minimalIncreaseSize) / (float)limit ) * (1/Math.log(resizeFactor)));
+            long newLimit = (long)(limit * Math.pow(resizeFactor, resizePow));
+
+            vertexCover.length(newLimit);
+        }
     }
 
     @Override
-    public long[] getNodesInVertexCover(){
-        long[] ret = new long[vertexCover.cardinality()];
-        int node = -1, i = 0;
-        while ((node = vertexCover.nextSetBit(node+1)) != -1)
-            ret[i++] = node;
-        return ret;
+    public LongArrayBitVector getNodesInVertexCover(){
+        return vertexCover;
     }
 
     @Override
@@ -250,20 +283,37 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     @Override
-    public int getVertexCoverSize() {
-        return vertexCover.cardinality();
+    public long getVertexCoverSize() {
+        return vertexCover.count();
     }
 
-    public int getMaximalMatchingSize() {
-        return maximalMatching.size();
+    /**
+     * Runs in O(n).
+     * Made public for debugging and testing purposes
+     * @return
+     */
+    public long getMaximalMatchingSize() {
+        long count = 0;
+        for (int i = 0; i < maximalMatching.length; i++) {
+            for (int j = 0; j < maximalMatching[i].length; j++) {
+
+                if(maximalMatching[i][j] != -1) {
+                    count++;
+                }
+            }
+        }
+
+        return count;
     }
+
+
 
     private class VertexCoverIterator implements LazyLongIterator{
-        private int last = -1;
+        private long last = -1;
 
         @Override
         public long nextLong() {
-            return last = vertexCover.nextSetBit(last+1);
+            return last = vertexCover.nextOne(last+1);
         }
 
         @Override
