@@ -281,8 +281,8 @@ public class TestDynamicVertexCover {
                 assertTrue(isVertexCover(graph, dvc));
             }
 
-            assertTrue(dvc.getVertexCoverSize() == 0);
-            assertTrue(dvc.getMaximalMatchingSize() == 0);
+            assertEquals(0, dvc.getVertexCoverSize());
+            assertEquals(0, dvc.getMaximalMatchingSize());
         }
     }
 

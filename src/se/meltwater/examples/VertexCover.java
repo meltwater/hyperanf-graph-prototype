@@ -60,7 +60,7 @@ public class VertexCover {
         fetchEdgesFromFileAndCalculateVC();
         long end = System.currentTimeMillis();
 
-        int maximalMatchingSize = dvc.getMaximalMatchingSize();
+        long maximalMatchingSize = dvc.getMaximalMatchingSize();
         long vertexCoverSize = dvc.getVertexCoverSize();
         long nodesInGraph = numberOfNodes;
 
@@ -68,6 +68,8 @@ public class VertexCover {
         System.out.println("Vertex cover of size: " + vertexCoverSize + " : " + nodesInGraph);
         System.out.println("Efficiency rate of " + (double)vertexCoverSize / nodesInGraph) ;
         System.out.println("Elapsed time: " + (float)(end - start)/1000 + "s");
+
+        Thread.sleep(5000);
     }
 
 }

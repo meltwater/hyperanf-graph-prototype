@@ -3,11 +3,9 @@ package se.meltwater.vertexcover;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
-import it.unimi.dsi.fastutil.longs.LongBigArrayBigList;
-import it.unimi.dsi.fastutil.objects.Object2BooleanArrayMap;
+import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
-import se.meltwater.graph.SimulatedGraph;
 
 import java.util.*;
 
@@ -26,8 +24,9 @@ import java.util.*;
  *
  */
 public class DynamicVertexCover implements IDynamicVertexCover {
+    private long[][] maximalMatchingz;
 
-    private HashMap<Long, Long> maximalMatching = new HashMap<>();
+
     private LongArrayBitVector vertexCoverz;
     private IGraph graph;
     private float resizeFactor = 1.1f;
@@ -37,11 +36,16 @@ public class DynamicVertexCover implements IDynamicVertexCover {
 
         this.graph = graph;
 
+        long maxNode = graph.getNumberOfNodes();
+        maximalMatchingz = LongBigArrays.newBigArray(maxNode);
+        LongBigArrays.fill(maximalMatchingz, -1);
+
         graph.iterateAllEdges(edge -> {
             insertEdge(edge);
             return null;
         });
     }
+
 
     @Override
     public Map<Long, AffectedState> insertEdge(Edge edge) {
@@ -209,8 +213,9 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     public boolean isInMaximalMatching(Edge edge) {
-        Long value = maximalMatching.get(edge.from);
-        if(value == null) {
+        long value = LongBigArrays.get(maximalMatchingz, edge.from);
+
+        if(value == -1) {
             return false;
         }
 
@@ -222,11 +227,14 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     private void addEdgeToMaximalMatching(Edge edge) {
-        maximalMatching.put(edge.from, edge.to);
+        long previousSize = LongBigArrays.length(maximalMatchingz);
+        maximalMatchingz = LongBigArrays.grow(maximalMatchingz, (edge.from + 1));
+        long newSize = LongBigArrays.length(maximalMatchingz);
+        LongBigArrays.fill(maximalMatchingz, previousSize, newSize, -1);
+        LongBigArrays.set(maximalMatchingz, edge.from, edge.to);
     }
 
     private void addEdgeToVertexCover(Edge edge) {
-        //vertexCoverz.length(Math.max(edge.from, edge.to) + 1);
         checkArrayCapacity(edge);
         vertexCoverz.set(edge.from, true);
         vertexCoverz.set(edge.to, true);
@@ -237,12 +245,10 @@ public class DynamicVertexCover implements IDynamicVertexCover {
             return;
         }
 
-        maximalMatching.remove(edge.from);
+        LongBigArrays.set(maximalMatchingz, edge.from, -1);
     }
 
     private void removeEdgeFromVertexCover(Edge edge) {
-
-        //vertexCoverz.length(Math.max(edge.from, edge.to) + 1);
         checkArrayCapacity(edge);
         vertexCoverz.set(edge.from, false);
         vertexCoverz.set(edge.to,   false);
@@ -276,8 +282,23 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         return vertexCoverz.count();
     }
 
+    /**
+     * Runs in O(n).
+     * Made public for debugging and testing purposes
+     * @return
+     */
     public long getMaximalMatchingSize() {
-        return maximalMatching.size();
+        long count = 0;
+        for (int i = 0; i < maximalMatchingz.length; i++) {
+            for (int j = 0; j < maximalMatchingz[i].length; j++) {
+
+                if(maximalMatchingz[i][j] != -1) {
+                    count++;
+                }
+            }
+        }
+
+        return count;
     }
 
 
