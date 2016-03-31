@@ -61,7 +61,9 @@ public class Benchmarks {
         long elapsedTime = currentTime - lastTime;
         float timePerBulkSeconds = elapsedTime / 1000.0f;
         float dps = bulkSize / timePerBulkSeconds;
-        float heapSize = Runtime.getRuntime().totalMemory() / (float)bytesPerGigaByte;
+
+        float heapSize = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (float)bytesPerGigaByte;
+
         float elapsedTimeSinceStart = (currentTime - startTime) / 1000.0f;
         float addedInMillions = (float)added / 1000000;
 

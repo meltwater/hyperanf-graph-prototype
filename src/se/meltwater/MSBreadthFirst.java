@@ -304,10 +304,15 @@ public class MSBreadthFirst {
             BitSet visitNeigh;
             for (long d = 0; d < degree; d++) {
                 neighbor = neighbors.nextLong();
-                if(ObjectBigArrays.get(visitNext,neighbor) == null)
-                    ObjectBigArrays.set(visitNext,neighbor,new BitSet(numSources));
-                synchronized (ObjectBigArrays.get(visitNext,neighbor)) {
-                    visitNeigh = ObjectBigArrays.get(visitNext,neighbor);
+
+                visitNeigh = ObjectBigArrays.get(visitNext,neighbor);
+                boolean wasNull = visitNeigh == null;
+
+                synchronized (wasNull ? this : ObjectBigArrays.get(visitNext,neighbor)) {
+                    if(wasNull) {
+                        visitNeigh = new BitSet(numSources);
+                    }
+
                     if(hasTraveler) {
                         Traveler toSet = ObjectBigArrays.get(travelers,node);
                         if (visitNeigh.cardinality() != 0)
@@ -315,6 +320,10 @@ public class MSBreadthFirst {
                         ObjectBigArrays.set(travelersNext,neighbor,toSet);
                     }
                     visitNeigh.or(visitN);
+
+                    if(wasNull) {
+                        ObjectBigArrays.set(visitNext,neighbor,visitNeigh);
+                    }
                 }
             }
 
