@@ -200,7 +200,7 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
         @Override
         public long nextLong() {
             if(!hasNext())
-                throw new IllegalStateException("No more nodes");
+                return -1;
             currentIndex++;
             outdegree = graph.getOutdegree(currentIndex);
             return currentIndex;
@@ -224,7 +224,7 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
         @Override
         public long nextLong() {
             if(!it.hasNext()) {
-                throw new IllegalStateException("No more nodes");
+                return -1;
             }
             return it.next();
         }

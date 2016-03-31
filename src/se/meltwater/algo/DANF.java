@@ -3,6 +3,8 @@ package se.meltwater.algo;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntOpenHashBigSet;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import se.meltwater.MSBreadthFirst;
 import se.meltwater.graph.Edge;
@@ -127,10 +129,12 @@ public class DANF {
      */
     private void addNodeToTopLevel(long node) {
         if(!graph.containsNode(node)) {
-            long previousHighestNode = graph.getNumberOfNodes();
-            long nodesToAdd = node - previousHighestNode + 1;
+            long previousHighestNode = graph.getNumberOfNodes()-1;
+            long nodesToAdd = node - previousHighestNode;
             history[h-1].addCounters(nodesToAdd);
-            history[h-1].add(node, node);
+            for (long n = previousHighestNode+1; n <= node ; n++) {
+                history[h-1].add(n,n);
+            }
         }
     }
 
@@ -194,6 +198,7 @@ public class DANF {
             i++;
         }
         return ret;
+
     }
 
     /**
@@ -209,9 +214,13 @@ public class DANF {
             else{
                 LazyLongIterator succs = graph.getSuccessors(node);
                 long out = graph.getOutdegree(node);
+                history[h-1].add(node,node);
                 for (long neighborI = 0; neighborI < out ; neighborI++) {
                     long neighbor = succs.nextLong();
-                    history[h-1].union(node,history[h-2],getNodeIndex(neighbor,h-1));
+                    if(h > 1)
+                        history[h-1].union(node,history[h-2],getNodeIndex(neighbor,h-1));
+                    else
+                        history[h-1].add(node,neighbor);
                 }
             }
         }
@@ -244,14 +253,16 @@ public class DANF {
     private MSBreadthFirst.Visitor recalculateVisitor(long[] bfsSources){
         return (long visitNode, BitSet bfsVisits, BitSet seen, int depth, MSBreadthFirst.Traveler t) -> {
 
-            if(depth > 0){
+            if(depth > 0 && depth <= h){
                 synchronized (this) {
                     if (vc.isInVertexCover(visitNode)) {
-                        for (int i = h - 1; i >= depth; i--) {
-                            long visitIndex = getNodeIndex(visitNode, i - depth + 1);
-                            int bfs = -1;
-                            while((bfs = bfsVisits.nextSetBit(bfs+1)) != -1)
-                                history[i].union(getNodeIndex(bfsSources[bfs],i+1), history[i - depth], visitIndex);
+                        if(h > 1) {
+                            for (int i = h - 1; i >= depth; i--) {
+                                long visitIndex = getNodeIndex(visitNode, i - depth + 1);
+                                int bfs = -1;
+                                while ((bfs = bfsVisits.nextSetBit(bfs + 1)) != -1)
+                                    history[i].union(getNodeIndex(bfsSources[bfs], i + 1), history[i - depth], visitIndex);
+                            }
                         }
 
                         int bfs = -1;
@@ -301,15 +312,25 @@ public class DANF {
 
     private void propagate(Edge ... edges) throws InterruptedException {
 
-        PropagationTraveler[] travelers = new PropagationTraveler[edges.length];
-        long[] fromNodes = new long[edges.length];
-        for (int i = 0; i < fromNodes.length ; i++) {
-            travelers[i] = new PropagationTraveler(calculateHistory(edges[i].to));
-            fromNodes[i] = edges[i].from;
+        int partition = 5000;
+        PropagationTraveler[] travelers = new PropagationTraveler[Math.min(partition,edges.length)];
+        long[] fromNodes = new long[Math.min(partition,edges.length)];
+        for (int i = 0,j = 0; i < edges.length ; i++,j++) {
+            travelers[j] = new PropagationTraveler(calculateHistory(edges[i].to));
+            fromNodes[j] = edges[i].from;
+            if(j == partition-1) {
+                MSBreadthFirst msbfs = new MSBreadthFirst(fromNodes, travelers, graphTranspose, propagateVisitor());
+                msbfs.breadthFirstSearch();
+                travelers = new PropagationTraveler[Math.min(partition,edges.length-i-1)];
+                fromNodes = new long[Math.min(partition,edges.length-i-1)];
+                j = -1;
+            }
         }
 
-        MSBreadthFirst msbfs = new MSBreadthFirst(fromNodes,travelers, graphTranspose, propagateVisitor());
-        msbfs.breadthFirstSearch();
+        if(fromNodes.length > 0) {
+            MSBreadthFirst msbfs = new MSBreadthFirst(fromNodes, travelers, graphTranspose, propagateVisitor());
+            msbfs.breadthFirstSearch();
+        }
 
     }
 

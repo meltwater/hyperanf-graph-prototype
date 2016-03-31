@@ -25,6 +25,7 @@ public interface IGraph {
 
     boolean addEdge(Edge edge);
     boolean addEdges(Edge ... edges);
+    void merge(IGraph graph);
 
     long getOutdegree(long node);
 

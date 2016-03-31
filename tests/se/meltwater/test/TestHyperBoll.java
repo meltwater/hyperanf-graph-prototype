@@ -10,6 +10,7 @@ import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 
 import java.io.IOException;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -22,13 +23,16 @@ public class TestHyperBoll {
     public void testHyperBollSameAsHyperBall() throws IOException {
         BVGraph graph = BVGraph.load("testGraphs/wordassociationNoBlocks");
         long seed = Util.randomSeed();
+        int h = new Random().nextInt(5)+1;
 
         HyperBall hyperBall = new HyperBall(graph,7,seed);
         HyperBoll hyperBoll = new HyperBoll(new ImmutableGraphWrapper(graph),7,seed);
         hyperBall.init();
         hyperBoll.init();
-        hyperBall.run();
-        hyperBoll.run();
+        for (int i = 0; i < h ; i++) {
+            hyperBall.iterate();
+            hyperBoll.iterate();
+        }
         hyperBall.close();
         hyperBoll.close();
 

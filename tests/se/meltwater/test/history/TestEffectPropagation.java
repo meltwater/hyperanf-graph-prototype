@@ -1,15 +1,24 @@
 package se.meltwater.test.history;
 
+import it.unimi.dsi.Util;
+import it.unimi.dsi.big.webgraph.BVGraph;
+import it.unimi.dsi.big.webgraph.ImmutableGraph;
+import it.unimi.dsi.big.webgraph.UnionImmutableGraph;
 import javafx.util.Pair;
 import org.junit.Test;
 import se.meltwater.algo.DANF;
 import se.meltwater.algo.HyperBoll;
 import se.meltwater.graph.Edge;
+import se.meltwater.graph.IGraph;
+import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graph.SimulatedGraph;
+import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 import se.meltwater.test.TestUtils;
 import se.meltwater.vertexcover.DynamicVertexCover;
 
 import java.io.IOException;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -27,8 +36,75 @@ public class TestEffectPropagation {
 
     final float epsilon = 0.1f;
 
+    final int maxNumNodes = 100;
     int log2m;
     int h;
+
+    @Test
+    public void testDANFSameAsHyperBallOnImmutableGraphs() throws IOException, InterruptedException {
+        Random rand = new Random();
+        log2m = rand.nextInt(7)+4;
+        h = rand.nextInt(5)+1;
+
+        BVGraph g1 = BVGraph.load("testGraphs/noBlocksUk");
+        BVGraph g2 = BVGraph.load("testGraphs/wordassociationNoBlocks");
+
+        Edge[] additionalEdges = new Edge[(int)g2.numArcs()]; //wordassociation only contains 10k nodes
+        AtomicInteger i = new AtomicInteger(0);
+        new ImmutableGraphWrapper(g2).iterateAllEdges((Edge e) -> {
+            additionalEdges[i.getAndIncrement()] = e;
+            return null;
+        });
+
+        IGraph merged = new ImmutableGraphWrapper(new UnionImmutableGraph(g1,g2));
+        ImmutableGraphWrapper g1g = new ImmutableGraphWrapper(g1);
+        testDANFSameAsHyperBall(g1g,additionalEdges,merged);
+        g1g.close();
+
+    }
+
+    /**
+     *
+     *
+     *
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    @Test
+    public void testDANFSameAsHyperBallOnSimulatedGraphs() throws IOException, InterruptedException {
+
+        Random rand = new Random();
+        for (int i = 0; i < 100 ; i++) {
+
+            log2m = rand.nextInt(7)+4;
+            h = rand.nextInt(5)+1;
+
+            SimulatedGraph g1 = TestUtils.genRandomGraph(maxNumNodes);
+            int numExtraNodes = rand.nextInt(maxNumNodes)+1;
+            int numEdges = rand.nextInt((int)Math.pow(numExtraNodes,2));
+            Edge[] additionalEdges = TestUtils.generateEdges(numExtraNodes,numEdges);
+
+            SimulatedGraph mergedGraph = (SimulatedGraph) g1.clone();
+            mergedGraph.addEdges(additionalEdges);
+            testDANFSameAsHyperBall(g1,additionalEdges,mergedGraph);
+
+        }
+    }
+
+    private void testDANFSameAsHyperBall(IGraph g1, Edge[] additionalEdges, IGraph mergedGraph) throws IOException, InterruptedException {
+
+        long seed = Util.randomSeed();
+        Pair<DANF,HyperBoll> pair = TestUtils.runHyperBall(g1,new DynamicVertexCover(g1),h,log2m, seed);
+        DANF danf = pair.getKey();
+
+        danf.addEdges(additionalEdges);
+
+        HyperLolLolCounterArray hll = TestUtils.runHyperBall(mergedGraph,h,log2m,seed).getCounter();
+        for (long i = 0; i < mergedGraph.getNumberOfNodes() ; i++) {
+            assertEquals("Node " + i,hll.count(i),danf.count(i,h),epsilon);
+        }
+
+    }
 
     /**
      * 0 -> N1

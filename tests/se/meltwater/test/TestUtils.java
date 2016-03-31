@@ -153,6 +153,17 @@ public class TestUtils {
         return danf;
     }
 
+    public static HyperBoll runHyperBall(IGraph graph, int h, int log2m, long seed) throws IOException {
+        HyperBoll hb = new HyperBoll(graph,log2m,seed);
+
+        hb.init();
+        for (int i = 1; i <= h; i++)
+            hb.iterate();
+
+        return hb;
+
+    }
+
     /**
      *
      * @param runnable

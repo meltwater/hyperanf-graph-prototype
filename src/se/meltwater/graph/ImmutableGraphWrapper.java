@@ -2,6 +2,7 @@ package se.meltwater.graph;
 
 import it.unimi.dsi.big.webgraph.*;
 import it.unimi.dsi.big.webgraph.ArcListASCIIGraph;
+import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.big.webgraph.Transform;
@@ -9,11 +10,11 @@ import it.unimi.dsi.big.webgraph.UnionImmutableGraph;
 import it.unimi.dsi.io.ByteBufferInputStream;
 import it.unimi.dsi.webgraph.*;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
+import java.util.HashMap;
 
 /**
  * @author Simon Lindhén
@@ -28,14 +29,56 @@ public class ImmutableGraphWrapper extends AGraph{
 
     private ImmutableGraph graph;
     private long modifications = 0;
+    private String oldPath = null;
+    private static File tempDir = null;
+    private String thisPath = null;
+    private static int graphID = 0;
+    private int thisID;
+    private int fileVersion = 0;
 
     public ImmutableGraphWrapper(ImmutableGraph graph) {
         this.graph = graph;
+        thisID = graphID++;
+    }
+
+    public void close(){
+        if(thisPath != null){
+            new File(thisPath + ".graph").delete();
+            new File(thisPath + ".properties").delete();
+            new File(thisPath + ".offsets").delete();
+        }
     }
 
     @Override
     public boolean addEdges(Edge ... edges){
-        throw new RuntimeException("SimulatedGraph.addEdges() NOT IMPLEMENTED YET");
+
+        try {
+            SimulatedGraph extraEdge = new SimulatedGraph();
+            extraEdge.addEdges(edges);
+            ImmutableGraph store = new UnionImmutableGraph(new SimulatedGraphWrapper(extraEdge), graph);
+            checkFile();
+            BVGraph.store(store, thisPath, 0, 0, -1, -1, 0);
+            graph = BVGraph.load(thisPath);
+            cleanOldFile();
+            return true;
+        }catch (Exception e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void checkFile() throws IOException {
+        if(tempDir == null)
+            tempDir = new File(Files.createTempDirectory("tmpGraphs").toAbsolutePath().toUri());
+        oldPath = thisPath;
+        thisPath = tempDir.getAbsolutePath() + "/graph_" + thisID + "_" + fileVersion++;
+    }
+
+    private void cleanOldFile(){
+        if(oldPath != null) {
+            new File(oldPath + ".graph").delete();
+            new File(oldPath + ".properties").delete();
+            new File(oldPath + ".offsets").delete();
+        }
     }
 
     @Override
@@ -46,14 +89,11 @@ public class ImmutableGraphWrapper extends AGraph{
 
         modifications++;
 
-        String strGraph = edge.from + " " + edge.to;
-        try {
-            ImmutableGraph extraEdge = new StringArcListASCIIGraph(strGraph,0, Math.max(edge.from,edge.to)+1);
-            graph = new UnionImmutableGraph(graph,extraEdge);
-            return true;
-        } catch (IOException e) {
-            throw new RuntimeException("Got an IOException from reading a string...", e);
-        }
+        SimulatedGraph extraEdge = new SimulatedGraph();
+        extraEdge.addEdge(edge);
+        graph = new UnionImmutableGraph(new SimulatedGraphWrapper(extraEdge),graph);
+        return true;
+
     }
 
     private boolean containsEdge(Edge edge){
@@ -93,6 +133,15 @@ public class ImmutableGraphWrapper extends AGraph{
     @Override
     public NodeIterator getNodeIterator(long node){
         return new ImmutableGraphIteratorWrapper(graph.nodeIterator(node));
+    }
+
+    @Override
+    public void merge(IGraph graph){
+        if(graph instanceof ImmutableGraphWrapper){
+            ImmutableGraph copy = ((ImmutableGraphWrapper)graph).graph;
+            this.graph = new UnionImmutableGraph(this.graph,copy);
+        }else
+            super.merge(graph);
     }
 
     public IGraph transpose(){
@@ -149,20 +198,48 @@ public class ImmutableGraphWrapper extends AGraph{
         }
     }
 
-    private class StringArcListASCIIGraph extends ArcListASCIIGraph{
+    private class SimulatedGraphWrapper extends ImmutableGraph{
 
-        private long numNodes;
+        SimulatedGraph graph;
 
-        StringArcListASCIIGraph(final String graph, final int shift, final long numNodes) throws IOException {
-            super(new ByteArrayInputStream(graph.getBytes()),shift);
-            this.numNodes = numNodes;
+        public SimulatedGraphWrapper(SimulatedGraph graph){
+            this.graph = graph;
         }
 
         @Override
-        public long numNodes(){
-            return numNodes;
+        public long numArcs() {
+            return graph.getNumberOfArcs();
         }
 
+        @Override
+        public LazyLongIterator successors(long x) {
+            return graph.getSuccessors(x);
+        }
+
+        @Override
+        public NodeIterator nodeIterator(long from) {
+            return graph.getNodeIterator(from);
+        }
+
+        @Override
+        public long numNodes() {
+            return graph.getNumberOfNodes();
+        }
+
+        @Override
+        public boolean randomAccess() {
+            return true;
+        }
+
+        @Override
+        public long outdegree(long l) {
+            return graph.getOutdegree(l);
+        }
+
+        @Override
+        public ImmutableGraph copy() {
+            return new SimulatedGraphWrapper((SimulatedGraph) graph.copy());
+        }
     }
 
 }

@@ -313,8 +313,12 @@ public class TestMSBFS {
      */
     private void checkValidSeen(long[] sources, BitSet[][] seen, IGraph graph){
         BitSet[][] originalSeen = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.getNumberOfNodes());
-        for (long i = 0; i< graph.getNumberOfNodes(); i++)
-            ObjectBigArrays.set(originalSeen,i,ObjectBigArrays.get(seen,i).clone());
+        BitSet temp;
+        for (long i = 0; i< graph.getNumberOfNodes(); i++) {
+            temp = ObjectBigArrays.get(seen, i);
+            temp = temp == null ? new BitSet(sources.length) : (BitSet)temp.clone();
+            ObjectBigArrays.set(originalSeen, i, temp);
+        }
 
         /* Do standard BFS from each source */
         for (int bfs = 0; bfs < sources.length ; bfs++) {

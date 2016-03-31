@@ -175,14 +175,7 @@ public class TestSimulatedGraph {
             iterator.nextLong();
         }
 
-        boolean hadException = false;
-        try{
-            iterator.nextLong();
-        } catch (IllegalStateException e) {
-            hadException = true;
-        }
-
-        assertTrue(hadException);
+        assertEquals(iterator.nextLong(),-1);
     }
 
     /**
@@ -224,11 +217,11 @@ public class TestSimulatedGraph {
                     LazyLongIterator successors = graph.getSuccessors(i);
                     successors.skip(nodeDegree);
 
-                    TestUtils.assertGivesException(() -> successors.nextLong());
+                    assertEquals(successors.nextLong(),-1);
                 } else {
                     LazyLongIterator successors = graph.getSuccessors(i);
 
-                    TestUtils.assertGivesException (() -> successors.nextLong());
+                    assertEquals(successors.nextLong(),-1);
                 }
             }
         }

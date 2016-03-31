@@ -2,8 +2,10 @@ package se.meltwater.graph;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
+import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 /**
@@ -43,6 +45,19 @@ public abstract class AGraph implements IGraph {
     @Override
     public boolean containsNode(long node) {
         return node < getNumberOfNodes();
+    }
+
+    @Override
+    public void merge(IGraph graph){
+        Edge[][] edges = ObjectBigArrays.newBigArray(new Edge[0][0],graph.getNumberOfArcs());
+        AtomicLong i = new AtomicLong();
+        graph.iterateAllEdges((Edge e) -> {
+            ObjectBigArrays.set(edges,i.getAndIncrement(),e);
+            return null;
+        });
+        for (Edge[] edgeChunk : edges) {
+            addEdges(edgeChunk);
+        }
     }
 
     @Override
