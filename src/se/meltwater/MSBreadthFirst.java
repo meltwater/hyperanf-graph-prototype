@@ -310,7 +310,11 @@ public class MSBreadthFirst {
 
                 synchronized (wasNull ? this : ObjectBigArrays.get(visitNext,neighbor)) {
                     if(wasNull) {
-                        visitNeigh = new BitSet(numSources);
+                        visitNeigh = ObjectBigArrays.get(visitNext,neighbor);
+                        if(visitNeigh == null)
+                            visitNeigh = new BitSet(numSources);
+                        else
+                            wasNull = false;
                     }
 
                     if(hasTraveler) {
