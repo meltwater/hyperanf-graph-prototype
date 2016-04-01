@@ -36,7 +36,7 @@ public class TestEffectPropagation {
 
     final float epsilon = 0.1f;
 
-    final int maxNumNodes = 100;
+    final int maxNumNodes = 5;
     int log2m;
     int h;
 
@@ -81,7 +81,7 @@ public class TestEffectPropagation {
 
             SimulatedGraph g1 = TestUtils.genRandomGraph(maxNumNodes);
             int numExtraNodes = rand.nextInt(maxNumNodes)+1;
-            int numEdges = rand.nextInt((int)Math.pow(numExtraNodes,2));
+            int numEdges = rand.nextInt((int)Math.pow(numExtraNodes,1));
             Edge[] additionalEdges = TestUtils.generateEdges(numExtraNodes,numEdges);
 
             SimulatedGraph mergedGraph = (SimulatedGraph) g1.clone();
@@ -93,6 +93,7 @@ public class TestEffectPropagation {
 
     private void testDANFSameAsHyperBall(IGraph g1, Edge[] additionalEdges, IGraph mergedGraph) throws IOException, InterruptedException {
 
+        IGraph clone = (IGraph) ((SimulatedGraph)g1).clone();
         long seed = Util.randomSeed();
         Pair<DANF,HyperBoll> pair = TestUtils.runHyperBall(g1,new DynamicVertexCover(g1),h,log2m, seed);
         DANF danf = pair.getKey();
@@ -102,6 +103,83 @@ public class TestEffectPropagation {
         HyperLolLolCounterArray hll = TestUtils.runHyperBall(mergedGraph,h,log2m,seed).getCounter();
         for (long i = 0; i < mergedGraph.getNumberOfNodes() ; i++) {
             assertEquals("Node " + i,hll.count(i),danf.count(i,h),epsilon);
+        }
+
+    }
+
+    @Test
+    public void testStaticRandomGraph3() throws IOException, InterruptedException {
+      //  while(true) {
+            long seed = 1607655446946170955L;
+            h = 3;
+            log2m = 8;
+
+            SimulatedGraph graph = new SimulatedGraph();
+            graph.addNode(4);
+            graph.addEdges(new Edge(0, 3), new Edge(2, 1), new Edge(2, 3), new Edge(3, 0), new Edge(3, 2));
+
+            SimulatedGraph mergedGraph = (SimulatedGraph) graph.clone();
+            mergedGraph.addEdges(new Edge(0, 2));
+
+            DynamicVertexCover vc = new DynamicVertexCover(graph);
+            DANF danf = TestUtils.runHyperBall(graph, vc, h, log2m, seed).getKey();
+
+            danf.addEdges(new Edge(0, 2));
+
+            HyperLolLolCounterArray hll = TestUtils.runHyperBall(mergedGraph, h, log2m, seed).getCounter();
+            for (long i = 0; i < mergedGraph.getNumberOfNodes(); i++) {
+                assertEquals("Node " + i, hll.count(i), danf.count(i, h), epsilon);
+            }
+        //}
+    }
+
+    @Test
+    public void testStaticRandomGraph2() throws IOException, InterruptedException {
+        long seed = 4405387622461906011L;
+        h = 3;
+        log2m = 8;
+
+        SimulatedGraph graph = new SimulatedGraph();
+        graph.addNode(3);
+        graph.addEdges(new Edge(1,1),new Edge(2,1));
+
+        SimulatedGraph mergedGraph = (SimulatedGraph) graph.clone();
+        mergedGraph.addEdges(new Edge(0,2));
+
+        DynamicVertexCover vc = new DynamicVertexCover(graph);
+        DANF danf = TestUtils.runHyperBall(graph, vc, h, log2m, seed).getKey();
+
+        danf.addEdges(new Edge(0, 2));
+
+        HyperLolLolCounterArray hll = TestUtils.runHyperBall(mergedGraph, h, log2m, seed).getCounter();
+        for (long i = 0; i < mergedGraph.getNumberOfNodes(); i++) {
+            assertEquals("Node " + i, hll.count(i), danf.count(i, h), epsilon);
+        }
+
+    }
+
+    @Test
+    public void testStaticRandomGraph() throws IOException, InterruptedException {
+
+        h = 3;
+        log2m = 6;
+        long seed = -6861637300863366465L;
+
+
+        SimulatedGraph graph = new SimulatedGraph();
+        graph.addNode(0);
+        graph.addEdges();
+        SimulatedGraph mergedGraph = (SimulatedGraph) graph.clone();
+        mergedGraph.addEdges(new Edge(0, 0), new Edge(0, 1), new Edge(1, 3));
+
+        DynamicVertexCover vc = new DynamicVertexCover(graph);
+        DANF danf = TestUtils.runHyperBall(graph, vc, h, log2m, seed).getKey();
+
+        danf.addEdges(new Edge(0, 1), new Edge(1, 3), new Edge(0,0));
+
+        HyperLolLolCounterArray hll = TestUtils.runHyperBall(mergedGraph, h, log2m, seed).getCounter();
+        for (long i = 0; i < mergedGraph.getNumberOfNodes(); i++) {
+            assertEquals("Node " + i, hll.count(i), danf.count(i, h), epsilon);
         }
 
     }
@@ -118,6 +196,22 @@ public class TestEffectPropagation {
         DANF danf = setupGraphAndRunHyperBall(h, log2m, 0);
 
         danf.addEdges(new Edge(0, 1));
+        assertArrayEquals(new double[]{2.0,2.0,2.0,2.0}, danf.count(0), epsilon);
+    }
+
+    /**
+     * 0 -> N1
+     * @throws IOException
+     */
+    @Test
+    public void testOnlyIncomingEdgeSingleNewNodeTwice() throws IOException, InterruptedException {
+        h = 4;
+        log2m = 7;
+
+        DANF danf = setupGraphAndRunHyperBall(h, log2m, 0);
+
+        danf.addEdges(new Edge(0, 1),new Edge(0,1));
+
         assertArrayEquals(new double[]{2.0,2.0,2.0,2.0}, danf.count(0), epsilon);
     }
 

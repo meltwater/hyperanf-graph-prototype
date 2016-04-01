@@ -14,6 +14,7 @@ import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -65,13 +66,18 @@ public class DANF {
     public void addEdges(Edge ... edges) throws InterruptedException {
         Map<Long, IDynamicVertexCover.AffectedState> affectedNodes = new HashMap<>();
 
-        Edge[] flippedEdges = new Edge[edges.length];
-        for(int i = 0; i < edges.length; i++) {
-            Edge edge = edges[i];
-            addNewNodes(edge);
-            affectedNodes.putAll(vc.insertEdge(edge));
-            flippedEdges[i] = edge.flip();
+        ArrayList<Edge> validEdges = new ArrayList<>(edges.length);
+        ArrayList<Edge> flippedEdgesList = new ArrayList<>(edges.length);
+        for(Edge edge : edges) {
+            if(edge.from != edge.to) {
+                addNewNodes(edge);
+                affectedNodes.putAll(vc.insertEdge(edge));
+                validEdges.add(edge);
+                flippedEdgesList.add(edge.flip());
+            }
         }
+        edges = validEdges.toArray(new Edge[validEdges.size()]);
+        Edge[] flippedEdges = flippedEdgesList.toArray(new Edge[flippedEdgesList.size()]);
 
         graph.addEdges(edges);
         graphTranspose.addEdges(flippedEdges);
@@ -120,13 +126,31 @@ public class DANF {
             long node = entry.getKey();
 
             if (entry.getValue() == IDynamicVertexCover.AffectedState.Added) {
-                addedNodes.add(node);
+                LazyLongIterator successors = graph.getSuccessors(node);
+                long degree = graph.getOutdegree(node);
+
+                history[h-1].add(node,node);
+                long index = getNodeIndex(node,0);
+                for (int i = 0; i < h; i++) {
+                    history[i].add(index,node);
+                }
+
+                while(degree-- > 0 ) {
+                    long neighbor = successors.nextLong();
+
+                    history[0].add(index,neighbor);
+                    for (int i = 1; i < h; i++) {
+                        history[i].add(index,neighbor);
+
+                        history[i].union(index,history[h-1],getNodeIndex(neighbor,i));
+                    }
+                }
             } else if (entry.getValue() == IDynamicVertexCover.AffectedState.Removed) {
                 // TODO When deleteEdge is added there should be a case here
                 throw new RuntimeException("Removed nodes not supported in DANF.updateAffectedNodes");
             }
         }
-        recalculateHistory(addedNodes.toLongArray());
+        //recalculateHistory(addedNodes.toLongArray());
     }
 
     /**
@@ -345,31 +369,32 @@ public class DANF {
     private MSBreadthFirst.Visitor propagateVisitor(){
         return (long visitNode, BitSet bfsVisits, BitSet seen, int d, MSBreadthFirst.Traveler t) -> {
 
-            int depth = d+1;
+                int depth = d + 1;
 
-            PropagationTraveler propTraver = (PropagationTraveler) t;
+                PropagationTraveler propTraver = (PropagationTraveler) t;
 
-            if(vc.isInVertexCover(visitNode)) {
-                long[] visitNodeBits = new long[counterLongWords];
-                long visitNodeHistoryIndex = getNodeIndex(visitNode,0);
-                long visitNodeIndex;
-                for (int i = 0; i < h+1-depth ; i++) {
-                    visitNodeIndex = i+depth-1 == h-1 ? visitNode : visitNodeHistoryIndex;
-                    history[i+depth-1].getCounter(visitNodeIndex,visitNodeBits);
-                    history[i+depth-1].max(visitNodeBits,propTraver.bits[i]);
-                    history[i+depth-1].setCounter(visitNodeBits,visitNodeIndex);
+                if (vc.isInVertexCover(visitNode)) {
+                    long[] visitNodeBits = new long[counterLongWords];
+                    long visitNodeHistoryIndex = getNodeIndex(visitNode, 0);
+                    long visitNodeIndex;
+                    for (int i = 0; i < h + 1 - depth; i++) {
+                        visitNodeIndex = i + depth - 1 == h - 1 ? visitNode : visitNodeHistoryIndex;
+                        history[i + depth - 1].getCounter(visitNodeIndex, visitNodeBits);
+                        history[i + depth - 1].max(visitNodeBits, propTraver.bits[i]);
+                        history[i + depth - 1].setCounter(visitNodeBits, visitNodeIndex);
+                    }
+                } else {
+                    long[] visitNodeBits = new long[counterLongWords];
+                    history[h - 1].getCounter(visitNode, visitNodeBits);
+                    history[h - 1].max(visitNodeBits, propTraver.bits[h - depth]);
+                    history[h - 1].setCounter(visitNodeBits, visitNode);
                 }
-            } else {
-                long[] visitNodeBits = new long[counterLongWords];
-                history[h-1].getCounter(visitNode, visitNodeBits);
-                history[h-1].max(visitNodeBits, propTraver.bits[h-depth]);
-                history[h-1].setCounter(visitNodeBits, visitNode);
-            }
 
 
-            if(depth == h) {
-                bfsVisits.clear();
-            }
+                if (depth == h) {
+                    bfsVisits.clear();
+                }
+
         };
     }
 
@@ -382,16 +407,19 @@ public class DANF {
 
         @Override
         public MSBreadthFirst.Traveler merge(MSBreadthFirst.Traveler mergeWith, int d) {
-            int depth = d+1;
-            long[][] clonedBits = new long[h + 1 - depth][counterLongWords];
-            PropagationTraveler otherTraveler = (PropagationTraveler) mergeWith;
 
-            for (int i = 0; i < clonedBits.length; i++) {
-                clonedBits[i] = bits[i].clone();
-                history[STATIC_LOLOL].max(clonedBits[i], otherTraveler.bits[i]);
-            }
+                int depth = d + 1;
+                long[][] clonedBits = new long[h + 1 - depth][counterLongWords];
+                PropagationTraveler otherTraveler = (PropagationTraveler) mergeWith;
 
-            return new PropagationTraveler(clonedBits);
+                for (int i = 0; i < clonedBits.length; i++) {
+                    clonedBits[i] = bits[i].clone();
+                    history[STATIC_LOLOL].max(clonedBits[i], otherTraveler.bits[i]);
+                }
+
+                return new PropagationTraveler(clonedBits);
+
+
         }
     }
 

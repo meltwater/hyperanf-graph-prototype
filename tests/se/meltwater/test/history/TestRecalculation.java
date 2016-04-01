@@ -143,8 +143,8 @@ public class TestRecalculation {
 
         danf.addEdges(new Edge(5,3),new Edge(4,2));
 
-        assertEquals(4.0, danf.count(5, h), epsilon);
         assertEquals(4.0, danf.count(4, h), epsilon);
+        assertEquals(4.0, danf.count(5, h), epsilon);
     }
 
     /**

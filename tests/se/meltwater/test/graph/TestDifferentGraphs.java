@@ -163,7 +163,6 @@ public class TestDifferentGraphs {
         graph.addEdge(new Edge(9,8));
         graph.addEdge(new Edge(10,25));
         graph.addEdge(new Edge(10,12));
-        graph.addEdge(new Edge(10,10));
         graph.addEdge(new Edge(11,6));
         graph.addEdge(new Edge(12,24));
         graph.addEdge(new Edge(13,11));
@@ -184,11 +183,8 @@ public class TestDifferentGraphs {
         graph.addEdge(new Edge(20,23));
         graph.addEdge(new Edge(20,11));
         graph.addEdge(new Edge(21,10));
-        graph.addEdge(new Edge(22,22));
         graph.addEdge(new Edge(23,29));
-        graph.addEdge(new Edge(23,23));
         graph.addEdge(new Edge(23,10));
-        graph.addEdge(new Edge(24,24));
         graph.addEdge(new Edge(25,19));
         graph.addEdge(new Edge(27,1));
         graph.addEdge(new Edge(27,9));
