@@ -1,14 +1,18 @@
 package se.meltwater.examples;
 
 
+import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import se.meltwater.algo.DANF;
 import se.meltwater.algo.HyperBoll;
 import se.meltwater.graph.Edge;
+import se.meltwater.graph.IGraph;
+import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.vertexcover.DynamicVertexCover;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,14 +23,15 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
  *         <p>
- *         // TODO Class description
+ *         // TODO Remove copy-paste!
  */
 public class Benchmarks {
 
     private static float chanceNewNode = 1.05f;
     private static long bytesPerGigaByte = 1024 * 1024 * 1024;
 
-    public static void benchmarkDVCInsertions() throws IOException {
+
+    public static void benchmarkDVCInsertionsSimluated() throws IOException {
         SimulatedGraph graph = new SimulatedGraph();
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
@@ -41,11 +46,10 @@ public class Benchmarks {
         PrintWriter writer = new PrintWriter("benchmarksdvc.data");
 
         while(System.in.available() == 0 && added < edgesToAdd) {
-            generateEdges(graph.getNumberOfNodes(), bulkSize, edges);
+            generateEdges(edgesToAdd, bulkSize, edges);
             for (int i = 0; i < bulkSize; i++) {
                 dvc.insertEdge(edges[i]);
             }
-            graph.addEdges(edges);
             added += bulkSize;
 
             long currentTime = System.currentTimeMillis();
@@ -56,13 +60,49 @@ public class Benchmarks {
         writer.close();
     }
 
-    public static void benchmarkDVCDeletions() throws IOException {
+    private static int added = 0;
+    private static long lastTime;
+
+    public static void benchmarkDVCInsertionsReal() throws IOException {
+        IGraph graph = new SimulatedGraph();
+        IGraph graphToInsert = new ImmutableGraphWrapper(ImmutableGraph.load("testGraphs/it-2004"));
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+        final int bulkSize =    10000000;
+        PrintWriter writer = new PrintWriter("benchmarksdvc.data");
+
+        added = 0;
+        lastTime = System.currentTimeMillis();
+        long startTime = lastTime;
+
+        graphToInsert.iterateAllEdges(edge -> {
+            dvc.insertEdge(edge);
+            added++;
+
+            if(added % bulkSize == 0) {
+                long currentTime = System.currentTimeMillis();
+                printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime);
+                lastTime = currentTime;
+            }
+            return null;
+        });
+
+        long currentTime = System.currentTimeMillis();
+        printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime);
+        writer.close();
+
+        System.out.println("Graph size: " + graphToInsert.getNumberOfNodes());
+        System.out.println("VC Dize: " + dvc.getVertexCoverSize());
+    }
+
+
+    public static void benchmarkDVCDeletionsSimulated() throws IOException {
         SimulatedGraph graph   = new SimulatedGraph();
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        final long maxNode =       100000;
-        final int edgesToAdd =   10000000;
-        final int bulkSize =        10000;
+        final long maxNode =        1382908;
+        final int edgesToAdd =     16917053;
+        final int bulkSize =          10000;
 
         int added = 0;
 
@@ -75,6 +115,7 @@ public class Benchmarks {
             for (int i = 0; i < bulkSize; i++) {
                 dvc.insertEdge(edges[i]);
             }
+
             graph.addEdges(edges);
             edgeList.addAll(Arrays.asList(edges));
             added += bulkSize;
@@ -85,6 +126,8 @@ public class Benchmarks {
         long startTime = lastTime;
 
         System.out.println("Graph nodes: " + graph.getNumberOfNodes() + ", Arcs: " + graph.getNumberOfArcs());
+        System.out.print("DVC Size: " + dvc.getVertexCoverSize() + " ");
+        System.out.println("Graph arcs: " + graph.getNumberOfArcs());
 
         Collections.shuffle(edgeList);
         edges = edgeList.toArray(new Edge[edgeList.size()]);
@@ -206,7 +249,8 @@ public class Benchmarks {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         //Benchmarks.benchmarkInsertions();
-        //Benchmarks.benchmarkDVCInsertions();
-        Benchmarks.benchmarkDVCDeletions();
+        //Benchmarks.benchmarkDVCInsertionsSimluated();
+        Benchmarks.benchmarkDVCInsertionsReal();
+        //Benchmarks.benchmarkDVCDeletions();
     }
 }

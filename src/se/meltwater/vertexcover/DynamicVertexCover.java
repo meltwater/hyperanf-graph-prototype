@@ -63,6 +63,8 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         return affectedNodes;
     }
 
+
+
     /**
      * Deletes an edge and updates the Vertex Cover/Maximal matching
      * @param edge The deleted edge
@@ -171,7 +173,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
      * Each endpoint of the edge might have previously covered
      * incoming edges which now are uncovered. To determine what incoming
      * edges are uncovered we loop through all edges and test them.
-     * @param edgeRemoved An edge deleted from the Maximal Matching
+     * @param edge An edge deleted from the Maximal Matching
      */
     public void checkIncomingEdgesToDeletedEndpoints(Edge edge, Set<Long> addedNodes) {
 
@@ -193,7 +195,6 @@ public class DynamicVertexCover implements IDynamicVertexCover {
 
         NodeIterator nodeIt = graph.getNodeIterator();
 
-
         for(long currentNode = 0; currentNode < graph.getNumberOfNodes(); currentNode++) {
             nodeIt.nextLong();
             if(isInVertexCover(currentNode)) {
@@ -203,7 +204,6 @@ public class DynamicVertexCover implements IDynamicVertexCover {
             LazyLongIterator succ = nodeIt.successors();
             long degree = nodeIt.outdegree();
 
-            outerLoop:
             while( degree-- != 0 ) {
                 long successorOfCurrentNode = succ.nextLong();
 
@@ -223,7 +223,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
                     addedNodes.add(Long.valueOf(currentNode));
                     addedNodes.add(Long.valueOf(successorOfCurrentNode));
 
-                    break outerLoop;
+                    break;
                 }
             }
         }
