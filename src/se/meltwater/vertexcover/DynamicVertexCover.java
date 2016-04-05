@@ -27,7 +27,6 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     private long[][] maximalMatching;
     private long maximalMatchingLength;
 
-
     private LongArrayBitVector vertexCover;
     private IGraph graph;
     private float resizeFactor = 1.1f;
@@ -172,10 +171,29 @@ public class DynamicVertexCover implements IDynamicVertexCover {
      * Each endpoint of the edge might have previously covered
      * incoming edges which now are uncovered. To determine what incoming
      * edges are uncovered we loop through all edges and test them.
-     * @param edge An edge deleted from the Maximal Matching
+     * @param edgeRemoved An edge deleted from the Maximal Matching
      */
     public void checkIncomingEdgesToDeletedEndpoints(Edge edge, Set<Long> addedNodes) {
+
+        /*graph.iterateAllEdges(edge -> {
+            if(isInVertexCover(edge.from) || isInVertexCover(edge.to) || (edge.to != edgeRemoved.from && edge.to != edgeRemoved.to)) {
+                return null;
+            }
+
+            addEdgeToMaximalMatching(edge);
+            addEdgeToVertexCover(edge);
+
+            addedNodes.add(edge.from);
+            addedNodes.add(edge.to);
+            return null;
+        });*/
+
+
+
+
         NodeIterator nodeIt = graph.getNodeIterator();
+
+
         for(long currentNode = 0; currentNode < graph.getNumberOfNodes(); currentNode++) {
             nodeIt.nextLong();
             if(isInVertexCover(currentNode)) {
@@ -184,8 +202,14 @@ public class DynamicVertexCover implements IDynamicVertexCover {
 
             LazyLongIterator succ = nodeIt.successors();
             long degree = nodeIt.outdegree();
+
+            outerLoop:
             while( degree-- != 0 ) {
                 long successorOfCurrentNode = succ.nextLong();
+
+                if(isInVertexCover(successorOfCurrentNode) || (successorOfCurrentNode != edge.from && successorOfCurrentNode != edge.to)) {
+                    continue;
+                }
 
                 if(!(successorOfCurrentNode == edge.from) && !(successorOfCurrentNode == edge.to)) {
                     continue;
@@ -199,7 +223,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
                     addedNodes.add(Long.valueOf(currentNode));
                     addedNodes.add(Long.valueOf(successorOfCurrentNode));
 
-                    break;
+                    break outerLoop;
                 }
             }
         }
@@ -215,6 +239,10 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     public boolean isInMaximalMatching(Edge edge) {
+        if(edge.from >= maximalMatchingLength) {
+            return false;
+        }
+
         long value = LongBigArrays.get(maximalMatching, edge.from);
 
         if(value == -1) {
