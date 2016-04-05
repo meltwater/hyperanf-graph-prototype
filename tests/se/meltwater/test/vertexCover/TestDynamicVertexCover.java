@@ -13,6 +13,7 @@ import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.util.*;
+import java.util.stream.Collector;
 import java.util.stream.LongStream;
 
 /**
@@ -79,6 +80,67 @@ public class TestDynamicVertexCover {
         /* Second node were already in VC so shouldnt be affected */
         assertTrue(affectedStateMap.get(nodes[1]) == null);
         assertTrue(affectedStateMap.size() == 2);
+    }
+
+    @Test
+    public void testVCSizeOnlyIncreaseInsertion() {
+        int iteration = 0;
+        final int maxNumNodes = 100;
+
+        while(iteration++ < nrTestIterations) {
+            SimulatedGraph graph = new SimulatedGraph();
+            DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+            SimulatedGraph graphToMerge = TestUtils.genRandomGraph(maxNumNodes);
+            graph.addNode(graphToMerge.getNumberOfNodes());
+
+            Edge[] edges = graphToMerge.getAllEdges();
+
+            long previousVCSize = 0;
+            for (int i = 0; i < edges.length; i++) {
+                graph.addEdge(edges[i]);
+                dvc.insertEdge(edges[i]);
+
+                long currentVCSize = dvc.getVertexCoverSize();
+
+                assertTrue(previousVCSize <= currentVCSize);
+                previousVCSize = currentVCSize;
+            }
+        }
+    }
+
+    @Test
+    public void testVCSizeDeletions() {
+        int iteration = 0;
+        final int maxNumNodes = 100;
+
+        while(iteration++ < nrTestIterations) {
+            SimulatedGraph graph = new SimulatedGraph();
+            DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+            SimulatedGraph graphToMerge = TestUtils.genRandomGraph(maxNumNodes);
+            graph.addNode(graphToMerge.getNumberOfNodes());
+
+            Edge[] edges = graphToMerge.getAllEdges();
+
+            for (int i = 0; i < edges.length; i++) {
+                dvc.insertEdge(edges[i]);
+                graph.addEdge(edges[i]);
+            }
+
+
+            long previousVCSize = dvc.getVertexCoverSize();
+            assertTrue(previousVCSize != 0);
+            for (int i = 0; i < edges.length; i++) {
+                graph.deleteEdge(edges[i]);
+                dvc.deleteEdge(edges[i]);
+
+                long currentVCSize = dvc.getVertexCoverSize();
+                assertTrue(currentVCSize <= previousVCSize + 2); //+2 as removing some edges can increase the VC by at most two
+                previousVCSize = currentVCSize;
+            }
+            assertTrue(previousVCSize == 0);
+        }
     }
 
     /**
@@ -151,6 +213,9 @@ public class TestDynamicVertexCover {
             }
         }
     }
+
+
+
 
     /**
      * Small test that inserts a small graph into the dynamic
