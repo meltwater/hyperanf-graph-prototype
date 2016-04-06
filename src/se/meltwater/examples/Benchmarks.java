@@ -10,13 +10,12 @@ import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.vertexcover.DynamicVertexCover;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -30,7 +29,53 @@ public class Benchmarks {
     private static float chanceNewNode = 1.05f;
     private static long bytesPerGigaByte = 1024 * 1024 * 1024;
 
+    private static int added = 0;
+    private static long lastTime;
 
+
+    public static void benchmarkUnionVsStored() throws IOException {
+        ImmutableGraphWrapper graphUnioned = new ImmutableGraphWrapper(ImmutableGraph.load("testGraphs/in-2004"));
+        ImmutableGraphWrapper graphStored = new ImmutableGraphWrapper(ImmutableGraph.load("testGraphs/in-2004"));
+
+        long maxNode = 1000000;
+        int bulkSize = 1000;
+
+        Edge[] edges = new Edge[bulkSize];
+        int iteration = 0;
+        int maxIteration = 50;
+        PrintWriter writer = new PrintWriter("unionVSStored.data");
+        writer.println("#Iteration UnionedTimems StoredTimedms");
+
+        while (iteration++ < maxIteration) {
+            generateEdges(maxNode, bulkSize, edges);
+
+            long startTime = System.currentTimeMillis();
+            graphUnioned.addEdgesUnioned(edges);
+            graphUnioned.iterateAllEdges(edge -> {
+                return null;
+            });
+            long unionTime = System.currentTimeMillis() - startTime;
+
+            startTime = System.currentTimeMillis();
+            graphStored.addEdges(edges);
+            graphStored.iterateAllEdges(edge -> {
+                return null;
+            });
+            long storedTime = System.currentTimeMillis() - startTime;
+
+            writer.println(iteration + " " + unionTime + " " + storedTime);
+            System.out.println("Iteration: " + iteration);
+        }
+
+        writer.close();
+
+    }
+
+
+    /**
+     *
+     * @throws IOException
+     */
     public static void benchmarkDVCInsertionsSimluated() throws IOException {
         SimulatedGraph graph = new SimulatedGraph();
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
