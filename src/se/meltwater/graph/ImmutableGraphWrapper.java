@@ -49,6 +49,25 @@ public class ImmutableGraphWrapper extends AGraph{
         }
     }
 
+    /**
+     * Method only used for comparing Unioned vs Stored graphs
+     * @param edges
+     * @return
+     */
+    public boolean addEdgesUnioned(Edge ... edges) {
+
+        try {
+            SimulatedGraph extraEdge = new SimulatedGraph();
+            extraEdge.addEdges(edges);
+            graph = new UnionImmutableGraph(new SimulatedGraphWrapper(extraEdge), graph);
+
+            return true;
+        }catch (Exception e){
+            throw new RuntimeException(e);
+        }
+
+    }
+
     @Override
     public boolean addEdges(Edge ... edges){
 
