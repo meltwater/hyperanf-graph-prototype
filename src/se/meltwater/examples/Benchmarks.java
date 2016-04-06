@@ -80,41 +80,32 @@ public class Benchmarks {
         SimulatedGraph graph = new SimulatedGraph();
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
+        final int maxNode = 1000000;
         final int edgesToAdd = 100000000;
         final int bulkSize =     1000000;
-
-        int added = 0;
         long lastTime = System.currentTimeMillis();
         long startTime = lastTime;
 
-        Edge[] edges = new Edge[bulkSize];
-        PrintWriter writer = new PrintWriter("benchmarksdvc.data");
+        PrintWriter writer = getInititatedPrinter("benchmarksdvc.data");
 
-        while(System.in.available() == 0 && added < edgesToAdd) {
-            generateEdges(edgesToAdd, bulkSize, edges);
-            for (int i = 0; i < bulkSize; i++) {
-                dvc.insertEdge(edges[i]);
-            }
-            added += bulkSize;
-
-            long currentTime = System.currentTimeMillis();
-            printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime);
-            lastTime = currentTime;
-        }
+        insertRandomEdgesIntoDvc(graph, dvc, maxNode, edgesToAdd, bulkSize, lastTime, startTime, false, writer);
 
         writer.close();
     }
 
-    private static int added = 0;
-    private static long lastTime;
 
+
+    /**
+     *
+     * @throws IOException
+     */
     public static void benchmarkDVCInsertionsReal() throws IOException {
         IGraph graph = new SimulatedGraph();
-        IGraph graphToInsert = new ImmutableGraphWrapper(ImmutableGraph.load("testGraphs/it-2004"));
+        IGraph graphToInsert = new ImmutableGraphWrapper(ImmutableGraph.load("testGraphs/indochina-2004"));
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
         final int bulkSize =    10000000;
-        PrintWriter writer = new PrintWriter("benchmarksdvc.data");
+        PrintWriter writer = getInititatedPrinter("benchmarksdvc.data");
 
         added = 0;
         lastTime = System.currentTimeMillis();
@@ -126,95 +117,85 @@ public class Benchmarks {
 
             if(added % bulkSize == 0) {
                 long currentTime = System.currentTimeMillis();
-                printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime);
+                printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime, graph);
                 lastTime = currentTime;
             }
             return null;
         });
 
         long currentTime = System.currentTimeMillis();
-        printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime);
+        printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime, graph);
         writer.close();
 
         System.out.println("Graph size: " + graphToInsert.getNumberOfNodes());
         System.out.println("VC Dize: " + dvc.getVertexCoverSize());
     }
 
-
-    public static void benchmarkDVCDeletionsSimulated() throws IOException {
-        SimulatedGraph graph   = new SimulatedGraph();
+    /**
+     *
+     * @throws IOException
+     */
+    public static void benchmarkDVCDeletionsReal() throws IOException {
+        IGraph graph = new ImmutableGraphWrapper(ImmutableGraph.load("testGraphs/in-2004"));
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        final long maxNode =        1382908;
-        final int edgesToAdd =     16917053;
-        final int bulkSize =          10000;
-
-        int added = 0;
-
-        ArrayList<Edge> edgeList = new ArrayList<>(edgesToAdd);
-        Edge[] edges = new Edge[bulkSize];
-        PrintWriter writer = new PrintWriter("benchmarksdvcdelete.data");
-
-        while(System.in.available() == 0 && added < edgesToAdd) {
-            generateEdges(maxNode, bulkSize, edges);
-            for (int i = 0; i < bulkSize; i++) {
-                dvc.insertEdge(edges[i]);
-            }
-
-            graph.addEdges(edges);
-            edgeList.addAll(Arrays.asList(edges));
-            added += bulkSize;
-        }
-
-        int removed = 0;
-        long lastTime = System.currentTimeMillis();
+        PrintWriter writer = getInititatedPrinter("benchmarksDvcDeletionsReal.data");
+        final int edgesToDelete = 2000;
+        final int bulkSize = 100;
+        added = 0;
+        lastTime = System.currentTimeMillis();
         long startTime = lastTime;
 
-        System.out.println("Graph nodes: " + graph.getNumberOfNodes() + ", Arcs: " + graph.getNumberOfArcs());
-        System.out.print("DVC Size: " + dvc.getVertexCoverSize() + " ");
-        System.out.println("Graph arcs: " + graph.getNumberOfArcs());
+        graph.iterateAllEdges(edge -> {
+           if(added++ == edgesToDelete) {
+               return edge;
+           }
 
-        Collections.shuffle(edgeList);
-        edges = edgeList.toArray(new Edge[edgeList.size()]);
-
-        while(removed < added) {
-            for (int i = 0; i < bulkSize; i++) {
-                Edge edgeToRemove = edges[i + removed];
-                graph.deleteEdge(edgeToRemove);
-                dvc.deleteEdge(edgeToRemove);
+            if(added % bulkSize == 0) {
+                long currentTime = System.currentTimeMillis();
+                printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime, graph);
+                lastTime = currentTime;
             }
 
-            long currentTime = System.currentTimeMillis();
-            long elapsedTime = currentTime - lastTime;
-            float timePerBulkSeconds = elapsedTime / 1000.0f;
-            float dps = bulkSize / timePerBulkSeconds;
-
-            float heapSize = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (float)bytesPerGigaByte;
-
-            float elapsedTimeSinceStart = (currentTime - startTime) / 1000.0f;
-            float addedInMillions = (float)added / 1000000;
-
-            System.out.print("Total nr edges: " + added + ". ");
-            System.out.print("Added " + bulkSize + " edges. ");
-            System.out.print("Time per bulk: " + timePerBulkSeconds + "s. ");
-            System.out.print("DPS: " + dps + ". ");
-            System.out.print("Heap size: " + heapSize + " Gb. ");
-            System.out.println("Total time: " + elapsedTimeSinceStart + "s.");
-
-            writer.println(addedInMillions + " " + dps + " " + heapSize + " " + elapsedTimeSinceStart + " " + graph.getNumberOfArcs());
-
-            lastTime = currentTime;
-
-            System.out.print("DVC Size: " + dvc.getVertexCoverSize() + " ");
-            System.out.println("Graph arcs: " + graph.getNumberOfArcs());
-
-            removed += bulkSize;
-        }
+            dvc.deleteEdge(edge);
+            return null;
+        });
 
         writer.close();
     }
 
-    public static void benchmarkInsertions() throws IOException, InterruptedException {
+    /**
+     *
+     * @throws IOException
+     */
+    public static void benchmarkDVCDeletionsSimulated() throws IOException {
+        SimulatedGraph graph   = new SimulatedGraph();
+        DynamicVertexCover dvc = new DynamicVertexCover(graph);
+
+        final long maxNode =    100000;
+        final int edgesToAdd =  100000;
+        final int bulkSize =       100;
+
+        insertRandomEdgesIntoDvc(graph, dvc, maxNode, edgesToAdd, bulkSize, 0, 0, true, null);
+
+        PrintWriter writer = getInititatedPrinter("benchmarksdvcdelete.data");
+
+        int removed = 0;
+        long lastTime = System.currentTimeMillis();
+        long startTime = lastTime;
+        final int edgesToRemove = (int)graph.getNumberOfArcs();
+
+        deleteEdges(graph, dvc, edgesToRemove, bulkSize, writer, removed, lastTime, startTime, true);
+
+        writer.close();
+    }
+
+    /**
+     *
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    public static void benchmarkEdgeInsertionsDanf() throws IOException, InterruptedException {
         int log2m = 7;
         int h = 3;
         int edgesToAdd = 5000000;
@@ -225,7 +206,7 @@ public class Benchmarks {
 
         DANF danf = runHyperBoll(log2m, h, graph);
 
-        PrintWriter writer = new PrintWriter("benchmarksSimon.data");
+        PrintWriter writer = getInititatedPrinter("benchmarksSimon.data");
 
         int added = 0;
         long lastTime = System.currentTimeMillis();
@@ -240,14 +221,71 @@ public class Benchmarks {
             added += bulkSize;
 
             long currentTime = System.currentTimeMillis();
-            printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime);
+            printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime, graph);
             lastTime = currentTime;
         }
 
         writer.close();
     }
 
-    private static void printAndLogStatistics(PrintWriter writer, int added, long lastTime, long startTime, int bulkSize, long currentTime) {
+    private static void insertRandomEdgesIntoDvc(SimulatedGraph graph, DynamicVertexCover dvc, long maxNode, int edgesToAdd, int bulkSize, long lastTime, long startTime, boolean shouldAddToGraph, PrintWriter writer) {
+        int added = 0;
+        Edge[] edges = new Edge[bulkSize];
+        while(added < edgesToAdd) {
+            generateEdges(maxNode, bulkSize, edges);
+            for (int i = 0; i < bulkSize; i++) {
+                dvc.insertEdge(edges[i]);
+            }
+
+            if(shouldAddToGraph) {
+                graph.addEdges(edges);
+            }
+            added += bulkSize;
+
+            long currentTime = System.currentTimeMillis();
+            if(writer != null) {
+                printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime, graph);
+            }
+            lastTime = currentTime;
+        }
+    }
+
+
+    private static void deleteEdges(SimulatedGraph graph, DynamicVertexCover dvc, int edgesToRemove, int bulkSize, PrintWriter writer, int removed, long lastTime, long startTime, boolean shouldShuffle) {
+        ArrayList<Edge> edgeList = new ArrayList<>(edgesToRemove);
+        graph.iterateAllEdges(edge -> {
+            edgeList.add(edge);
+            return null;
+        });
+        if(shouldShuffle) {
+            Collections.shuffle(edgeList);
+        }
+        Edge[] edges = edgeList.toArray(new Edge[edgeList.size()]);
+
+        while(removed < edgesToRemove) {
+            int nrDeleted = Math.min(bulkSize, edgesToRemove - removed);
+
+            for (int i = 0; i < nrDeleted; i++) {
+                Edge edgeToRemove = edges[i + removed];
+                graph.deleteEdge(edgeToRemove);
+                dvc.deleteEdge(edgeToRemove);
+            }
+
+            long currentTime = System.currentTimeMillis();
+            printAndLogStatistics(writer, removed, lastTime, startTime, nrDeleted, currentTime, graph );
+
+            lastTime = currentTime;
+            removed += nrDeleted;
+        }
+    }
+
+    private static PrintWriter getInititatedPrinter(String fileName) throws FileNotFoundException {
+        PrintWriter writer = new PrintWriter(fileName);
+        writer.println("#Modifications DPS HeapSize ElapsedTime nrArcs nrNodes");
+        return writer;
+    }
+
+    private static void printAndLogStatistics(PrintWriter writer, int nrModified, long lastTime, long startTime, int bulkSize, long currentTime, IGraph graph) {
         long elapsedTime = currentTime - lastTime;
         float timePerBulkSeconds = elapsedTime / 1000.0f;
         float dps = bulkSize / timePerBulkSeconds;
@@ -255,16 +293,18 @@ public class Benchmarks {
         float heapSize = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (float)bytesPerGigaByte;
 
         float elapsedTimeSinceStart = (currentTime - startTime) / 1000.0f;
-        float addedInMillions = (float)added / 1000000;
+        float modifiedInMillions = (float)nrModified / 1000000;
 
-        System.out.print("Total nr edges: " + added + ". ");
-        System.out.print("Added " + bulkSize + " edges. ");
+        System.out.print("Total nr edges: " + nrModified + ". ");
+        System.out.print("Modified " + bulkSize + " edges. ");
         System.out.print("Time per bulk: " + timePerBulkSeconds + "s. ");
         System.out.print("DPS: " + dps + ". ");
         System.out.print("Heap size: " + heapSize + " Gb. ");
+        System.out.print("NrArcs: " + graph.getNumberOfArcs() + " ");
+        System.out.print("NrNodes: " + graph.getNumberOfNodes() + " ");
         System.out.println("Total time: " + elapsedTimeSinceStart + "s.");
 
-        writer.println(addedInMillions + " " + dps + " " + heapSize + " " + elapsedTimeSinceStart);
+        writer.println(modifiedInMillions + " " + dps + " " + heapSize + " " + elapsedTimeSinceStart  + " " + graph.getNumberOfArcs() + " " + graph.getNumberOfNodes());
     }
 
     private static void generateEdges(long currentMaxNode, int bulkSize, Edge[] edges) {
@@ -293,9 +333,11 @@ public class Benchmarks {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        //Benchmarks.benchmarkInsertions();
+        //Benchmarks.benchmarkEdgeInsertionsDanf();
         //Benchmarks.benchmarkDVCInsertionsSimluated();
-        Benchmarks.benchmarkDVCInsertionsReal();
-        //Benchmarks.benchmarkDVCDeletions();
+        //Benchmarks.benchmarkDVCInsertionsReal();
+        //Benchmarks.benchmarkDVCDeletionsSimulated();
+        //Benchmarks.benchmarkDVCDeletionsReal();
+        Benchmarks.benchmarkUnionVsStored();
     }
 }
