@@ -70,7 +70,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
      * @param edge The deleted edge
      */
     @Override
-    public Map<Long, AffectedState> deleteEdge(Edge edge) {
+    public Map<Long, AffectedState> deleteEdge(Edge edge, IGraph graphTranspose) {
         Set<Long> removedNodes = new HashSet<>();
         Set<Long> addedNodes   = new HashSet<>();
 
@@ -88,7 +88,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         checkOutgoingEdgesFromDeletedEndpoint(edge.from, addedNodes);
         if(edge.from != edge.to)
             checkOutgoingEdgesFromDeletedEndpoint(edge.to, addedNodes);
-        checkIncomingEdgesToDeletedEndpoints(edge, addedNodes);
+        checkIncomingEdgesToDeletedEndpoints(edge, addedNodes, graphTranspose);
 
         affectedNodes = createAffectedNodes(removedNodes, addedNodes);
 
@@ -175,57 +175,37 @@ public class DynamicVertexCover implements IDynamicVertexCover {
      * edges are uncovered we loop through all edges and test them.
      * @param edge An edge deleted from the Maximal Matching
      */
-    public void checkIncomingEdgesToDeletedEndpoints(Edge edge, Set<Long> addedNodes) {
+    public void checkIncomingEdgesToDeletedEndpoints(Edge edge, Set<Long> addedNodes, IGraph graphTranspose) {
+        checkTransposeFromNode(edge.from, addedNodes, graphTranspose);
+        if(edge.from != edge.to) {
+            checkTransposeFromNode(edge.to, addedNodes, graphTranspose);
+        }
+    }
 
-        /*graph.iterateAllEdges(edge -> {
-            if(isInVertexCover(edge.from) || isInVertexCover(edge.to) || (edge.to != edgeRemoved.from && edge.to != edgeRemoved.to)) {
-                return null;
-            }
+    private void checkTransposeFromNode(Long node, Set<Long> addedNodes, IGraph graphTranspose) {
+        NodeIterator nodeIt = graphTranspose.getNodeIterator(node); // TODO Let danf update tranpose
+        nodeIt.nextLong();
+        long outdegree = nodeIt.outdegree();
+        LazyLongIterator succ = nodeIt.successors();
 
-            addEdgeToMaximalMatching(edge);
-            addEdgeToVertexCover(edge);
+        while(outdegree-- != 0) {
+            /*if(isInVertexCover(node)) {
+                break;
+            }*/
 
-            addedNodes.add(edge.from);
-            addedNodes.add(edge.to);
-            return null;
-        });*/
-
-
-
-
-        NodeIterator nodeIt = graph.getNodeIterator();
-
-        for(long currentNode = 0; currentNode < graph.getNumberOfNodes(); currentNode++) {
-            nodeIt.nextLong();
-            if(isInVertexCover(currentNode)) {
+            long neighbor = succ.nextLong();
+            if(isInVertexCover(neighbor)) {
                 continue;
             }
 
-            LazyLongIterator succ = nodeIt.successors();
-            long degree = nodeIt.outdegree();
+            Edge incomingEdge = new Edge(neighbor, node);
+            addEdgeToMaximalMatching(incomingEdge);
+            addEdgeToVertexCover(incomingEdge);
 
-            while( degree-- != 0 ) {
-                long successorOfCurrentNode = succ.nextLong();
+            addedNodes.add(Long.valueOf(node));
+            addedNodes.add(Long.valueOf(neighbor));
 
-                if(isInVertexCover(successorOfCurrentNode) || (successorOfCurrentNode != edge.from && successorOfCurrentNode != edge.to)) {
-                    continue;
-                }
-
-                if(!(successorOfCurrentNode == edge.from) && !(successorOfCurrentNode == edge.to)) {
-                    continue;
-                }
-
-                if(!isInVertexCover(successorOfCurrentNode)){
-                    Edge incomingEdge = new Edge(currentNode, successorOfCurrentNode);
-                    addEdgeToMaximalMatching(incomingEdge);
-                    addEdgeToVertexCover(incomingEdge);
-
-                    addedNodes.add(Long.valueOf(currentNode));
-                    addedNodes.add(Long.valueOf(successorOfCurrentNode));
-
-                    break;
-                }
-            }
+            break;
         }
     }
 

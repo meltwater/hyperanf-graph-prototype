@@ -165,7 +165,12 @@ public class ImmutableGraphWrapper extends AGraph{
 
     public IGraph transpose(){
         try {
-            return new ImmutableGraphWrapper(Transform.transposeOffline(graph, (int) graph.numNodes()));
+            ImmutableGraph transpose = Transform.transposeOffline(graph, (int) graph.numNodes());
+            BVGraph.store(transpose, "tmp", 0, 0, -1, -1, 0);
+            transpose = BVGraph.load("tmp"); // TODO Use javas tmp files
+
+
+            return new ImmutableGraphWrapper(transpose);
         } catch (IOException e) {
             e.printStackTrace();
             return null;

@@ -2,6 +2,9 @@ package se.meltwater.examples;
 
 
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
+import it.unimi.dsi.big.webgraph.BVGraph;
+import it.unimi.dsi.big.webgraph.ImmutableSequentialGraph;
+import it.unimi.dsi.big.webgraph.Transform;
 import se.meltwater.algo.DANF;
 import se.meltwater.algo.HyperBoll;
 import se.meltwater.graph.Edge;
@@ -136,16 +139,21 @@ public class Benchmarks {
      * @throws IOException
      */
     public static void benchmarkDVCDeletionsReal() throws IOException {
-        IGraph graph = new ImmutableGraphWrapper(ImmutableGraph.load("testGraphs/in-2004"));
+        IGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped("testGraphs/it-2004"));
+        System.out.println("Graph loaded. Starting loading transpose");
+        IGraph graphTranspose = graph.transpose();
+
+        System.out.println("Transpose done");
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
         PrintWriter writer = getInititatedPrinter("benchmarksDvcDeletionsReal.data");
-        final int edgesToDelete = 2000;
-        final int bulkSize = 100;
+        final long edgesToDelete = graph.getNumberOfArcs();
+        final int bulkSize =          10000000;
         added = 0;
         lastTime = System.currentTimeMillis();
         long startTime = lastTime;
 
+        System.out.println("Starting deletion");
         graph.iterateAllEdges(edge -> {
            if(added++ == edgesToDelete) {
                return edge;
@@ -157,7 +165,8 @@ public class Benchmarks {
                 lastTime = currentTime;
             }
 
-            dvc.deleteEdge(edge);
+            dvc.deleteEdge(edge, graphTranspose);
+
             return null;
         });
 
@@ -172,9 +181,9 @@ public class Benchmarks {
         SimulatedGraph graph   = new SimulatedGraph();
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        final long maxNode =    100000;
-        final int edgesToAdd =  100000;
-        final int bulkSize =       100;
+        final long maxNode =    10000000;
+        final int edgesToAdd =   1000000;
+        final int bulkSize =         100;
 
         insertRandomEdgesIntoDvc(graph, dvc, maxNode, edgesToAdd, bulkSize, 0, 0, true, null);
 
@@ -185,7 +194,9 @@ public class Benchmarks {
         long startTime = lastTime;
         final int edgesToRemove = (int)graph.getNumberOfArcs();
 
-        deleteEdges(graph, dvc, edgesToRemove, bulkSize, writer, removed, lastTime, startTime, true);
+        SimulatedGraph graphTranspose = (SimulatedGraph) graph.transpose();
+
+        deleteEdges(graph, graphTranspose, dvc, edgesToRemove, bulkSize, writer, removed, lastTime, startTime, true);
 
         writer.close();
     }
@@ -251,7 +262,7 @@ public class Benchmarks {
     }
 
 
-    private static void deleteEdges(SimulatedGraph graph, DynamicVertexCover dvc, int edgesToRemove, int bulkSize, PrintWriter writer, int removed, long lastTime, long startTime, boolean shouldShuffle) {
+    private static void deleteEdges(SimulatedGraph graph, SimulatedGraph graphTranspose, DynamicVertexCover dvc, int edgesToRemove, int bulkSize, PrintWriter writer, int removed, long lastTime, long startTime, boolean shouldShuffle) {
         ArrayList<Edge> edgeList = new ArrayList<>(edgesToRemove);
         graph.iterateAllEdges(edge -> {
             edgeList.add(edge);
@@ -268,7 +279,8 @@ public class Benchmarks {
             for (int i = 0; i < nrDeleted; i++) {
                 Edge edgeToRemove = edges[i + removed];
                 graph.deleteEdge(edgeToRemove);
-                dvc.deleteEdge(edgeToRemove);
+                graphTranspose.deleteEdge(edgeToRemove.flip());
+                dvc.deleteEdge(edgeToRemove, graphTranspose);
             }
 
             long currentTime = System.currentTimeMillis();
@@ -337,7 +349,7 @@ public class Benchmarks {
         //Benchmarks.benchmarkDVCInsertionsSimluated();
         //Benchmarks.benchmarkDVCInsertionsReal();
         //Benchmarks.benchmarkDVCDeletionsSimulated();
-        //Benchmarks.benchmarkDVCDeletionsReal();
-        Benchmarks.benchmarkUnionVsStored();
+        Benchmarks.benchmarkDVCDeletionsReal();
+        //Benchmarks.benchmarkUnionVsStored();
     }
 }
