@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntOpenHashBigSet;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.webgraph.BVGraph;
 import se.meltwater.MSBreadthFirst;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
@@ -56,9 +57,6 @@ public class DANF {
             insertNodeToCounterIndex(nextNode);
             nextNode = nextNode + 1;
         }
-        /*for(long node : vc.getNodesInVertexCover()) {
-            insertNodeToCounterIndex(node);
-        }*/
     }
 
 
