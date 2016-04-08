@@ -1,10 +1,8 @@
-package se.meltwater;
+package se.meltwater.bfs;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
-import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
-import it.unimi.dsi.fastutil.objects.ObjectBigLists;
 import se.meltwater.graph.IGraph;
 
 import java.util.ArrayList;

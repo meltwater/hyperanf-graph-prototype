@@ -49,6 +49,25 @@ public class ImmutableGraphWrapper extends AGraph{
         }
     }
 
+    /**
+     * Method only used for comparing Unioned vs Stored graphs
+     * @param edges
+     * @return
+     */
+    public boolean addEdgesUnioned(Edge ... edges) {
+
+        try {
+            SimulatedGraph extraEdge = new SimulatedGraph();
+            extraEdge.addEdges(edges);
+            graph = new UnionImmutableGraph(new SimulatedGraphWrapper(extraEdge), graph);
+
+            return true;
+        }catch (Exception e){
+            throw new RuntimeException(e);
+        }
+
+    }
+
     @Override
     public boolean addEdges(Edge ... edges){
 
@@ -146,7 +165,12 @@ public class ImmutableGraphWrapper extends AGraph{
 
     public IGraph transpose(){
         try {
-            return new ImmutableGraphWrapper(Transform.transposeOffline(graph, (int) graph.numNodes()));
+            ImmutableGraph transpose = Transform.transposeOffline(graph, (int) graph.numNodes());
+            BVGraph.store(transpose, "tmp", 0, 0, -1, -1, 0);
+            transpose = BVGraph.load("tmp"); // TODO Use javas tmp files
+
+
+            return new ImmutableGraphWrapper(transpose);
         } catch (IOException e) {
             e.printStackTrace();
             return null;

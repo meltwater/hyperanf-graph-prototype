@@ -2,7 +2,7 @@
 import com.martiansoftware.jsap.*;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import se.meltwater.Converter;
-import se.meltwater.MSBreadthFirst;
+import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graphEditing.GraphMerger;
 import se.meltwater.GraphReader;
@@ -11,7 +11,6 @@ import se.meltwater.examples.VertexCover;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**

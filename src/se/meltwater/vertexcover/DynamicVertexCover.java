@@ -27,7 +27,6 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     private long[][] maximalMatching;
     private long maximalMatchingLength;
 
-
     private LongArrayBitVector vertexCover;
     private IGraph graph;
     private float resizeFactor = 1.1f;
@@ -64,12 +63,14 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         return affectedNodes;
     }
 
+
+
     /**
      * Deletes an edge and updates the Vertex Cover/Maximal matching
      * @param edge The deleted edge
      */
     @Override
-    public Map<Long, AffectedState> deleteEdge(Edge edge) {
+    public Map<Long, AffectedState> deleteEdge(Edge edge, IGraph graphTranspose) {
         Set<Long> removedNodes = new HashSet<>();
         Set<Long> addedNodes   = new HashSet<>();
 
@@ -87,7 +88,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         checkOutgoingEdgesFromDeletedEndpoint(edge.from, addedNodes);
         if(edge.from != edge.to)
             checkOutgoingEdgesFromDeletedEndpoint(edge.to, addedNodes);
-        checkIncomingEdgesToDeletedEndpoints(edge, addedNodes);
+        checkIncomingEdgesToDeletedEndpoints(edge, addedNodes, graphTranspose);
 
         affectedNodes = createAffectedNodes(removedNodes, addedNodes);
 
@@ -174,34 +175,37 @@ public class DynamicVertexCover implements IDynamicVertexCover {
      * edges are uncovered we loop through all edges and test them.
      * @param edge An edge deleted from the Maximal Matching
      */
-    public void checkIncomingEdgesToDeletedEndpoints(Edge edge, Set<Long> addedNodes) {
-        NodeIterator nodeIt = graph.getNodeIterator();
-        for(long currentNode = 0; currentNode < graph.getNumberOfNodes(); currentNode++) {
-            nodeIt.nextLong();
-            if(isInVertexCover(currentNode)) {
+    public void checkIncomingEdgesToDeletedEndpoints(Edge edge, Set<Long> addedNodes, IGraph graphTranspose) {
+        checkTransposeFromNode(edge.from, addedNodes, graphTranspose);
+        if(edge.from != edge.to) {
+            checkTransposeFromNode(edge.to, addedNodes, graphTranspose);
+        }
+    }
+
+    private void checkTransposeFromNode(Long node, Set<Long> addedNodes, IGraph graphTranspose) {
+        NodeIterator nodeIt = graphTranspose.getNodeIterator(node); // TODO Let danf update tranpose
+        nodeIt.nextLong();
+        long outdegree = nodeIt.outdegree();
+        LazyLongIterator succ = nodeIt.successors();
+
+        while(outdegree-- != 0) {
+            if(isInVertexCover(node)) {
+                break;
+            }
+
+            long neighbor = succ.nextLong();
+            if(isInVertexCover(neighbor)) {
                 continue;
             }
 
-            LazyLongIterator succ = nodeIt.successors();
-            long degree = nodeIt.outdegree();
-            while( degree-- != 0 ) {
-                long successorOfCurrentNode = succ.nextLong();
+            Edge incomingEdge = new Edge(neighbor, node);
+            addEdgeToMaximalMatching(incomingEdge);
+            addEdgeToVertexCover(incomingEdge);
 
-                if(!(successorOfCurrentNode == edge.from) && !(successorOfCurrentNode == edge.to)) {
-                    continue;
-                }
+            addedNodes.add(Long.valueOf(node));
+            addedNodes.add(Long.valueOf(neighbor));
 
-                if(!isInVertexCover(successorOfCurrentNode)){
-                    Edge incomingEdge = new Edge(currentNode, successorOfCurrentNode);
-                    addEdgeToMaximalMatching(incomingEdge);
-                    addEdgeToVertexCover(incomingEdge);
-
-                    addedNodes.add(Long.valueOf(currentNode));
-                    addedNodes.add(Long.valueOf(successorOfCurrentNode));
-
-                    break;
-                }
-            }
+            break;
         }
     }
 
@@ -215,6 +219,10 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     public boolean isInMaximalMatching(Edge edge) {
+        if(edge.from >= maximalMatchingLength) {
+            return false;
+        }
+
         long value = LongBigArrays.get(maximalMatching, edge.from);
 
         if(value == -1) {

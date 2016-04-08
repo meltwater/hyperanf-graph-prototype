@@ -1,21 +1,19 @@
 package se.meltwater.test.BFS;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
-import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
-import org.apache.commons.collections.ArrayStack;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import se.meltwater.MSBreadthFirst;
+import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
+import se.meltwater.utils.Utils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,7 +48,7 @@ public class TestMSBFS {
             numNodes = graph.getNumberOfNodes();
             long sources[] = TestUtils.generateRandomNodes(numNodes,(int)numNodes,1);
             MSBreadthFirst.Traveler t = (MSBreadthFirst.Traveler t1, int depth) ->  t1;
-            MSBreadthFirst.Traveler[] travelers = repeat(t,sources.length, new MSBreadthFirst.Traveler[0]);
+            MSBreadthFirst.Traveler[] travelers = Utils.repeat(t,sources.length, new MSBreadthFirst.Traveler[0]);
             AtomicBoolean noNull = new AtomicBoolean(true);
             MSBreadthFirst.Visitor v = (long x, BitSet y, BitSet z, int d, MSBreadthFirst.Traveler t2) -> {if(t2 == null) noNull.set(false);};
             MSBreadthFirst msbfs = new MSBreadthFirst(sources,travelers,graph,v);
@@ -59,21 +57,7 @@ public class TestMSBFS {
         }
     }
 
-    /**
-     *
-     * @param elem
-     * @param times
-     * @param dummyArr This is for {@link ArrayList#toArray(Object[])} which needs a dummy array
-     * @param <T>
-     * @return
-     */
-    public static <T> T[] repeat(T elem, int times, T[] dummyArr){
-        ArrayList<T> ret = new ArrayList<>(times);
-        for (int i = 0; i < times ; i++) {
-            ret.add(elem);
-        }
-        return ret.toArray(dummyArr);
-    }
+
 
     /**
      * Tests that a traveler merges once and only once for a graph where that should happen. Starts

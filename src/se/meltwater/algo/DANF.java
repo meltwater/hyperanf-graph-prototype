@@ -3,11 +3,8 @@ package se.meltwater.algo;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 
 import it.unimi.dsi.bits.LongArrayBitVector;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntOpenHashBigSet;
-import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import se.meltwater.MSBreadthFirst;
+import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
@@ -57,9 +54,6 @@ public class DANF {
             node = vcIterator.nextLong();
             insertNodeToCounterIndex(node);
         }
-        /*for(long node : vc.getNodesInVertexCover()) {
-            insertNodeToCounterIndex(node);
-        }*/
     }
 
 
