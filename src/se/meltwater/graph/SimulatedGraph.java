@@ -87,6 +87,7 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
 
     @Override
     public boolean addEdge(Edge edge){
+
         if(!containsNode(edge.from)) {
             addNode(edge.from);
         }
@@ -94,13 +95,12 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
             addNode(edge.to);
         }
 
-        Set<Long> neighbors = iteratorNeighbors.get(edge.from);
+        TreeSet<Long> neighbors = iteratorNeighbors.get(edge.from);
 
-        if(neighbors == null) {
-            addNode(edge.from);
-            neighbors = iteratorNeighbors.get(edge.from);
+        if(neighbors == null){
+            neighbors = new TreeSet<>();
+            iteratorNeighbors.put(edge.from,neighbors);
         }
-
         boolean wasAdded = neighbors.add(edge.to);
 
         if(wasAdded)

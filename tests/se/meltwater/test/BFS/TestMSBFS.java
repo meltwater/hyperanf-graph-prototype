@@ -75,14 +75,15 @@ public class TestMSBFS {
      */
     @Test
     public void testOneMerge() throws InterruptedException {
+
         SimulatedGraph graph = new SimulatedGraph();
         graph.addNode(3);
-        graph.addEdges(new Edge(0,2),new Edge(1,2), new Edge(2,3));
-        long[] bfsSources = new long[]{0,1};
+        graph.addEdges(new Edge(0, 2), new Edge(1, 2), new Edge(2, 3));
+        long[] bfsSources = new long[]{0, 1};
         AtomicInteger merges = new AtomicInteger(0);
-        MSBreadthFirst.Traveler[] travs = new CountMergesTraveler[]{new CountMergesTraveler(merges),new CountMergesTraveler(merges)};
-        new MSBreadthFirst(bfsSources,travs,graph,correctMergesVisitor()).breadthFirstSearch();
-        assertEquals(1,merges.get());
+        MSBreadthFirst.Traveler[] travs = new CountMergesTraveler[]{new CountMergesTraveler(merges), new CountMergesTraveler(merges)};
+        new MSBreadthFirst(bfsSources, travs, graph, correctMergesVisitor()).breadthFirstSearch();
+        assertEquals(1, merges.get());
 
     }
 
