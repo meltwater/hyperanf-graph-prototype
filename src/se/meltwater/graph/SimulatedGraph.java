@@ -87,8 +87,6 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
 
     @Override
     public boolean addEdge(Edge edge){
-        if(edge.from == edge.to)
-            return false;
 
         if(!containsNode(edge.from)) {
             addNode(edge.from);

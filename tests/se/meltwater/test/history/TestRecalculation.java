@@ -99,7 +99,7 @@ public class TestRecalculation {
 
         DANF danf = pair.getKey();
 
-        danf.addEdges(new Edge(1, 2), new Edge(2, 1));
+        danf.addEdges(new Edge(2, 1), new Edge(1, 2));
 
         assertEquals(2.0, danf.count(1, h), epsilon);
         assertEquals(2.0, danf.count(2, h), epsilon);
@@ -148,23 +148,6 @@ public class TestRecalculation {
     }
 
     /**
-     * Tests that a complete recalculation of a node gives the same
-     * result as HyperBoll would.
-     */
-    @Test
-    public void historyUnchangedOnRecalculation() throws IOException, InterruptedException {
-        setupRandomParameters();
-
-        BVGraph bvGraph = BVGraph.load("testGraphs/wordassociationNoBlocks");
-        IGraph graph = new ImmutableGraphWrapper(bvGraph);
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
-
-        DANF danf = TestUtils.runHyperBall(graph, dvc, h, log2m).getKey();
-        assertCurrentCountIsSameAsRecalculatedCount(danf,dvc);
-
-    }
-
-    /**
      * Tests that a node which previously didn't have any edges has some history after
      * adding edges
      */
@@ -202,7 +185,6 @@ public class TestRecalculation {
                 } while(boll.getCounter().hasSameRegisters(node, neighbor));
 
                 nh.addEdges(new Edge(node, neighbor));
-                nh.recalculateHistory(node);
                 history2 = nh.count(node);
                 for (int j = 0; j < history.length; j++) {
                     assertTrue(history[j]+0.05 < history2[j]);
@@ -219,19 +201,6 @@ public class TestRecalculation {
         return ret;
     }
 
-    @Test
-    public void historyUnchangedCircleReference() throws IOException, InterruptedException {
-
-        setupRandomParameters();
-
-        IGraph graph = createGraphWithCircles();
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
-
-        DANF danf = TestUtils.runHyperBall(graph, dvc, h, log2m).getKey();
-        assertCurrentCountIsSameAsRecalculatedCount(danf,dvc);
-
-    }
-
     private IGraph createGraphWithCircles(){
         SimulatedGraph g = new SimulatedGraph();
         g.addNode(1);
@@ -246,32 +215,6 @@ public class TestRecalculation {
         g.addEdge(new Edge(2,0));
         g.addEdge(new Edge(3,4));
         return g;
-    }
-
-    /**
-     * Tests that all recalculations give the same answer as the previous history
-     * @throws InterruptedException
-     */
-    private void assertCurrentCountIsSameAsRecalculatedCount(DANF danf, DynamicVertexCover dvc) throws InterruptedException {
-        double[] history;
-
-        LongArrayBitVector vcNodes = dvc.getNodesInVertexCover();
-        long node = 0;
-        while((node = vcNodes.nextOne(node)) != -1) {
-            history = danf.count(node);
-            danf.recalculateHistory(node);
-
-            assertArrayEquals("Failed for node " + node,history, danf.count(node), 0.01);
-
-            node = node + 1;
-        }
-
-        /*for(long node : dvc.getNodesInVertexCover()){
-            history = danf.count(node);
-            danf.recalculateHistory(node);
-
-            assertArrayEquals("Failed for node " + node,history, danf.count(node), 0.01);
-        }*/
     }
 
     /**

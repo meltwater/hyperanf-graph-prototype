@@ -51,11 +51,11 @@ public class DANF {
 
         counterIndex = new HashMap<>();
 
-        LongArrayBitVector vcNodes = vc.getNodesInVertexCover();
-        long nextNode = 0;
-        while((nextNode = vcNodes.nextOne(nextNode)) != -1) {
-            insertNodeToCounterIndex(nextNode);
-            nextNode = nextNode + 1;
+        LazyLongIterator vcIterator = vc.getNodesInVertexCoverIterator();
+        long vcSize = vc.getVertexCoverSize(), node;
+        while(vcSize-- > 0) {
+            node = vcIterator.nextLong();
+            insertNodeToCounterIndex(node);
         }
         /*for(long node : vc.getNodesInVertexCover()) {
             insertNodeToCounterIndex(node);
@@ -66,18 +66,16 @@ public class DANF {
     public void addEdges(Edge ... edges) throws InterruptedException {
         Map<Long, IDynamicVertexCover.AffectedState> affectedNodes = new HashMap<>();
 
-        ArrayList<Edge> validEdges = new ArrayList<>(edges.length);
-        ArrayList<Edge> flippedEdgesList = new ArrayList<>(edges.length);
-        for(Edge edge : edges) {
-            if(edge.from != edge.to) {
-                addNewNodes(edge);
-                affectedNodes.putAll(vc.insertEdge(edge));
-                validEdges.add(edge);
-                flippedEdgesList.add(edge.flip());
-            }
+        Edge[] flippedEdges = new Edge[edges.length];
+        long maxNode = 0;
+        for (int i = 0; i < edges.length; i++) {
+            Edge edge = edges[i];
+            maxNode = Math.max(maxNode,Math.max(edge.to,edge.from));
+            affectedNodes.putAll(vc.insertEdge(edge));
+            edges[i] = edge;
+            flippedEdges[i] = edge.flip();
         }
-        edges = validEdges.toArray(new Edge[validEdges.size()]);
-        Edge[] flippedEdges = flippedEdgesList.toArray(new Edge[flippedEdgesList.size()]);
+        addNodeToTopLevel(maxNode);
 
         graph.addEdges(edges);
         graphTranspose.addEdges(flippedEdges);
@@ -90,67 +88,6 @@ public class DANF {
         updateAffectedNodes(affectedNodes);
 
         propagate(edges);
-    }
-
-    /**
-     * Adds new nodes in the edge to the graph.
-     * This will also allocate memory in the top counterArray
-     * as it should always have counters for all nodes.
-     * @param edge
-     */
-    private void addNewNodes(Edge edge) {
-        if(!graph.containsNode(edge.from)) { /* Check for readability purpose, not actually necessary */
-            addNodeToTopLevel(edge.from);
-        }
-        if(!graph.containsNode(edge.to)) {
-            addNodeToTopLevel(edge.to);
-        }
-    }
-
-    /**
-     * Updates every node that have been affected by a change in the graph.
-     * For insertions it sets a mapping index to the lower histories and
-     * recalculates their history.
-     * Deletions are NOT supported yet
-     * @param affectedNodes
-     * @throws InterruptedException
-     */
-    private void updateAffectedNodes(Map<Long, IDynamicVertexCover.AffectedState> affectedNodes) throws InterruptedException {
-        for(Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : affectedNodes.entrySet()) {
-            long node = entry.getKey();
-            insertNodeToCounterIndex(node);
-        }
-
-        LongArrayList addedNodes = new LongArrayList();
-        for(Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : affectedNodes.entrySet()) {
-            long node = entry.getKey();
-
-            if (entry.getValue() == IDynamicVertexCover.AffectedState.Added) {
-                LazyLongIterator successors = graph.getSuccessors(node);
-                long degree = graph.getOutdegree(node);
-
-                history[h-1].add(node,node);
-                long index = getNodeIndex(node,0);
-                for (int i = 0; i < h; i++) {
-                    history[i].add(index,node);
-                }
-
-                while(degree-- > 0 ) {
-                    long neighbor = successors.nextLong();
-
-                    history[0].add(index,neighbor);
-                    for (int i = 1; i < h; i++) {
-                        history[i].add(index,neighbor);
-
-                        history[i].union(index,history[h-1],getNodeIndex(neighbor,i));
-                    }
-                }
-            } else if (entry.getValue() == IDynamicVertexCover.AffectedState.Removed) {
-                // TODO When deleteEdge is added there should be a case here
-                throw new RuntimeException("Removed nodes not supported in DANF.updateAffectedNodes");
-            }
-        }
-        //recalculateHistory(addedNodes.toLongArray());
     }
 
     /**
@@ -168,6 +105,76 @@ public class DANF {
                 history[h-1].add(n,n);
             }
         }
+    }
+
+    /**
+     * Updates every node that have been affected by a change in the graph.
+     * For insertions it sets a mapping index to the lower histories and
+     * recalculates their history.
+     * Deletions are NOT supported yet
+     * @param affectedNodes
+     * @throws InterruptedException
+     */
+    private void updateAffectedNodes(Map<Long, IDynamicVertexCover.AffectedState> affectedNodes) throws InterruptedException {
+        for(Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : affectedNodes.entrySet()) {
+            long node = entry.getKey();
+            insertNodeToCounterIndex(node);
+        }
+
+        for(Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : affectedNodes.entrySet()) {
+            long node = entry.getKey();
+
+            if (entry.getValue() == IDynamicVertexCover.AffectedState.Added) {
+
+                calculateIncompleteHistory(node);
+
+            } else if (entry.getValue() == IDynamicVertexCover.AffectedState.Removed) {
+                // TODO When deleteEdge is added there should be a case here
+                throw new RuntimeException("Removed nodes not supported in DANF.updateAffectedNodes");
+            }
+        }
+
+    }
+
+    /**
+     *
+     * When a node has been added to the vertex cover, calculate its history
+     * based on the surrounding nodes.
+     *
+     * If there was an edge to a neighbor previously
+     * that node have to be in the vertex cover as otherwise that edge wuld not
+     * have been covered.
+     *
+     * If there were no edge to a neighbor previously, that node may not be in
+     * the vertex cover and may not have a history. However, as the edge was added
+     * in this bulk the neighbor will propagate its history to this node so the history
+     * will be correct after the propagation.
+     *
+     * @param node The node just added to the VC
+     */
+    private void calculateIncompleteHistory(long node){
+
+        LazyLongIterator successors = graph.getSuccessors(node);
+        long degree = graph.getOutdegree(node);
+
+        for (int i = 0; i < h; i++) {
+            history[i].add(getNodeIndex(node,i+1),node);
+        }
+
+        while(degree-- > 0 ) {
+            long neighbor = successors.nextLong();
+
+            if(!vc.isInVertexCover(neighbor))
+                continue;
+
+            history[0].add(getNodeIndex(node,1),neighbor);
+            for (int i = 1; i < h; i++) {
+                history[i].add(getNodeIndex(node,i+1),neighbor);
+
+                history[i].union(getNodeIndex(node,i+1), history[i-1],getNodeIndex(neighbor,i));
+            }
+        }
+
     }
 
     /**
@@ -231,84 +238,6 @@ public class DANF {
         }
         return ret;
 
-    }
-
-    /**
-     *
-     * @param nodes
-     * @throws InterruptedException If the parallel breadth-first search reached time-out
-     */
-    public void recalculateHistory(long ... nodes) throws InterruptedException {
-        LongArrayList inVC = new LongArrayList();
-        for (long node : nodes) {
-            if(vc.isInVertexCover(node))
-                inVC.add(node);
-            else{
-                LazyLongIterator succs = graph.getSuccessors(node);
-                long out = graph.getOutdegree(node);
-                history[h-1].add(node,node);
-                for (long neighborI = 0; neighborI < out ; neighborI++) {
-                    long neighbor = succs.nextLong();
-                    if(h > 1)
-                        history[h-1].union(node,history[h-2],getNodeIndex(neighbor,h-1));
-                    else
-                        history[h-1].add(node,neighbor);
-                }
-            }
-        }
-        if(inVC.size() == 0)
-            return;
-
-        long[] nodesInVc = inVC.toLongArray();
-        for (int i = 0; i < h; i++) {
-            HyperLolLolCounterArray counter = history[i];
-            for(long node : nodesInVc) {
-                long counterInd = getNodeIndex(node, i + 1);
-                counter.clearCounter(counterInd);
-                counter.add(counterInd, node);
-            }
-        }
-
-        MSBreadthFirst msbfs = new MSBreadthFirst(nodesInVc, graph, recalculateVisitor(nodesInVc));
-        msbfs.breadthFirstSearch();
-
-        for(int i = 1; i < h; i++) {
-            for (long node : nodesInVc) {
-                long counterInd = getNodeIndex(node, i + 1);
-                long counterLower = getNodeIndex(node, i);
-                history[i].union(counterInd, history[i - 1], counterLower);
-            }
-        }
-
-    }
-
-    private MSBreadthFirst.Visitor recalculateVisitor(long[] bfsSources){
-        return (long visitNode, BitSet bfsVisits, BitSet seen, int depth, MSBreadthFirst.Traveler t) -> {
-
-            if(depth > 0 && depth <= h){
-                synchronized (this) {
-                    if (vc.isInVertexCover(visitNode)) {
-                        if(h > 1) {
-                            for (int i = h - 1; i >= depth; i--) {
-                                long visitIndex = getNodeIndex(visitNode, i - depth + 1);
-                                int bfs = -1;
-                                while ((bfs = bfsVisits.nextSetBit(bfs + 1)) != -1)
-                                    history[i].union(getNodeIndex(bfsSources[bfs], i + 1), history[i - depth], visitIndex);
-                            }
-                        }
-
-                        int bfs = -1;
-                        while((bfs = bfsVisits.nextSetBit(bfs+1)) != -1)
-                            history[depth - 1].add(getNodeIndex(bfsSources[bfs], depth), visitNode);
-                        bfsVisits.clear();
-                    } else {
-                        int bfs = -1;
-                        while((bfs = bfsVisits.nextSetBit(bfs+1)) != -1)
-                            history[depth - 1].add(getNodeIndex(bfsSources[bfs], depth), visitNode);
-                    }
-                }
-            }
-        };
     }
 
     public long[][] calculateHistory(long node){

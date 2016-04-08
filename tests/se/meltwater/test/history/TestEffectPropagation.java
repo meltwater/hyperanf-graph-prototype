@@ -93,7 +93,7 @@ public class TestEffectPropagation {
 
     private void testDANFSameAsHyperBall(IGraph g1, Edge[] additionalEdges, IGraph mergedGraph) throws IOException, InterruptedException {
 
-        IGraph clone = (IGraph) ((SimulatedGraph)g1).clone();
+        //IGraph clone = (IGraph) ((SimulatedGraph)g1).clone();
         long seed = Util.randomSeed();
         Pair<DANF,HyperBoll> pair = TestUtils.runHyperBall(g1,new DynamicVertexCover(g1),h,log2m, seed);
         DANF danf = pair.getKey();
