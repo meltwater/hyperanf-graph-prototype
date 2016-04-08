@@ -1,4 +1,4 @@
-data = load ("../benchmarksDvcDeletionsReal.data");
+data = load ("../benchmarkdata/DvcDeletionsReal2016-04-08-11:31:49.data");
 
 nrBreaks = 1;
 x  = data(:,1)';
@@ -13,7 +13,7 @@ title("It-2004");
 set(h2, "Linestyle", "--");
 set(h1,'Linewidth', 1.5); 
 set(h2,'Linewidth', 1.5); 
-set(ax(1), 'ylim', [0 1000])
+set(ax(1), 'ylim', [0 400])
 set(ax(2), 'ylim', [0 4])
 xlabel ("Deleted edges (Million)");
 ylabel (ax(1), "Elapsed time (Seconds)");

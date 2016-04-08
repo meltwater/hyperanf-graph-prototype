@@ -16,4 +16,8 @@ hs_err_pid*
 
 # Random files #
 files/
+data/
 *~
+*.png
+octave*
+tmp*

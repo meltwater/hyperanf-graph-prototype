@@ -1,4 +1,4 @@
-data = load ("../benchmarkBfs.data");
+data = load ("../benchmarkdata/bfsVsMsbfs-08-04-2016.data");
 
 nrBreaks = 1;
 
@@ -13,5 +13,5 @@ title("In-2004");
 set(H,'Linewidth', 1.5); 
 xlabel("Max steps BFS");
 ylabel("Elapsed time (Seconds)");
-legend ({"Standard", "Multi-source"});
+legend ("Standard", "Multi-source");
 

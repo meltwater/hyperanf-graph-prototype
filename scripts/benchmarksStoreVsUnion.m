@@ -1,4 +1,4 @@
-data = load ("../unionVSStored.data");
+data = load ("../benchmarkdata/unionVSStored-07-04-2016.data");
 
 x  = data(:,1)';
 y1 = data(:,2)'./1000;
@@ -12,4 +12,4 @@ set(h,'Linewidth', 1.5);
 xlabel ("Graph merges");
 ylabel ("Elapsed time (Seconds)");
 
-legend ({"Unioned", "Merged"}) 
+legend ({"Unioned", "Merged"});

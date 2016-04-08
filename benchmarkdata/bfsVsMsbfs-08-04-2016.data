@@ -1,0 +1,13 @@
+#2016/04/08 in-2004; Comparison between a standard implementation of BFS and the MS-BFS algorithm; 5000 sources are used for each bfs and the time measured is the millis to perform a bfs that stops after h steps;
+#h nrSources stdbfsMillis msbfsMillis
+0 5000 181 360
+1 5000 223 441
+2 5000 273 365
+3 5000 997 420
+4 5000 2862 664
+5 5000 9491 786
+6 5000 28693 1045
+7 5000 72696 2071
+8 5000 169540 2430
+9 5000 307465 3412
+10 5000 491047 4953
