@@ -189,9 +189,9 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         LazyLongIterator succ = nodeIt.successors();
 
         while(outdegree-- != 0) {
-            /*if(isInVertexCover(node)) {
+            if(isInVertexCover(node)) {
                 break;
-            }*/
+            }
 
             long neighbor = succ.nextLong();
             if(isInVertexCover(neighbor)) {
