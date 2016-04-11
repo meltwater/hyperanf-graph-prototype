@@ -31,6 +31,8 @@ public class DANF {
 
     private int h;
 
+    private long cachedNode = -1, cachedNodeIndex;
+
     private final int STATIC_LOLOL = 0;
 
     public DANF(IDynamicVertexCover vertexCover, int h, IGraph graph){
@@ -61,7 +63,6 @@ public class DANF {
             Edge edge = edges[i];
             maxNode = Math.max(maxNode,Math.max(edge.to,edge.from));
             affectedNodes.putAll(vc.insertEdge(edge));
-            edges[i] = edge;
             flippedEdges[i] = edge.flip();
         }
         addNodeToTopLevel(maxNode);
@@ -131,7 +132,7 @@ public class DANF {
      * based on the surrounding nodes.
      *
      * If there was an edge to a neighbor previously
-     * that node have to be in the vertex cover as otherwise that edge wuld not
+     * that node have to be in the vertex cover as otherwise that edge would not
      * have been covered.
      *
      * If there were no edge to a neighbor previously, that node may not be in
@@ -182,10 +183,15 @@ public class DANF {
      * @return
      */
     private long getNodeIndex(long node, int h){
+
         if (h == this.h) {
             return node;
         }
-        return counterIndex.get(node);
+
+        if(cachedNode == node)
+            return cachedNodeIndex;
+
+        return cachedNodeIndex = counterIndex.get(cachedNode = node);
     }
 
     /**
@@ -293,10 +299,9 @@ public class DANF {
 
                 if (vc.isInVertexCover(visitNode)) {
                     long[] visitNodeBits = new long[counterLongWords];
-                    long visitNodeHistoryIndex = getNodeIndex(visitNode, 0);
                     long visitNodeIndex;
                     for (int i = 0; i < h + 1 - depth; i++) {
-                        visitNodeIndex = i + depth - 1 == h - 1 ? visitNode : visitNodeHistoryIndex;
+                        visitNodeIndex = getNodeIndex(visitNode,i+depth);
                         history[i + depth - 1].getCounter(visitNodeIndex, visitNodeBits);
                         history[i + depth - 1].max(visitNodeBits, propTraver.bits[i]);
                         history[i + depth - 1].setCounter(visitNodeBits, visitNodeIndex);
