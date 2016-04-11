@@ -1,11 +1,8 @@
 package se.meltwater.examples;
 
 
-import com.google.common.collect.Range;
-import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.ImmutableSequentialGraph;
-import it.unimi.dsi.big.webgraph.Transform;
+import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import se.meltwater.algo.DANF;
 import se.meltwater.algo.HyperBoll;
 import se.meltwater.bfs.MSBreadthFirst;
@@ -17,14 +14,15 @@ import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.utils.Utils;
 import se.meltwater.vertexcover.DynamicVertexCover;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.Date;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 /**

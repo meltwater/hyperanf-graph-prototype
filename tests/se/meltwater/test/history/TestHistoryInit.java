@@ -12,7 +12,7 @@ import se.meltwater.vertexcover.DynamicVertexCover;
 import java.io.IOException;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Simon Lindhén

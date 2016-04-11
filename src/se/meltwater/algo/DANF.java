@@ -1,17 +1,12 @@
 package se.meltwater.algo;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
-
-import it.unimi.dsi.bits.LongArrayBitVector;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
-
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;

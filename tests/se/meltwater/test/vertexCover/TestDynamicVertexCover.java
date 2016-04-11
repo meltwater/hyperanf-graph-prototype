@@ -3,9 +3,6 @@ package se.meltwater.test.vertexCover;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import org.junit.Test;
-import static org.junit.Assert.*;
-
-import se.meltwater.examples.VertexCover;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
@@ -13,8 +10,9 @@ import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.util.*;
-import java.util.stream.Collector;
-import java.util.stream.LongStream;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Simon Lindhén

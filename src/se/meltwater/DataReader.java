@@ -10,11 +10,11 @@ import com.meltwater.quiddity.impl.JsonQuiddityObjectSerializer;
 import com.meltwater.quiddity.support.QuiddityObject;
 
 import java.io.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 /**
  * @author Simon Lindhén
