@@ -3,8 +3,6 @@ package se.meltwater.test.graph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import org.junit.Test;
-import static org.junit.Assert.*;
-
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.graph.ImmutableGraphWrapper;
@@ -13,6 +11,8 @@ import se.meltwater.test.TestUtils;
 
 import java.util.*;
 import java.util.stream.LongStream;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Simon Lindhén

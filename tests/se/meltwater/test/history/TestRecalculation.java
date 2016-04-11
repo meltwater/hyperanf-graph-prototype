@@ -1,24 +1,23 @@
 package se.meltwater.test.history;
 
-import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.bits.LongArrayBitVector;
 import javafx.util.Pair;
 import org.junit.Test;
-import static org.junit.Assert.*;
-
 import se.meltwater.algo.DANF;
 import se.meltwater.algo.HyperBoll;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
-import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
 import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Simon Lindhén

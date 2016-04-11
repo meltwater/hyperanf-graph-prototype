@@ -2,7 +2,6 @@ package se.meltwater.test.history;
 
 import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.UnionImmutableGraph;
 import javafx.util.Pair;
 import org.junit.Test;
@@ -20,7 +19,8 @@ import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Simon Lindhén

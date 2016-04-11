@@ -12,7 +12,10 @@ import it.unimi.dsi.fastutil.floats.FloatBigArrays;
 import it.unimi.dsi.fastutil.ints.Int2DoubleFunction;
 import it.unimi.dsi.fastutil.io.BinIO;
 import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
-import it.unimi.dsi.fastutil.longs.*;
+import it.unimi.dsi.fastutil.longs.LongBigArrays;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.io.SafelyCloseable;
 import it.unimi.dsi.lang.ObjectParser;
 import it.unimi.dsi.logging.ProgressLogger;
@@ -20,6 +23,9 @@ import it.unimi.dsi.util.HyperLogLogCounterArray;
 import it.unimi.dsi.util.KahanSummation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import se.meltwater.graph.IGraph;
+import se.meltwater.graph.ImmutableGraphWrapper;
+import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -49,67 +55,6 @@ import java.util.concurrent.locks.ReentrantLock;
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-import it.unimi.dsi.Util;
-import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.GraphClassParser;
-import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
-import it.unimi.dsi.big.webgraph.Transform;
-import it.unimi.dsi.bits.LongArrayBitVector;
-import it.unimi.dsi.fastutil.Hash;
-import it.unimi.dsi.fastutil.booleans.BooleanBigArrays;
-import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
-import it.unimi.dsi.fastutil.doubles.DoubleIterator;
-import it.unimi.dsi.fastutil.floats.FloatBigArrays;
-import it.unimi.dsi.fastutil.ints.Int2DoubleFunction;
-import it.unimi.dsi.fastutil.io.BinIO;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
-import it.unimi.dsi.fastutil.longs.LongBigArrays;
-import it.unimi.dsi.fastutil.longs.LongBigList;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.longs.LongSets;
-import it.unimi.dsi.io.SafelyCloseable;
-import it.unimi.dsi.lang.ObjectParser;
-import it.unimi.dsi.logging.ProgressLogger;
-import it.unimi.dsi.util.HyperLogLogCounterArray;
-import it.unimi.dsi.util.KahanSummation;
-
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.ObjectOutputStream;
-import java.io.PrintStream;
-import java.io.RandomAccessFile;
-import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.martiansoftware.jsap.FlaggedOption;
-import com.martiansoftware.jsap.JSAP;
-import com.martiansoftware.jsap.JSAPException;
-import com.martiansoftware.jsap.JSAPResult;
-import com.martiansoftware.jsap.Parameter;
-import com.martiansoftware.jsap.SimpleJSAP;
-import com.martiansoftware.jsap.Switch;
-import com.martiansoftware.jsap.UnflaggedOption;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.ImmutableGraphWrapper;
-import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 
 /** <p>Computes an approximation of the neighbourhood function, of the size of the reachable sets,
  * and of (discounted) positive geometric centralities of a graph using HyperBoll.

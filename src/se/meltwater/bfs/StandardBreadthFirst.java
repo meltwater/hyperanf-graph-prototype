@@ -3,7 +3,6 @@ package se.meltwater.bfs;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
-import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 import se.meltwater.graph.IGraph;
 
 /**

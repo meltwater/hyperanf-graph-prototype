@@ -5,14 +5,13 @@ import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.algo.HyperBall;
 import org.junit.Test;
 import se.meltwater.algo.HyperBoll;
-import se.meltwater.graph.IGraph;
 import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 
 import java.io.IOException;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by simon on 2016-03-16.

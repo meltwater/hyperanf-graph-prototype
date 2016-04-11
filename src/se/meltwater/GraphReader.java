@@ -3,7 +3,9 @@ package se.meltwater;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.io.InputBitStream;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 
 /**

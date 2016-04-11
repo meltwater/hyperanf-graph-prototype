@@ -1,20 +1,11 @@
 package se.meltwater.graph;
 
 import it.unimi.dsi.big.webgraph.*;
-import it.unimi.dsi.big.webgraph.ArcListASCIIGraph;
-import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import it.unimi.dsi.big.webgraph.NodeIterator;
-import it.unimi.dsi.big.webgraph.Transform;
-import it.unimi.dsi.big.webgraph.UnionImmutableGraph;
-import it.unimi.dsi.io.ByteBufferInputStream;
-import it.unimi.dsi.webgraph.*;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
-import java.util.HashMap;
 
 /**
  * @author Simon Lindhén

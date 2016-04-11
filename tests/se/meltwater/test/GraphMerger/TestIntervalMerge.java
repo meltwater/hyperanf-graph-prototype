@@ -3,8 +3,9 @@ package se.meltwater.test.GraphMerger;
 
 import javafx.util.Pair;
 import org.junit.Test;
-import static org.junit.Assert.*;
 import se.meltwater.graphEditing.GraphMerger;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Simon Lindhén
