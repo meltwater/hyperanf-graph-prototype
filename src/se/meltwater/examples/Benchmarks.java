@@ -51,9 +51,10 @@ public class Benchmarks {
      * @throws InterruptedException
      */
     public static void benchmarkStdBfs() throws IOException, InterruptedException {
-        final int numberOfSources = 5000;
-        final int startNode = 5000;
-        final int maxSteps = 0;
+        final int maxNumberOfSources = 5000;
+        final int sourceBulkSize = 500;
+        final int startNode = 0;
+        final int maxSteps = 8;
         final String dateString = getDateString();
 
         final String graphName = "in-2004";
@@ -61,19 +62,27 @@ public class Benchmarks {
         final String dataFile = dataFolder + "benchmarkBfs" + dateString + ".data";
 
         ImmutableGraphWrapper graph = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile));
-        long[] sources = LongStream.range(startNode, startNode + numberOfSources).toArray();
+
 
         PrintWriter writer = new PrintWriter(dataFile);
         writer.println("#" + getDateString() + " " + graphName + "; Comparison between a standard implementation of BFS and the MS-BFS algorithm; "
-                + numberOfSources + " sources are used for each bfs and the time measured is the millis to perform a bfs that stops after h steps;");
+                + " 0 to " + maxNumberOfSources + " sources are used for each bfs with " + sourceBulkSize + " bulk increase;" +
+                " The time measured is the millis to perform a bfs that stops after h steps;");
         writer.println("#h nrSources stdbfsMillis msbfsMillis");
 
-        for (int h = 0; h <= maxSteps; h++) {
-            long stdTotalTime = performStandardBfsAndMeasureTime(sources, graph, h);
-            long msbfsTotalTime = performMSBfsAndMeasureTime(sources, graph, h);
+        int nrSources = 0;
+        while(nrSources <= maxNumberOfSources) {
+            long[] sources = LongStream.range(startNode, startNode + nrSources).toArray();
 
-            System.out.println("Iteration " + h + " completed.");
-            writer.println(h + " " + sources.length + " " + stdTotalTime + " " + msbfsTotalTime);
+            for (int h = 0; h <= maxSteps; h++) {
+                long stdTotalTime = performStandardBfsAndMeasureTime(sources, graph, h);
+                long msbfsTotalTime = performMSBfsAndMeasureTime(sources, graph, h);
+
+                System.out.println("Iteration " + h + " completed with " + nrSources + " sources.");
+                writer.println(h + " " + sources.length + " " + stdTotalTime + " " + msbfsTotalTime);
+            }
+
+            nrSources += sourceBulkSize;
         }
 
         writer.close();
@@ -479,12 +488,12 @@ public class Benchmarks {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Benchmarks.benchmarkEdgeInsertionsDanfReal();
+        //Benchmarks.benchmarkEdgeInsertionsDanfReal();
         //Benchmarks.benchmarkDVCInsertionsSimluated();
         //Benchmarks.benchmarkDVCInsertionsReal();
         //Benchmarks.benchmarkDVCDeletionsSimulated();
         //Benchmarks.benchmarkDVCDeletionsReal();
         //Benchmarks.benchmarkUnionVsStored();
-        //Benchmarks.benchmarkStdBfs();
+        Benchmarks.benchmarkStdBfs();
     }
 }
