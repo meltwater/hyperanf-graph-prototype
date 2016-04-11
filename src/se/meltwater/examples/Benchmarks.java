@@ -40,7 +40,7 @@ public class Benchmarks {
     private static long lastTime;
 
     final static String graphFolder = "testGraphs/";
-    final static String dataFolder = "data/";
+    final static String dataFolder = "files/";
 
 
     /**
@@ -102,9 +102,6 @@ public class Benchmarks {
      * @throws InterruptedException
      */
     private static long performMSBfsAndMeasureTime(long[] sources, IGraph graph, final int h) throws InterruptedException {
-        //Dummy traveler
-        MSBreadthFirst.Traveler traveler = (MSBreadthFirst.Traveler t1, int depth) ->  t1;
-        MSBreadthFirst.Traveler[] travelers = Utils.repeat(traveler,sources.length, new MSBreadthFirst.Traveler[0]);
 
         MSBreadthFirst.Visitor visitor = (long node, BitSet bfsVisits, BitSet seen, int depth, MSBreadthFirst.Traveler t) -> {
             if(depth == h) {
@@ -113,7 +110,7 @@ public class Benchmarks {
         };
 
         long startTime = System.currentTimeMillis();
-        MSBreadthFirst msbfs = new MSBreadthFirst(sources, travelers ,graph,visitor);
+        MSBreadthFirst msbfs = new MSBreadthFirst(sources, graph,visitor);
         msbfs.breadthFirstSearch();
         long endTime = System.currentTimeMillis();
         return endTime - startTime;
@@ -148,16 +145,13 @@ public class Benchmarks {
 
             long startTime = System.currentTimeMillis();
             graphUnioned.addEdgesUnioned(edges);
-            graphUnioned.iterateAllEdges(edge -> {
-                return null;
-            });
+            graphUnioned.iterateAllEdges(edge -> null);
+
             long unionTime = System.currentTimeMillis() - startTime;
 
             startTime = System.currentTimeMillis();
             graphStored.addEdges(edges);
-            graphStored.iterateAllEdges(edge -> {
-                return null;
-            });
+            graphStored.iterateAllEdges(edge -> null);
             long storedTime = System.currentTimeMillis() - startTime;
 
             writer.println(iteration + " " + unionTime + " " + storedTime);
