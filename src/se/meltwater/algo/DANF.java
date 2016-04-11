@@ -1,6 +1,7 @@
 package se.meltwater.algo;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
+import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
@@ -23,7 +24,7 @@ public class DANF {
     private IGraph graphTranspose;
     private IDynamicVertexCover vc;
 
-    private HashMap<Long,Long> counterIndex;
+    private long[][] counterIndex;
     private long nextFreeCounterIndex = 0;
 
     private HyperLolLolCounterArray[] history;
@@ -43,7 +44,7 @@ public class DANF {
         this.graph = graph;
         this.graphTranspose = graph.transpose();
 
-        counterIndex = new HashMap<>();
+        counterIndex = LongBigArrays.newBigArray(vc.getVertexCoverSize());
 
         LazyLongIterator vcIterator = vc.getNodesInVertexCoverIterator();
         long vcSize = vc.getVertexCoverSize(), node;
@@ -191,7 +192,7 @@ public class DANF {
         if(cachedNode == node)
             return cachedNodeIndex;
 
-        return cachedNodeIndex = counterIndex.get(cachedNode = node);
+        return cachedNodeIndex = LongBigArrays.get(counterIndex,cachedNode = node);
     }
 
     /**
@@ -199,7 +200,8 @@ public class DANF {
      * @param node
      */
     private void insertNodeToCounterIndex(long node) {
-        counterIndex.put(node, nextFreeCounterIndex++);
+        counterIndex = LongBigArrays.grow(counterIndex,node+1);
+        LongBigArrays.set(counterIndex,node,nextFreeCounterIndex++);
     }
 
     /**
