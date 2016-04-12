@@ -1,11 +1,18 @@
 package se.meltwater.graph;
 
 import it.unimi.dsi.big.webgraph.*;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongBigArrays;
+import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.ConcurrentModificationException;
+import java.util.HashMap;
+import java.util.function.BiFunction;
 
 /**
  * @author Simon Lindhén
@@ -19,6 +26,8 @@ import java.util.ConcurrentModificationException;
 public class ImmutableGraphWrapper extends AGraph{
 
     private ImmutableGraph graph;
+    private ImmutableGraph originalGraph;
+    private SimulatedGraph additionalEdges;
     private long modifications = 0;
     private String oldPath = null;
     private static File tempDir = null;
@@ -28,8 +37,10 @@ public class ImmutableGraphWrapper extends AGraph{
     private int fileVersion = 0;
 
     public ImmutableGraphWrapper(ImmutableGraph graph) {
-        this.graph = graph;
         thisID = graphID++;
+        additionalEdges = new SimulatedGraph();
+        originalGraph = graph;
+        this.graph = graph;
     }
 
     public void close(){
@@ -48,9 +59,8 @@ public class ImmutableGraphWrapper extends AGraph{
     public boolean addEdgesUnioned(Edge ... edges) {
 
         try {
-            SimulatedGraph extraEdge = new SimulatedGraph();
-            extraEdge.addEdges(edges);
-            graph = new UnionImmutableGraph(new SimulatedGraphWrapper(extraEdge), graph);
+            additionalEdges.addEdges(edges);
+            graph = new UnionImmutableGraph(originalGraph,new SimulatedGraphWrapper(additionalEdges));
 
             return true;
         }catch (Exception e){
@@ -63,9 +73,9 @@ public class ImmutableGraphWrapper extends AGraph{
     public boolean addEdges(Edge ... edges){
 
         try {
-            SimulatedGraph extraEdge = new SimulatedGraph();
-            extraEdge.addEdges(edges);
-            ImmutableGraph store = new UnionImmutableGraph(new SimulatedGraphWrapper(extraEdge), graph);
+            SimulatedGraph g = new SimulatedGraph();
+            g.addEdges(edges);
+            ImmutableGraph store = new UnionImmutableGraph(new SimulatedGraphWrapper(g), graph);
             checkFile();
             BVGraph.store(store, thisPath, 0, 0, -1, -1, 0);
             graph = BVGraph.load(thisPath);
@@ -212,6 +222,8 @@ public class ImmutableGraphWrapper extends AGraph{
                 throw new ConcurrentModificationException("Immutable graph wrapper must never be modified during iteration.");
         }
     }
+
+
 
     private class SimulatedGraphWrapper extends ImmutableGraph{
 
