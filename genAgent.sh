@@ -1,1 +1,0 @@
-jar cvfm agent.jar src/META-INF/MANIFEST.MF src/se/meltwater/ObjectSizeFetcher.java

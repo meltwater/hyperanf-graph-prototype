@@ -5,7 +5,8 @@ import com.javamex.classmexer.MemoryUtil;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import javafx.util.Pair;
-import se.meltwater.ObjectSizeFetcher;
+import it.unimi.dsi.big.webgraph.LazyLongIterator;
+import it.unimi.dsi.big.webgraph.NodeIterator;
 import se.meltwater.algo.DANF;
 import se.meltwater.algo.HyperBoll;
 import se.meltwater.bfs.MSBreadthFirst;
@@ -16,7 +17,9 @@ import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.utils.Utils;
 import se.meltwater.vertexcover.DynamicVertexCover;
+import se.meltwater.graph.TraverseGraph;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.instrument.Instrumentation;
@@ -43,8 +46,9 @@ public class Benchmarks {
     private static int added = 0;
     private static long lastTime;
 
-    final static String graphFolder = "testGraphs/";
+    final static String graphFolder = "files/";
     final static String dataFolder = "files/";
+
 
 
     /**
@@ -137,6 +141,55 @@ public class Benchmarks {
      * after a certain threshold.
      * @throws IOException
      */
+    public static void compareSimulatedAndTraverseGraph() throws FileNotFoundException {
+        final int maxNumberOfEdges = 1000000;
+        final int sourceBulkSize = 50000;
+        final int startNode = 0;
+        final int maxSteps = 8;
+        final String dateString = getDateString();
+
+        final String dataFile = dataFolder + "benchmarkSimTrav" + dateString + ".data";
+
+
+        /*PrintWriter writer = new PrintWriter(dataFile);
+        writer.println("#" + getDateString() + "; Comparison between SimulatedGraph and TraverseGraph; ");
+        writer.println("#h nrSources stdbfsMillis msbfsMillis");*/
+
+        int nrEdges = sourceBulkSize;
+        TraverseGraph tg;
+        SimulatedGraph sim;
+        while(nrEdges <= maxNumberOfEdges) {
+            Edge[] edges = new Edge[nrEdges];
+            generateEdges(nrEdges, nrEdges, edges);
+
+            long time = System.currentTimeMillis();
+            sim = new SimulatedGraph();
+            sim.addEdges(edges);
+            sim.iterateAllEdges((Edge e) -> null);
+            System.out.println("Added " + nrEdges + " edges and iterated to SimulatedGraph in " + (System.currentTimeMillis()-time) + "ms.");
+
+            time = System.currentTimeMillis();
+            tg = new TraverseGraph(edges);
+            int i = 0;
+            NodeIterator it = tg.nodeIterator();
+            while(it.hasNext()){
+                it.nextLong();
+                LazyLongIterator neighIt = it.successors();
+                long neighbor;
+                while((neighbor = neighIt.nextLong()) != -1) i++;
+            }
+            System.out.println("Added " + nrEdges + " edges and iterated to TraverseGraph in " + (System.currentTimeMillis()-time) + "ms." + i);
+
+            System.out.println("");
+            //writer.println(h + " " + sources.length + " " + stdTotalTime + " " + msbfsTotalTime);
+
+
+            nrEdges += sourceBulkSize;
+        }
+
+        //writer.close();
+    }
+
     public static void benchmarkUnionVsStored() throws IOException {
         final String dateString = getDateString();
         final String graphName = "SameAsSimulated";
@@ -602,12 +655,11 @@ public class Benchmarks {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        //Benchmarks.benchmarkEdgeInsertionsDanfReal();
+        Benchmarks.benchmarkEdgeInsertionsDanfReal();
         //Benchmarks.benchmarkDVCInsertionsSimluated();
         //Benchmarks.benchmarkDVCInsertionsReal();
         //Benchmarks.benchmarkDVCDeletionsSimulated();
         //Benchmarks.benchmarkDVCDeletionsReal();
         Benchmarks.benchmarkUnionVsStored();
-        //Benchmarks.benchmarkStdBfs();
     }
 }
