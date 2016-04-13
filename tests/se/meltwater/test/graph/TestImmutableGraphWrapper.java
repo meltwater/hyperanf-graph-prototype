@@ -1,11 +1,14 @@
 package se.meltwater.test.graph;
 
+import com.google.common.collect.Lists;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import org.junit.Test;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.ImmutableGraphWrapper;
+import se.meltwater.test.TestUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.Assert.*;
@@ -74,6 +77,27 @@ public class TestImmutableGraphWrapper {
 
     private void setupGraph() throws IOException {
         graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/SameAsSimulated"));
+    }
+
+    @Test
+    public void testAddedEdgesCorrect() throws IOException {
+        setupGraph();
+
+        for(int i = 0; i< 10; i++) {
+
+            int numEdges = 500;
+            ArrayList<Edge> edges = Lists.newArrayList(TestUtils.generateEdges((int) graph.getNumberOfNodes(), numEdges));
+
+            Edge[] edgeArr = edges.toArray(new Edge[edges.size()]);
+            graph.addEdges(edgeArr);
+            graph.iterateAllEdges((Edge e) -> {
+                while (edges.remove(e));
+                return null;
+            });
+            assertEquals(0,edges.size());
+
+        }
+
     }
 
 }
