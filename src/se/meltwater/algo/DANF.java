@@ -54,7 +54,14 @@ public class DANF {
         }
     }
 
-
+    /**
+     *
+     * Adds the specified {@code edges} to the graph and recalculates
+     * the neighborhood functions.
+     *
+     * @param edges
+     * @throws InterruptedException
+     */
     public void addEdges(Edge ... edges) throws InterruptedException {
         Map<Long, IDynamicVertexCover.AffectedState> affectedNodes = new HashMap<>();
 
@@ -104,9 +111,8 @@ public class DANF {
      * recalculates their history.
      * Deletions are NOT supported yet
      * @param affectedNodes
-     * @throws InterruptedException
      */
-    private void updateAffectedNodes(Map<Long, IDynamicVertexCover.AffectedState> affectedNodes) throws InterruptedException {
+    private void updateAffectedNodes(Map<Long, IDynamicVertexCover.AffectedState> affectedNodes)  {
         for(Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : affectedNodes.entrySet()) {
             long node = entry.getKey();
             insertNodeToCounterIndex(node);
@@ -218,7 +224,16 @@ public class DANF {
         }
     }
 
-    public double count(long node, int h){
+    /**
+     *
+     * Returns the approximate neighborhood function for the given
+     * node with reach {@code h}.
+     *
+     * @param node
+     * @param h
+     * @return
+     */
+    public double count(long node, int h) {
         if(!vc.isInVertexCover(node) && h != this.h)
             throw new IllegalArgumentException("Node " + node + " wasn't in the vertex cover.");
         return history[h-1].count(getNodeIndex(node, h));
@@ -237,7 +252,15 @@ public class DANF {
 
     }
 
-    public long[][] calculateHistory(long node){
+    /**
+     * Fetches the registry history of the specified node.
+     * If the node is not in the vertex cover; the history is calculated
+     * from the surrounding vertex cover nodes.
+     *
+     * @param node
+     * @return
+     */
+    private long[][] calculateHistory(long node){
         long[][] historyBits = new long[h + 1][counterLongWords];
         if(vc.isInVertexCover(node)) {
             history[STATIC_LOLOL].add(node, historyBits[0]);
@@ -268,19 +291,28 @@ public class DANF {
         return historyBits;
     }
 
+    /**
+     *
+     * Propagates the effects of the added edges
+     *
+     * @param edges
+     * @throws InterruptedException
+     */
     private void propagate(Edge ... edges) throws InterruptedException {
 
-        int partition = 5000;
-        PropagationTraveler[] travelers = new PropagationTraveler[Math.min(partition,edges.length)];
-        long[] fromNodes = new long[Math.min(partition,edges.length)];
+        int partitionSize = 5000;
+        PropagationTraveler[] travelers = new PropagationTraveler[Math.min(partitionSize,edges.length)];
+        long[] fromNodes = new long[Math.min(partitionSize,edges.length)];
         for (int i = 0,j = 0; i < edges.length ; i++,j++) {
             travelers[j] = new PropagationTraveler(calculateHistory(edges[i].to));
             fromNodes[j] = edges[i].from;
-            if(j == partition-1) {
+            if(j == partitionSize-1) {
                 MSBreadthFirst msbfs = new MSBreadthFirst(fromNodes, travelers, graphTranspose, propagateVisitor());
                 msbfs.breadthFirstSearch();
-                travelers = new PropagationTraveler[Math.min(partition,edges.length-i-1)];
-                fromNodes = new long[Math.min(partition,edges.length-i-1)];
+                if(edges.length-i-1 < partitionSize) {
+                    travelers = new PropagationTraveler[edges.length - i - 1];
+                    fromNodes = new long[edges.length - i - 1];
+                }
                 j = -1;
             }
         }
