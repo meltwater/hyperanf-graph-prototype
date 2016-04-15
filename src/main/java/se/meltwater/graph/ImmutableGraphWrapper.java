@@ -1,9 +1,11 @@
 package se.meltwater.graph;
 
+import com.javamex.classmexer.MemoryUtil;
 import it.unimi.dsi.big.webgraph.*;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
+import se.meltwater.utils.Utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,11 +38,20 @@ public class ImmutableGraphWrapper extends AGraph{
     private int thisID;
     private int fileVersion = 0;
 
+    private int unionVsGraphMemoryRatioThreashold = 2;
+    private final int dataStructureOverheadFactor = 10;
+    private long graphHeapUsageBytes;
+    private long additionalGraphHeapUsageBytes;
+
+
     public ImmutableGraphWrapper(ImmutableGraph graph) {
         thisID = graphID++;
         additionalEdges = new SimulatedGraph();
         originalGraph = graph;
         this.graph = graph;
+
+        graphHeapUsageBytes = Utils.getMemoryUsage(graph);
+        additionalGraphHeapUsageBytes = Utils.getMemoryUsage(additionalEdges);
     }
 
     public void close(){
@@ -52,39 +63,80 @@ public class ImmutableGraphWrapper extends AGraph{
     }
 
     /**
-     * Method only used for comparing Unioned vs Stored graphs
-     * @param edges
-     * @return
+     * Inserts {@code edges} in to {@code currentAdditions} and
+     * creates a graph of their union.
+     * @param currentAdditions A graph to union the edges with
+     * @param edges The edges to be unioned
+     * @return A graph containing the union
      */
-    public boolean addEdgesUnioned(Edge ... edges) {
-
+    private ImmutableGraph unionEdges(SimulatedGraph currentAdditions, Edge ... edges) {
         try {
-            additionalEdges.addEdges(edges);
-            graph = new UnionImmutableGraph(originalGraph,new SimulatedGraphWrapper(additionalEdges));
-
-            return true;
+            currentAdditions.addEdges(edges);
+            return new UnionImmutableGraph(originalGraph, new SimulatedGraphWrapper(currentAdditions));
         }catch (Exception e){
             throw new RuntimeException(e);
         }
+    }
 
+    /**
+     * Explicitly says that the graph should be stored
+     * instead of letting the class decide when storage
+     * should occur. Mainly used for testing and benchmarking.
+     * @param edges The edges to add
+     */
+    public void addEdgesStored(Edge ... edges) {
+        try {
+            graph = unionEdges(additionalEdges, edges);
+            storeGraphs(graph);
+
+        }catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Stores the graph on disk and reloads it.
+     * This removes possible overheads from the graph,
+     * such as unions. Updates any graph references.
+     * @param graph The graph to store and reload
+     */
+    private void storeGraphs(ImmutableGraph graph) {
+        try {
+            checkFile();
+            BVGraph.store(graph, thisPath, 0, 0, -1, -1, 0);
+            this.graph = BVGraph.loadMapped(thisPath);
+            originalGraph = this.graph;
+            cleanOldFile(oldPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(0);
+        }
     }
 
     @Override
-    public boolean addEdges(Edge ... edges){
+    /**
+     * Add {@code edges} to the graph. The additional edges will be saved in an
+     * external data structure which is eventually saved to disk.
+     */
+    public boolean addEdges(Edge ... edges) {
+        long addedEdgesHeapUsageBytes = Utils.getMemoryUsage(edges) * dataStructureOverheadFactor;
+        additionalGraphHeapUsageBytes += addedEdgesHeapUsageBytes;
+        float unionVsGraphMemoryRatio = (additionalGraphHeapUsageBytes) / (float)graphHeapUsageBytes;
 
-        try {
-            SimulatedGraph g = new SimulatedGraph();
-            g.addEdges(edges);
-            ImmutableGraph store = new UnionImmutableGraph(new SimulatedGraphWrapper(g), graph);
-            checkFile();
-            BVGraph.store(store, thisPath, 0, 0, -1, -1, 0);
-            graph = BVGraph.load(thisPath);
-            cleanOldFile();
-            return true;
-        }catch (Exception e){
-            throw new RuntimeException(e);
+        graph = unionEdges(additionalEdges, edges);
+
+        if(unionVsGraphMemoryRatio > unionVsGraphMemoryRatioThreashold) {
+            storeGraphs(graph);
+
+            additionalEdges = new SimulatedGraph();
+            additionalGraphHeapUsageBytes = Utils.getMemoryUsage(additionalEdges);
+            graphHeapUsageBytes = Utils.getMemoryUsage(graph);
         }
+
+        return true;
     }
+
+
 
     private void checkFile() throws IOException {
         if(tempDir == null)
@@ -93,7 +145,7 @@ public class ImmutableGraphWrapper extends AGraph{
         thisPath = tempDir.getAbsolutePath() + "/graph_" + thisID + "_" + fileVersion++;
     }
 
-    private void cleanOldFile(){
+    private void cleanOldFile(String oldPath){
         if(oldPath != null) {
             new File(oldPath + ".graph").delete();
             new File(oldPath + ".properties").delete();
@@ -164,14 +216,19 @@ public class ImmutableGraphWrapper extends AGraph{
             super.merge(graph);
     }
 
+    @Override
+    /**
+     * Transposes the graph and stores it to a memory mapped file.
+     * @return The transposed graph
+     */
     public IGraph transpose(){
         try {
             ImmutableGraph transpose = Transform.transposeOffline(graph, (int) graph.numNodes());
-            BVGraph.store(transpose, "tmp", 0, 0, -1, -1, 0);
-            transpose = BVGraph.load("tmp"); // TODO Use javas tmp files
 
+            ImmutableGraphWrapper transposeWrapper = new ImmutableGraphWrapper(transpose);
+            transposeWrapper.storeGraphs(transpose);
 
-            return new ImmutableGraphWrapper(transpose);
+            return transposeWrapper;
         } catch (IOException e) {
             e.printStackTrace();
             return null;

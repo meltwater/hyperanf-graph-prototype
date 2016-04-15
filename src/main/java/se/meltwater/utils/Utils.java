@@ -1,5 +1,7 @@
 package se.meltwater.utils;
 
+//import com.javamex.classmexer.MemoryUtil;
+
 import java.util.ArrayList;
 
 /**
@@ -24,5 +26,12 @@ public class Utils {
             ret.add(elem);
         }
         return ret.toArray(dummyArr);
+    }
+
+
+
+    public static long getMemoryUsage(Object obj) {
+        //return MemoryUtil.deepMemoryUsageOf(obj, MemoryUtil.VisibilityFilter.ALL);
+        return 0L;
     }
 }
