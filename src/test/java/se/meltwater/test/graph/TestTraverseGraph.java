@@ -39,8 +39,6 @@ public class TestTraverseGraph {
     public void testAddedEdgesCorrect() throws IOException {
         setupGraph();
 
-        //graph.addEdges(new Edge[]{new Edge(0,0), new Edge(1,1)});
-
         for(int i = 0; i< 100; i++) {
 
             numNodes = rand.nextInt(maxNumNodes)+1;
@@ -53,7 +51,6 @@ public class TestTraverseGraph {
                 while ((neigh = it2.nextLong()) != -1)
                     edgesBefore.add(new Edge(node,neigh));
             }
-            ArrayList<Edge> edgesBeforeClone = (ArrayList<Edge>) edgesBefore.clone();
 
             int numEdges = 2;
             ArrayList<Edge> edges = Lists.newArrayList(TestUtils.generateEdges(numNodes, numEdges));

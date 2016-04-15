@@ -20,7 +20,7 @@ public class TraverseGraph extends ImmutableGraph {
 
     protected long[][] nodes;
     protected Long2LongOpenHashMap nodePoss;
-    protected long numNodes, numArcs;
+    protected long numNodes = 0, numArcs = 0;
     protected long length = 0;
     protected final static int HEADER_LENGTH = 2;
     protected boolean empty = false;
@@ -36,62 +36,26 @@ public class TraverseGraph extends ImmutableGraph {
             return;
         }
 
-        init(edges);
-
-    }
-
-    public void init(Edge[] edges){
-
-        empty = false;
-        nodePoss = new Long2LongOpenHashMap();
-        nodePoss.defaultReturnValue(-2);
-        numArcs = 0;
-        Arrays.sort(edges,edgeComparator());
-        nodes = LongBigArrays.newBigArray(edges.length*3);
-        long prevNode = -1, prevToNode = -1;
-        long i = 0;
-        long edgesLeft = edges.length;
-        long outIndex = 0, outDegree = 0;
-        for(Edge e : edges){
-            numNodes = Math.max(numNodes,e.to);
-            if(e.from != prevNode){
-                prevNode = e.from;
-                LongBigArrays.set(nodes,outIndex,outDegree);
-                prevToNode = -1;
-                outDegree = 0;
-                nodes = LongBigArrays.ensureCapacity(nodes,i+edgesLeft+HEADER_LENGTH);
-                nodePoss.put(e.from,i);
-                LongBigArrays.set(nodes,i++,e.from);
-                outIndex = i++;
-            }
-            if (e.to != prevToNode) {
-                prevToNode = e.to;
-                outDegree++;
-                LongBigArrays.set(nodes, i++, e.to);
-                numArcs++;
-            }
-            edgesLeft--;
-        }
-        length = i;
-        LongBigArrays.set(nodes,outIndex,outDegree);
-        numNodes = Math.max(edges[edges.length-1].from,numNodes) + 1;
+        addEdges(edges);
 
     }
 
     public void addEdges(Edge[] edges){
 
-        if (empty){
-            init(edges);
+        if (edges.length == 0)
             return;
-        }
 
-        EdgesAdder edgesAdder = new EdgesAdder(edges).invoke();
+        EdgesAdder edgesAdder = new EdgesAdder(edges);
+        if (empty){
+            edgesAdder.setEdges();
+        }else{
+            edgesAdder.addEdges();
+        }
 
         numNodes = edgesAdder.getNewNumNodes();
         numArcs = edgesAdder.getNewNumArcs();
         nodes = edgesAdder.getNewNodes();
         nodePoss = edgesAdder.getNewNodePoss();
-
 
     }
 
@@ -234,7 +198,7 @@ public class TraverseGraph extends ImmutableGraph {
         private long[][] newNodes;
         private TraverseIterator curNodes = new TraverseIterator(0);
         private long[] previousNeighbors = new long[0];
-        private int previousNeighborPos = 0;
+        private int previousNeighborPos = 0, previousNeighborsLength = 0;
 
         private long prevNode = -1, prevToNode = -1;
         private long i = 0;
@@ -269,7 +233,25 @@ public class TraverseGraph extends ImmutableGraph {
             return newNodePoss;
         }
 
-        public EdgesAdder invoke() {
+        public void setEdges(){
+
+            for (Edge e : edges){
+                newNumNodes = Math.max(newNumNodes,e.to);
+                if(e.from != prevNode){
+                    switchSourceNode(e.from);
+                }
+                if(e.to != prevToNode){
+                    addNeighbor(e.to);
+                }
+            }
+            length = i;
+            LongBigArrays.set(newNodes,outIndex,outDegree);
+            newNumNodes = Math.max(edges[edges.length-1].from,newNumNodes)+1;
+            empty = false;
+
+        }
+
+        public void addEdges() {
 
             for(Edge e : edges){
                 newNumNodes = Math.max(newNumNodes,e.to);
@@ -293,7 +275,6 @@ public class TraverseGraph extends ImmutableGraph {
             length = i;
             LongBigArrays.set(newNodes,outIndex,outDegree);
             newNumNodes = Math.max(edges[edges.length-1].from,newNumNodes) + 1;
-            return this;
         }
 
         /**
@@ -305,7 +286,7 @@ public class TraverseGraph extends ImmutableGraph {
                 curNodes.nextLong();
                 long pos = curNodes.getPosition();
                 newNodes = LongBigArrays.ensureCapacity(newNodes,i+(length-pos));
-                newNumArcs += copyAndWritePosition(pos, length,newNodes,i,newNodePoss);
+                newNumArcs += copyAndWritePosition(pos, length,i);
                 i += length-pos;
             }
         }
@@ -317,7 +298,7 @@ public class TraverseGraph extends ImmutableGraph {
          * @param neighbor The neighbor to add
          */
         private void addNeighbor(long neighbor) {
-            if(previousNeighborPos < previousNeighbors.length && previousNeighbors[previousNeighborPos] == neighbor)
+            if(previousNeighborPos < previousNeighborsLength && previousNeighbors[previousNeighborPos] == neighbor)
                 previousNeighborPos++;
             prevToNode = neighbor;
             outDegree++;
@@ -337,7 +318,7 @@ public class TraverseGraph extends ImmutableGraph {
                 LongBigArrays.set(newNodes,outIndex,outDegree);
             prevToNode = -1;
             outDegree = 0;
-            newNodes = LongBigArrays.ensureCapacity(newNodes,i+edgesLeft+ previousNeighbors.length+HEADER_LENGTH);
+            newNodes = LongBigArrays.ensureCapacity(newNodes,i+edgesLeft+ previousNeighborsLength+HEADER_LENGTH);
             newNodePoss.put(newSource,i);
             LongBigArrays.set(newNodes,i++,newSource);
             outIndex = i++;
@@ -353,21 +334,20 @@ public class TraverseGraph extends ImmutableGraph {
             if(curNodes.hasNext()) {
                 long curNode = curNodes.nextLong();
                 if(curNode < sourceNode){
-                    curNode = copyEdgesUpToThisSource(sourceNode, curNode);
+                    copyEdgesUpToThisSource(sourceNode, curNode);
                 }
-                storePreviousNeighbors(sourceNode, curNode);
+                storePreviousNeighbors();
             }
         }
 
         /**
-         * Stores all neigbhbors to {@code sourceNode} that existed previously
-         *
-         * @param sourceNode
-         * @param curNode
+         * Stores all neighbors to the current node in {@code curNodes} that existed previously into previousNeighbors
          */
-        private void storePreviousNeighbors(long sourceNode, long curNode) {
-            if(curNode == sourceNode && !reachedEnd){
-                previousNeighbors = new long[(int)curNodes.outdegree()];
+        private void storePreviousNeighbors() {
+            if(!reachedEnd){
+                if(previousNeighbors.length < curNodes.outdegree())
+                    previousNeighbors = new long[Math.max(previousNeighbors.length*2,(int)curNodes.outdegree())];
+                previousNeighborsLength = (int)curNodes.outdegree();
                 LongBigArrays.copyFromBig(nodes,curNodes.getPosition()+HEADER_LENGTH, previousNeighbors,0,(int)curNodes.outdegree());
                 previousNeighborPos = 0;
             }else
@@ -375,12 +355,11 @@ public class TraverseGraph extends ImmutableGraph {
         }
 
         /**
-         * Copies all edges TODO
+         * Copies all previous edges up to {@code sourceNode} and returns the new current node.
          * @param sourceNode
          * @param curNode
-         * @return
          */
-        private long copyEdgesUpToThisSource(long sourceNode, long curNode) {
+        private void copyEdgesUpToThisSource(long sourceNode, long curNode) {
             long startPos = curNodes.getPosition();
             long copyEnd, skip = sourceNode-curNode;
             if(curNodes.skip(skip) < skip){
@@ -388,21 +367,33 @@ public class TraverseGraph extends ImmutableGraph {
                 reachedEnd = true;
             }else
                 copyEnd = curNodes.getPosition();
-            newNumArcs += copyAndWritePosition(startPos,copyEnd,newNodes,i,newNodePoss);
+            newNumArcs += copyAndWritePosition(startPos,copyEnd,i);
             i += copyEnd-startPos;
-            curNode += skip;
-            return curNode;
         }
 
+        /**
+         * Copies all the neighbors form {@code previousNeighbors} that are less than {@code neighbor} (or all if null).
+         * and adds them to the new list
+         *
+         * @param neighbor
+         */
         private void copyPreviousNeighborsLessThan(Long neighbor) {
-            while(previousNeighborPos < previousNeighbors.length && (neighbor == null || previousNeighbors[previousNeighborPos] < neighbor)){
+            while(previousNeighborPos < previousNeighborsLength && (neighbor == null || previousNeighbors[previousNeighborPos] < neighbor)){
                 outDegree++;
                 newNumArcs++;
                 LongBigArrays.set(newNodes,i++, previousNeighbors[previousNeighborPos++]);
             }
         }
 
-        private long copyAndWritePosition(long startPos, long copyEnd, long[][] newNodes, long toPos, Long2LongOpenHashMap newNodePoss) {
+        /**
+         * Copies all edges from the old list starting at {@code startPos} to the new list at {@code toPos}
+         *
+         * @param startPos start position in {@code nodes}
+         * @param copyEnd end position in {@code nodes}
+         * @param toPos start position in {@code newNodes}
+         * @return
+         */
+        private long copyAndWritePosition(long startPos, long copyEnd, long toPos) {
 
             long curPos = startPos;
             long posDiff = toPos-startPos;
