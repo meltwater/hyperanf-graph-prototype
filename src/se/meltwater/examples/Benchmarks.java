@@ -22,11 +22,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.Date;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Matcher;
 import java.util.stream.LongStream;
 
 /**
@@ -137,8 +135,8 @@ public class Benchmarks {
     public static void compareSimulatedAndTraverseGraph() throws FileNotFoundException {
         final int maxNumberOfEdges = 1000000;
         final int sourceBulkSize = 50000;
-        final int startNode = 0;
-        final int maxSteps = 8;
+        int maxNode = maxNumberOfEdges;
+        Random rand = new Random();
         final String dateString = getDateString();
 
         final String dataFile = dataFolder + "benchmarkSimTrav" + dateString + ".data";
@@ -149,20 +147,23 @@ public class Benchmarks {
         writer.println("#h nrSources stdbfsMillis msbfsMillis");*/
 
         int nrEdges = sourceBulkSize;
-        TraverseGraph tg;
-        SimulatedGraph sim;
+        TraverseGraph tg = new TraverseGraph();
+        SimulatedGraph sim = new SimulatedGraph();
         while(nrEdges <= maxNumberOfEdges) {
             Edge[] edges = new Edge[nrEdges];
-            generateEdges(nrEdges, nrEdges, edges);
+            generateEdges(maxNode, nrEdges, edges);
 
             long time = System.currentTimeMillis();
-            sim = new SimulatedGraph();
             sim.addEdges(edges);
+            System.out.println("Added " + nrEdges + " edges to SimulatedGraph in " + (System.currentTimeMillis()-time) + "ms.");
+            time = System.currentTimeMillis();
             sim.iterateAllEdges((Edge e) -> null);
-            System.out.println("Added " + nrEdges + " edges and iterated to SimulatedGraph in " + (System.currentTimeMillis()-time) + "ms.");
+            System.out.println("Iterated Simulated graph in " + (System.currentTimeMillis() - time) + "ms.");
 
             time = System.currentTimeMillis();
-            tg = new TraverseGraph(edges);
+            tg.addEdges(edges);
+            System.out.println("Added " + nrEdges + " edges to TraverseGraph in " + (System.currentTimeMillis()-time) + "ms.");
+            time = System.currentTimeMillis();
             int i = 0;
             NodeIterator it = tg.nodeIterator();
             while(it.hasNext()){
@@ -171,9 +172,8 @@ public class Benchmarks {
                 long neighbor;
                 while((neighbor = neighIt.nextLong()) != -1) i++;
             }
-            System.out.println("Added " + nrEdges + " edges and iterated to TraverseGraph in " + (System.currentTimeMillis()-time) + "ms." + i);
-
-            System.out.println("");
+            System.out.println("Iterated Travers graph in " + (System.currentTimeMillis() - time) + "ms.");
+            System.out.println();
             //writer.println(h + " " + sources.length + " " + stdTotalTime + " " + msbfsTotalTime);
 
 
@@ -542,13 +542,13 @@ public class Benchmarks {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Benchmarks.benchmarkEdgeInsertionsDanfReal();
+        //Benchmarks.benchmarkEdgeInsertionsDanfReal();
         //Benchmarks.benchmarkDVCInsertionsSimluated();
         //Benchmarks.benchmarkDVCInsertionsReal();
         //Benchmarks.benchmarkDVCDeletionsSimulated();
         //Benchmarks.benchmarkDVCDeletionsReal();
         //Benchmarks.benchmarkUnionVsStored();
         //Benchmarks.benchmarkStdBfs();
-        //Benchmarks.compareSimulatedAndTraverseGraph();
+        Benchmarks.compareSimulatedAndTraverseGraph();
     }
 }

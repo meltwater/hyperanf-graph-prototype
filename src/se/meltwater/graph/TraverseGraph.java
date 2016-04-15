@@ -4,7 +4,6 @@ import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.LazyLongIterators;
 import it.unimi.dsi.big.webgraph.NodeIterator;
-import it.unimi.dsi.compression.TreeDecoder;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
 
@@ -86,113 +85,13 @@ public class TraverseGraph extends ImmutableGraph {
             return;
         }
 
-        long[][] newNodes;
-        Long2LongOpenHashMap newNodePoss = new Long2LongOpenHashMap();
-        newNodePoss.defaultReturnValue(-2);
-        long newNumNodes = numNodes-1, newNumArcs = 0;
+        EdgesAdder edgesAdder = new EdgesAdder(edges).invoke();
 
-        TraverseIterator curNodes = new TraverseIterator(0);
-        long[] extraNodes = new long[0];
-        int extraNodePos = 0;
+        numNodes = edgesAdder.getNewNumNodes();
+        numArcs = edgesAdder.getNewNumArcs();
+        nodes = edgesAdder.getNewNodes();
+        nodePoss = edgesAdder.getNewNodePoss();
 
-        Arrays.sort(edges,edgeComparator());
-        newNodes = LongBigArrays.newBigArray(numArcs + numNodes*2 + edges.length*3);
-        long prevNode = -1, prevToNode = -1;
-        long i = 0;
-        long edgesLeft = edges.length;
-        long outIndex = 0, outDegree = 0;
-        boolean reachedEnd = false, first = true;
-        for(Edge e : edges){
-            newNumNodes = Math.max(newNumNodes,e.to);
-            if(e.from != prevNode){
-                prevNode = e.from;
-                while(extraNodePos < extraNodes.length){
-                    outDegree++;
-                    newNumArcs++;
-                    LongBigArrays.set(newNodes,i++,extraNodes[extraNodePos++]);
-                }
-                if(curNodes.hasNext()) {
-                    long curNode;
-                    curNode = curNodes.nextLong();
-                    if(curNode < e.from){
-                        long startPos = curNodes.getPosition();
-                        long copyEnd, skip = e.from-curNode;
-                        if(curNodes.skip(skip) < skip){
-                            copyEnd = length;
-                            reachedEnd = true;
-                        }else
-                            copyEnd = curNodes.getPosition();
-                        newNumArcs += copyAndWritePosition(startPos,copyEnd,newNodes,i,newNodePoss);
-                        i += copyEnd-startPos;
-                        curNode += skip;
-                    }
-                    if(curNode == e.from && !reachedEnd){
-                        extraNodes = new long[(int)curNodes.outdegree()];
-                        LongBigArrays.copyFromBig(nodes,curNodes.getPosition()+HEADER_LENGTH,extraNodes,0,(int)curNodes.outdegree());
-                        extraNodePos = 0;
-                    }else
-                        extraNodes = new long[0];
-                }
-                if(first == (first = false))
-                    LongBigArrays.set(newNodes,outIndex,outDegree);
-                prevToNode = -1;
-                outDegree = 0;
-                newNodes = LongBigArrays.ensureCapacity(newNodes,i+edgesLeft+extraNodes.length+HEADER_LENGTH);
-                newNodePoss.put(e.from,i);
-                LongBigArrays.set(newNodes,i++,e.from);
-                outIndex = i++;
-            }
-            if (e.to != prevToNode) {
-                while(extraNodePos < extraNodes.length && extraNodes[extraNodePos] < e.to){
-                    outDegree++;
-                    newNumArcs++;
-                    LongBigArrays.set(newNodes,i++,extraNodes[extraNodePos++]);
-                }
-                if(extraNodePos < extraNodes.length && extraNodes[extraNodePos] == e.to)
-                    extraNodePos++;
-                prevToNode = e.to;
-                outDegree++;
-                LongBigArrays.set(newNodes, i++, e.to);
-                newNumArcs++;
-            }
-            edgesLeft--;
-        }
-        while(extraNodePos < extraNodes.length){
-            outDegree++;
-            newNumArcs++;
-            LongBigArrays.set(newNodes,i++,extraNodes[extraNodePos++]);
-        }
-        if(curNodes.hasNext()){
-            curNodes.nextLong();
-            long pos = curNodes.getPosition();
-            newNodes = LongBigArrays.ensureCapacity(newNodes,i+(length-pos));
-            newNumArcs += copyAndWritePosition(pos, length,newNodes,i,newNodePoss);
-            i += length-pos;
-        }
-        length = i;
-        LongBigArrays.set(newNodes,outIndex,outDegree);
-        numNodes = Math.max(edges[edges.length-1].from,newNumNodes) + 1;
-        numArcs = newNumArcs;
-        nodes = newNodes;
-        nodePoss = newNodePoss;
-
-
-    }
-
-    private long copyAndWritePosition(long startPos, long copyEnd, long[][] newNodes, long toPos, Long2LongOpenHashMap newNodePoss) {
-
-        long curPos = startPos;
-        long posDiff = toPos-startPos;
-        long arcsAdded = 0;
-        while(curPos < copyEnd && curPos < length){
-            long node = LongBigArrays.get(nodes,curPos);
-            long out = LongBigArrays.get(nodes,curPos+1);
-            arcsAdded += out;
-            newNodePoss.put(node,curPos+posDiff);
-            LongBigArrays.copy(nodes,curPos,newNodes,curPos+posDiff,out+HEADER_LENGTH);
-            curPos += out+HEADER_LENGTH;
-        }
-        return arcsAdded;
 
     }
 
@@ -327,4 +226,197 @@ public class TraverseGraph extends ImmutableGraph {
 
     }
 
+    private class EdgesAdder {
+        private Edge[] edges;
+        private Long2LongOpenHashMap newNodePoss;
+        private long newNumNodes;
+        private long newNumArcs;
+        private long[][] newNodes;
+        private TraverseIterator curNodes = new TraverseIterator(0);
+        private long[] previousNeighbors = new long[0];
+        private int previousNeighborPos = 0;
+
+        private long prevNode = -1, prevToNode = -1;
+        private long i = 0;
+        private long edgesLeft;
+        private long outIndex = 0, outDegree = 0;
+        private boolean reachedEnd = false, first = true;
+
+        public EdgesAdder(Edge[] edges) {
+            this.edges = edges;
+            this.newNodePoss = new Long2LongOpenHashMap();
+            newNodePoss.defaultReturnValue(-2);
+            this.newNumNodes = numNodes-1;
+            this.newNumArcs = 0;
+            Arrays.sort(edges,edgeComparator());
+            newNodes = LongBigArrays.newBigArray(numArcs + numNodes*2 + edges.length*3);
+            edgesLeft = edges.length;
+        }
+
+        public long[][] getNewNodes() {
+            return newNodes;
+        }
+
+        public long getNewNumNodes() {
+            return newNumNodes;
+        }
+
+        public long getNewNumArcs() {
+            return newNumArcs;
+        }
+
+        public Long2LongOpenHashMap getNewNodePoss(){
+            return newNodePoss;
+        }
+
+        public EdgesAdder invoke() {
+
+            for(Edge e : edges){
+                newNumNodes = Math.max(newNumNodes,e.to);
+                if(e.from != prevNode){
+                    // If we switched source node the previous source node may not have all its previous neighbors
+                    // copied so we copy the rest of them
+                    copyPreviousNeighborsLessThan(null);
+                    handlePreviousEdgesUpTo(e.from);
+                    switchSourceNode(e.from);
+                }
+                if (e.to != prevToNode) {
+                    copyPreviousNeighborsLessThan(e.to);
+                    addNeighbor(e.to);
+                }
+                edgesLeft--;
+            }
+            // If we went through all edges the last source node may not have all its previous neighbors
+            // copied so we copy the rest of them
+            copyPreviousNeighborsLessThan(null);
+            copyRemainingPreviousArcs();
+            length = i;
+            LongBigArrays.set(newNodes,outIndex,outDegree);
+            newNumNodes = Math.max(edges[edges.length-1].from,newNumNodes) + 1;
+            return this;
+        }
+
+        /**
+         * Copies all remaining nodes from the previous nodes list to the new one. Also writes the position
+         * of the nodes to the new node positions.
+         */
+        private void copyRemainingPreviousArcs() {
+            if(curNodes.hasNext()){
+                curNodes.nextLong();
+                long pos = curNodes.getPosition();
+                newNodes = LongBigArrays.ensureCapacity(newNodes,i+(length-pos));
+                newNumArcs += copyAndWritePosition(pos, length,newNodes,i,newNodePoss);
+                i += length-pos;
+            }
+        }
+
+        /**
+         * Increases number of arcs and out degree. If the top node in the previous neighbors are the same as
+         * {@code neighbor} the top is moved forward.
+         *
+         * @param neighbor The neighbor to add
+         */
+        private void addNeighbor(long neighbor) {
+            if(previousNeighborPos < previousNeighbors.length && previousNeighbors[previousNeighborPos] == neighbor)
+                previousNeighborPos++;
+            prevToNode = neighbor;
+            outDegree++;
+            LongBigArrays.set(newNodes, i++, neighbor);
+            newNumArcs++;
+        }
+
+        /**
+         * Writes the previous outdegree to the specified location (except for the first time). Resets all
+         * source specific members. Writes the source node and its position. Reserves index for outdegree.
+         *
+         * @param newSource The source to switch to
+         */
+        private void switchSourceNode(long newSource) {
+            prevNode = newSource;
+            if(first == (first = false))
+                LongBigArrays.set(newNodes,outIndex,outDegree);
+            prevToNode = -1;
+            outDegree = 0;
+            newNodes = LongBigArrays.ensureCapacity(newNodes,i+edgesLeft+ previousNeighbors.length+HEADER_LENGTH);
+            newNodePoss.put(newSource,i);
+            LongBigArrays.set(newNodes,i++,newSource);
+            outIndex = i++;
+        }
+
+        /**
+         * If the source node of the edge is higher than the current node (which is one more than the previous source)
+         * all previous arcs between are copied. If there were neighbors to the source previously, these are stored
+         * in {@code previousNeighbors}
+         * @param sourceNode
+         */
+        private void handlePreviousEdgesUpTo(long sourceNode) {
+            if(curNodes.hasNext()) {
+                long curNode = curNodes.nextLong();
+                if(curNode < sourceNode){
+                    curNode = copyEdgesUpToThisSource(sourceNode, curNode);
+                }
+                storePreviousNeighbors(sourceNode, curNode);
+            }
+        }
+
+        /**
+         * Stores all neigbhbors to {@code sourceNode} that existed previously
+         *
+         * @param sourceNode
+         * @param curNode
+         */
+        private void storePreviousNeighbors(long sourceNode, long curNode) {
+            if(curNode == sourceNode && !reachedEnd){
+                previousNeighbors = new long[(int)curNodes.outdegree()];
+                LongBigArrays.copyFromBig(nodes,curNodes.getPosition()+HEADER_LENGTH, previousNeighbors,0,(int)curNodes.outdegree());
+                previousNeighborPos = 0;
+            }else
+                previousNeighbors = new long[0];
+        }
+
+        /**
+         * Copies all edges TODO
+         * @param sourceNode
+         * @param curNode
+         * @return
+         */
+        private long copyEdgesUpToThisSource(long sourceNode, long curNode) {
+            long startPos = curNodes.getPosition();
+            long copyEnd, skip = sourceNode-curNode;
+            if(curNodes.skip(skip) < skip){
+                copyEnd = length;
+                reachedEnd = true;
+            }else
+                copyEnd = curNodes.getPosition();
+            newNumArcs += copyAndWritePosition(startPos,copyEnd,newNodes,i,newNodePoss);
+            i += copyEnd-startPos;
+            curNode += skip;
+            return curNode;
+        }
+
+        private void copyPreviousNeighborsLessThan(Long neighbor) {
+            while(previousNeighborPos < previousNeighbors.length && (neighbor == null || previousNeighbors[previousNeighborPos] < neighbor)){
+                outDegree++;
+                newNumArcs++;
+                LongBigArrays.set(newNodes,i++, previousNeighbors[previousNeighborPos++]);
+            }
+        }
+
+        private long copyAndWritePosition(long startPos, long copyEnd, long[][] newNodes, long toPos, Long2LongOpenHashMap newNodePoss) {
+
+            long curPos = startPos;
+            long posDiff = toPos-startPos;
+            long arcsAdded = 0;
+            while(curPos < copyEnd && curPos < length){
+                long node = LongBigArrays.get(nodes,curPos);
+                long out = LongBigArrays.get(nodes,curPos+1);
+                arcsAdded += out;
+                newNodePoss.put(node,curPos+posDiff);
+                LongBigArrays.copy(nodes,curPos,newNodes,curPos+posDiff,out+HEADER_LENGTH);
+                curPos += out+HEADER_LENGTH;
+            }
+            return arcsAdded;
+
+        }
+    }
 }
