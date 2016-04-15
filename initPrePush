@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo -e "#!/bin/bash\n\nmvn clean compile test" >  .git/hooks/pre-push 
+chmod +x .git/hooks/pre-push
