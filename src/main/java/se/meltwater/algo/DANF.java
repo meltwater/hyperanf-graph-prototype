@@ -54,6 +54,10 @@ public class DANF {
         }
     }
 
+    public int getMaxH(){
+        return h;
+    }
+
     /**
      *
      * Adds the specified {@code edges} to the graph and recalculates
@@ -184,6 +188,16 @@ public class DANF {
         }
     }
 
+    private void checkH(int h){
+        if(h > this.h)
+            throw new IllegalArgumentException("The given h (" + h + ") must be less than or equal to max h (" + this.h + ").");
+    }
+
+    private void checkNode(long node){
+        if(!graph.containsNode(node))
+            throw new IllegalArgumentException("The given node (" + node + ") doesn't exist in the graph.");
+    }
+
     /**
      * Returns the index of {@code node} in the HyperLolLol counters
      * @param node
@@ -191,6 +205,7 @@ public class DANF {
      */
     private long getNodeIndex(long node, int h){
 
+        checkH(h);
         if (h == this.h) {
             return node;
         }
@@ -216,6 +231,7 @@ public class DANF {
      * @param h The level to set
      */
     public void addHistory(HyperLolLolCounterArray counter, int h){
+        checkH(h);
         counterLongWords = counter.counterLongwords;
         if(h == this.h) {
             history[h-1] = counter;
@@ -234,12 +250,15 @@ public class DANF {
      * @return
      */
     public double count(long node, int h) {
+        checkH(h);
+        checkNode(node);
         if(!vc.isInVertexCover(node) && h != this.h)
             throw new IllegalArgumentException("Node " + node + " wasn't in the vertex cover.");
         return history[h-1].count(getNodeIndex(node, h));
     }
 
     public double[] count(long node){
+        checkNode(node);
         if(!vc.isInVertexCover(node))
             throw new IllegalArgumentException("Node " + node + " wasn't in the vertex cover.");
         double[] ret = new double[h];
