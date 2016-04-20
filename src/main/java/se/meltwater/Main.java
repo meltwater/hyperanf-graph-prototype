@@ -1,7 +1,8 @@
+package se.meltwater;
+
 import com.martiansoftware.jsap.*;
 import it.unimi.dsi.big.webgraph.BVGraph;
-import se.meltwater.Converter;
-import se.meltwater.GraphReader;
+import it.unimi.dsi.big.webgraph.UnionImmutableGraph;
 import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.examples.VertexCover;
 import se.meltwater.graph.ImmutableGraphWrapper;
@@ -46,9 +47,6 @@ public class Main {
                 break;
             case "-rb":
                 doRemoveBlocks(argsWithoutFirstFlag);
-                break;
-            case "-r":
-                doReadGraph(argsWithoutFirstFlag);
                 break;
             case "-bfs":
                 doBFS(argsWithoutFirstFlag);
@@ -123,7 +121,7 @@ public class Main {
         String[] filepaths = result.getStringArray("filenames");
 
         if(useWebgraph){
-            new Converter().union(filepaths[0], filepaths[1], filepaths[2]);
+            union(filepaths[0], filepaths[1], filepaths[2]);
         } else {
             long time = System.currentTimeMillis();
             GraphMerger.mergeGraphs(filepaths[0], filepaths[1], filepaths[2]);
@@ -181,25 +179,6 @@ public class Main {
         BVGraph.store(graph, outpath, 0, 0, -1, -1, 0);
     }
 
-    private static void doReadGraph(String[] args) throws  Exception {
-        SimpleJSAP jsap = new SimpleJSAP(jarName, jarDescription,
-                new Parameter[] {
-                        new Switch("print", 'e', "print", "Prints graph if set"),
-                        new FlaggedOption("path",  JSAP.STRING_PARSER, null, JSAP.REQUIRED, 'p', "path",  pathDescription),
-                        new FlaggedOption("numnodes", JSAP.INTEGER_PARSER, null, JSAP.REQUIRED, 'n', "numnodes", "The number of nodes to read"),
-                }
-        );
-
-        JSAPResult result = jsap.parse(args);
-        checkErrorFlags(jsap, result);
-
-        boolean print = result.getBoolean("print");
-        String path = result.getString("path");
-        int numNodes = result.getInt("numnodes");
-
-        GraphReader.readGraph(path, numNodes ,print);
-
-    }
 
     private static void checkErrorFlags(JSAP jsap, JSAPResult result) {
         if(!result.success()) {
@@ -218,7 +197,6 @@ public class Main {
 
     private static void printUsages(){
         System.out.println("-g   : Generate BVGraph from .graph");
-        System.out.println("-r   : Read graph");
         System.out.println("-rb  : Remove blocks from graph");
         System.out.println("-u   : Join two graphs to one");
         System.out.println("-vc  : Calculate a 2-approximate vertex cover in graph");
@@ -226,4 +204,11 @@ public class Main {
         System.out.println("-a   : Generate BVGraph from Ascii graph");
     }
 
+    public static void union(String graph1, String graph2, String newName) throws IOException {
+        BVGraph g1 = BVGraph.loadMapped(graph1), g2 = BVGraph.loadMapped(graph2);
+        System.out.println("Started joining graphs.");
+        long time = System.currentTimeMillis();
+        BVGraph.store(new UnionImmutableGraph(g1,g2),newName);
+        System.out.println("Joined graphs in: " + (System.currentTimeMillis() - time) + "ms.");
+    }
 }
