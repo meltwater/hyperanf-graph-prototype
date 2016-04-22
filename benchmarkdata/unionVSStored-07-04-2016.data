@@ -1,5 +1,5 @@
-#07-04-2016 in-2004; 1000 random edges inserted per iteration; Time measured to insert edges and to perform a complete edge scan. 
-#Iteration UnionedTimems StoredTimedms
+%07-04-2016 in-2004; 1000 random edges inserted per iteration; Time measured to insert edges and to perform a complete edge scan. 
+%Iteration UnionedTimems StoredTimedms
 1 968 2039
 2 914 1735
 3 1041 1774
