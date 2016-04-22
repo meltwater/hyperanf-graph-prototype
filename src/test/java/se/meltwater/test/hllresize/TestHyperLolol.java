@@ -42,7 +42,10 @@ public class TestHyperLolol {
             counter.addCounters(increaseSize);
             randomlyAddHashesToCounters(arraySize+increaseSize);
 
-            long[] extracts = generateNonDuplicateList(arraySize+increaseSize);
+            int size = arraySize+increaseSize;
+            if(size == 0)
+                size = 1;
+            long[] extracts = generateNonDuplicateList(size);
             HyperLolLolCounterArray extracted = counter.extract(LazyLongIterators.wrap(extracts), extracts.length);
 
             int i = 0;

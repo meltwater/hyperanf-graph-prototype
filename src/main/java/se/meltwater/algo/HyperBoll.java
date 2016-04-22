@@ -330,7 +330,7 @@ public class HyperBoll implements SafelyCloseable {
      * @param granularity the number of node per task in a multicore environment (it will be rounded to the next multiple of 64), or 0 for {@link #DEFAULT_GRANULARITY}.
      * @param external if true, results of an iteration will be stored on disk.
      */
-    public HyperBoll( final IGraph g, final IGraph gt, final int log2m, final ProgressLogger pl, final int numberOfThreads, final int bufferSize, final int granularity, final boolean external ) throws IOException {
+    public HyperBoll( final IGraph g, final IGraph gt, final int log2m, final ProgressLogger pl, final int numberOfThreads, final int bufferSize, final int granularity, final boolean external )  {
         this( g, gt, log2m, pl, numberOfThreads, bufferSize, granularity, external, false, false, null, Util.randomSeed() );
     }
 
@@ -340,8 +340,19 @@ public class HyperBoll implements SafelyCloseable {
      * @param gt the transpose of <code>g</code> in case you want to perform systolic computations, or <code>null</code>.
      * @param log2m the logarithm of the number of registers per counter.
      */
-    public HyperBoll( final IGraph g, final IGraph gt, final int log2m ) throws IOException {
+    public HyperBoll( final IGraph g, final IGraph gt, final int log2m )  {
         this( g, gt, log2m, null, 0, 0, 0, false );
+    }
+
+    /** Creates a new HyperBoll instance using default values.
+     *
+     * @param g the graph whose neighbourhood function you want to compute.
+     * @param gt the transpose of <code>g</code> in case you want to perform systolic computations, or <code>null</code>.
+     * @param log2m the logarithm of the number of registers per counter.
+     * @param seed The HyperLogLogCounterArray seed
+     */
+    public HyperBoll( final IGraph g, final IGraph gt, final int log2m, final long seed ) {
+        this( g, gt, log2m, null, 0, 0,0,false, false, false, null, seed );
     }
 
     /** Creates a new HyperBoll instance using default values.
@@ -351,7 +362,7 @@ public class HyperBoll implements SafelyCloseable {
      * @param log2m the logarithm of the number of registers per counter.
      * @param pl a progress logger, or <code>null</code>.
      */
-    public HyperBoll( final IGraph g, final IGraph gt, final int log2m, final ProgressLogger pl ) throws IOException {
+    public HyperBoll( final IGraph g, final IGraph gt, final int log2m, final ProgressLogger pl )  {
         this( g, null, log2m, pl, 0, 0, 0, false );
     }
 
@@ -360,7 +371,7 @@ public class HyperBoll implements SafelyCloseable {
      * @param g the graph whose neighbourhood function you want to compute.
      * @param log2m the logarithm of the number of registers per counter.
      */
-    public HyperBoll( final IGraph g, final int log2m ) throws IOException {
+    public HyperBoll( final IGraph g, final int log2m )  {
         this( g, null, log2m );
     }
 
@@ -370,7 +381,7 @@ public class HyperBoll implements SafelyCloseable {
      * @param log2m the logarithm of the number of registers per counter.
      * @param seed the random seed passed to {@link HyperLogLogCounterArray#HyperLogLogCounterArray(long, long, int, long)}.
      */
-    public HyperBoll( final IGraph g, final int log2m, final long seed ) throws IOException {
+    public HyperBoll( final IGraph g, final int log2m, final long seed ) {
         this( g, null, log2m, null, 0, 0, 0, false, false, false, null, seed );
     }
 
@@ -380,7 +391,7 @@ public class HyperBoll implements SafelyCloseable {
      * @param log2m the logarithm of the number of registers per counter.
      * @param pl a progress logger, or <code>null</code>.
      */
-    public HyperBoll( final IGraph g, final int log2m, final ProgressLogger pl ) throws IOException {
+    public HyperBoll( final IGraph g, final int log2m, final ProgressLogger pl ) {
         this( g, null, log2m, pl );
     }
 
@@ -400,7 +411,7 @@ public class HyperBoll implements SafelyCloseable {
      * @param discountFunction an array (possibly <code>null</code>) of discount functions.
      * @param seed the random seed passed to {@link HyperLogLogCounterArray#HyperLogLogCounterArray(long, long, int, long)}.
      */
-    public HyperBoll(final IGraph g, final IGraph gt, final int log2m, final ProgressLogger pl, final int numberOfThreads, final int bufferSize, final int granularity, final boolean external, boolean doSumOfDistances, boolean doSumOfInverseDistances, final Int2DoubleFunction[] discountFunction, final long seed ) throws IOException {
+    public HyperBoll(final IGraph g, final IGraph gt, final int log2m, final ProgressLogger pl, final int numberOfThreads, final int bufferSize, final int granularity, final boolean external, boolean doSumOfDistances, boolean doSumOfInverseDistances, final Int2DoubleFunction[] discountFunction, final long seed ) {
 
         workingCounter = new HyperLolLolCounterArray(g.getNumberOfNodes(), g.getNumberOfNodes(), ensureRegisters( log2m ), seed);
 
@@ -453,9 +464,13 @@ public class HyperBoll implements SafelyCloseable {
 
         if ( external ) {
             info( "Creating update list..." );
-            updateFile = File.createTempFile( HyperBoll.class.getName(), "-temp" );
-            updateFile.deleteOnExit();
-            fileChannel = ( randomAccessFile = new RandomAccessFile( updateFile, "rw" ) ).getChannel();
+            try {
+                updateFile = File.createTempFile(HyperBoll.class.getName(), "-temp");
+                updateFile.deleteOnExit();
+                fileChannel = (randomAccessFile = new RandomAccessFile(updateFile, "rw")).getChannel();
+            }catch (IOException e){
+                throw new RuntimeException("Couldn't create temporary files for external use",e);
+            }
         }
         else {
             updateFile = null;

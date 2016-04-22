@@ -95,12 +95,13 @@ public class TestEffectPropagation {
 
         //IGraph clone = (IGraph) ((SimulatedGraph)g1).clone();
         long seed = Util.randomSeed();
-        Pair<DANF,HyperBoll> pair = TestUtils.runHyperBall(g1,new DynamicVertexCover(g1),h,log2m, seed);
-        DANF danf = pair.getKey();
+        DANF danf = new DANF(new DynamicVertexCover(g1),h,log2m,g1,seed);
 
         danf.addEdges(additionalEdges);
 
-        HyperLolLolCounterArray hll = TestUtils.runHyperBall(mergedGraph,h,log2m,seed).getCounter();
+        HyperBoll hyperBoll = new HyperBoll(mergedGraph, log2m, seed);
+        hyperBoll.run(h);
+        HyperLolLolCounterArray hll = hyperBoll.getCounter();
         for (long i = 0; i < mergedGraph.getNumberOfNodes() ; i++) {
             assertEquals("Node " + i,hll.count(i),danf.count(i,h),epsilon);
         }
@@ -122,11 +123,13 @@ public class TestEffectPropagation {
             mergedGraph.addEdges(new Edge(0, 2));
 
             DynamicVertexCover vc = new DynamicVertexCover(graph);
-            DANF danf = TestUtils.runHyperBall(graph, vc, h, log2m, seed).getKey();
+            DANF danf = new DANF(vc,h,log2m,graph,seed);
 
             danf.addEdges(new Edge(0, 2));
 
-            HyperLolLolCounterArray hll = TestUtils.runHyperBall(mergedGraph, h, log2m, seed).getCounter();
+            HyperBoll hyperBoll = new HyperBoll(mergedGraph,log2m,seed);
+            hyperBoll.run(h);
+            HyperLolLolCounterArray hll = hyperBoll.getCounter();
             for (long i = 0; i < mergedGraph.getNumberOfNodes(); i++) {
                 assertEquals("Node " + i, hll.count(i), danf.count(i, h), epsilon);
             }
@@ -147,11 +150,13 @@ public class TestEffectPropagation {
         mergedGraph.addEdges(new Edge(0,2));
 
         DynamicVertexCover vc = new DynamicVertexCover(graph);
-        DANF danf = TestUtils.runHyperBall(graph, vc, h, log2m, seed).getKey();
+        DANF danf = new DANF(vc,h,log2m,graph,seed);
 
         danf.addEdges(new Edge(0, 2));
 
-        HyperLolLolCounterArray hll = TestUtils.runHyperBall(mergedGraph, h, log2m, seed).getCounter();
+        HyperBoll hyperBoll = new HyperBoll(mergedGraph,log2m,seed);
+        hyperBoll.run(h);
+        HyperLolLolCounterArray hll = hyperBoll.getCounter();
         for (long i = 0; i < mergedGraph.getNumberOfNodes(); i++) {
             assertEquals("Node " + i, hll.count(i), danf.count(i, h), epsilon);
         }
@@ -173,11 +178,13 @@ public class TestEffectPropagation {
         mergedGraph.addEdges(new Edge(0, 0), new Edge(0, 1), new Edge(1, 3));
 
         DynamicVertexCover vc = new DynamicVertexCover(graph);
-        DANF danf = TestUtils.runHyperBall(graph, vc, h, log2m, seed).getKey();
+        DANF danf = new DANF(vc,h,log2m,graph,seed);
 
         danf.addEdges(new Edge(0, 1), new Edge(1, 3), new Edge(0,0));
 
-        HyperLolLolCounterArray hll = TestUtils.runHyperBall(mergedGraph, h, log2m, seed).getCounter();
+        HyperBoll hyperBoll = new HyperBoll(mergedGraph,log2m,seed);
+        hyperBoll.run(h);
+        HyperLolLolCounterArray hll = hyperBoll.getCounter();
         for (long i = 0; i < mergedGraph.getNumberOfNodes(); i++) {
             assertEquals("Node " + i, hll.count(i), danf.count(i, h), epsilon);
         }
@@ -372,9 +379,7 @@ public class TestEffectPropagation {
 
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
-
-        DANF danf = pair.getKey();
+        DANF danf = new DANF(dvc,h,log2m,graph,fixedSeed);
 
         danf.addEdges(new Edge(2, 0), new Edge(1, 2));
 
@@ -401,9 +406,7 @@ public class TestEffectPropagation {
 
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
-
-        DANF danf = pair.getKey();
+        DANF danf = new DANF(dvc,h,log2m,graph,fixedSeed);
 
         danf.addEdges(new Edge(2, 3), new Edge(3, 1), new Edge(2, 0)  );
 
@@ -418,10 +421,8 @@ public class TestEffectPropagation {
         graph.addEdges(edges);
 
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
-        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
-        DANF danf = pair.getKey();
 
-        return danf;
+        return new DANF(dvc,h,log2m,graph,fixedSeed);
 
     }
 }

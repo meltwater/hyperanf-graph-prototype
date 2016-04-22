@@ -110,60 +110,6 @@ public class TestUtils {
         return gen;
     }
 
-
-
-
-    /**
-     * Runs hyperBoll on the graph and returns the calculated initial DANF
-     * @param graph
-     * @param dvc
-     * @param h
-     * @return
-     * @throws IOException
-     */
-    public static Pair<DANF, HyperBoll> runHyperBall(IGraph graph, DynamicVertexCover dvc, int h, int log2m) throws IOException {
-
-        HyperBoll hyperBoll = new HyperBoll(graph, log2m);
-
-        DANF danf = iterateHyperBallAndSaveHistory(graph, dvc, h, hyperBoll);
-
-        return new Pair<>(danf, hyperBoll);
-    }
-
-
-
-    public static Pair<DANF, HyperBoll> runHyperBall(IGraph graph, DynamicVertexCover dvc, int h, int log2m, long seed) throws IOException {
-        HyperBoll hyperBoll = new HyperBoll(graph, log2m, seed);
-
-        DANF danf = iterateHyperBallAndSaveHistory(graph, dvc, h, hyperBoll);
-
-        return new Pair<>(danf, hyperBoll);
-    }
-
-    private static DANF iterateHyperBallAndSaveHistory( IGraph graph, DynamicVertexCover dvc, int h, HyperBoll hyperBoll) throws IOException {
-        DANF danf = new DANF(dvc, h, graph);
-
-        hyperBoll.init();
-        for (int i = 1; i <= h; i++) {
-            hyperBoll.iterate();
-            danf.addHistory(hyperBoll.getCounter(), i);
-        }
-
-        hyperBoll.close();
-        return danf;
-    }
-
-    public static HyperBoll runHyperBall(IGraph graph, int h, int log2m, long seed) throws IOException {
-        HyperBoll hb = new HyperBoll(graph,log2m,seed);
-
-        hb.init();
-        for (int i = 1; i <= h; i++)
-            hb.iterate();
-
-        return hb;
-
-    }
-
     /**
      *
      * @param runnable

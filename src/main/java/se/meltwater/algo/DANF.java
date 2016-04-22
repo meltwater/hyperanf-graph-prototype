@@ -1,5 +1,6 @@
 package se.meltwater.algo;
 
+import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import se.meltwater.bfs.MSBreadthFirst;
@@ -8,6 +9,7 @@ import se.meltwater.graph.IGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
+import java.io.IOException;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +38,11 @@ public class DANF {
 
     private final int STATIC_LOLOL = 0;
 
-    public DANF(IDynamicVertexCover vertexCover, int h, IGraph graph){
+    public DANF(IDynamicVertexCover vertexCover, int h, int log2m, IGraph graph){
+        this(vertexCover,h,log2m,graph,Util.randomSeed());
+    }
+
+    public DANF(IDynamicVertexCover vertexCover, int h, int log2m, IGraph graph, long seed){
 
         vc = vertexCover;
         this.h = h;
@@ -52,10 +58,26 @@ public class DANF {
             node = vcIterator.nextLong();
             insertNodeToCounterIndex(node);
         }
+
+        HyperBoll hyperBoll = new HyperBoll(graph,graphTranspose,log2m,seed);
+        hyperBoll.init();
+        try {
+            for (int i = 1; i <= h; i++) {
+                hyperBoll.iterate();
+                addHistory(hyperBoll.getCounter(), i);
+            }
+        }catch (IOException e){
+            throw new RuntimeException("Something went wrong with the temporary graph files", e);
+        }
     }
 
     public int getMaxH(){
         return h;
+    }
+
+    public HyperLolLolCounterArray getCounter(int h){
+        checkH(h);
+        return history[h-1];
     }
 
     /**
@@ -189,8 +211,8 @@ public class DANF {
     }
 
     private void checkH(int h){
-        if(h > this.h)
-            throw new IllegalArgumentException("The given h (" + h + ") must be less than or equal to max h (" + this.h + ").");
+        if(h > this.h || h <= 0)
+            throw new IllegalArgumentException("The given h (" + h + ") must be more than 0 and less than or equal to max h (" + this.h + ").");
     }
 
     private void checkNode(long node){
@@ -230,7 +252,7 @@ public class DANF {
      * @param counter
      * @param h The level to set
      */
-    public void addHistory(HyperLolLolCounterArray counter, int h){
+    private void addHistory(HyperLolLolCounterArray counter, int h){
         checkH(h);
         counterLongWords = counter.counterLongwords;
         if(h == this.h) {

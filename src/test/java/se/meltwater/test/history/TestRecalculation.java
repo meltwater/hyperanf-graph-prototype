@@ -67,9 +67,7 @@ public class TestRecalculation {
 
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
-
-        DANF danf = pair.getKey();
+        DANF danf = new DANF(dvc,h,log2m,graph,fixedSeed);
 
         danf.addEdges(new Edge(newNode, 0), new Edge(newNode, 2));
 
@@ -94,9 +92,7 @@ public class TestRecalculation {
 
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
-
-        DANF danf = pair.getKey();
+        DANF danf = new DANF(dvc,h,log2m,graph,fixedSeed);
 
         danf.addEdges(new Edge(2, 1), new Edge(1, 2));
 
@@ -136,9 +132,7 @@ public class TestRecalculation {
 
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m, fixedSeed);
-
-        DANF danf = pair.getKey();
+        DANF danf = new DANF(dvc,h,log2m,graph,fixedSeed);
 
         danf.addEdges(new Edge(5,3),new Edge(4,2));
 
@@ -160,13 +154,13 @@ public class TestRecalculation {
             SimulatedGraph graph = TestUtils.genRandomGraph(100);
             DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-            Pair<DANF, HyperBoll> pair = TestUtils.runHyperBall(graph, dvc, h, log2m);
+            DANF danf = new DANF(dvc,h,log2m,graph);
 
-            addEdgeAndAssertIncreasedCount(pair.getKey(), pair.getValue(), dvc, graph);
+            addEdgeAndAssertIncreasedCount(danf, dvc, graph);
         }
     }
 
-    public void addEdgeAndAssertIncreasedCount(DANF nh, HyperBoll boll, IDynamicVertexCover vc, SimulatedGraph graph) throws InterruptedException {
+    public void addEdgeAndAssertIncreasedCount(DANF nh, IDynamicVertexCover vc, SimulatedGraph graph) throws InterruptedException {
 
 
         double[] history, history2;
@@ -181,7 +175,7 @@ public class TestRecalculation {
 
                 do {
                     neighbor = rand.nextInt((int)graph.getNumberOfNodes());
-                } while(boll.getCounter().hasSameRegisters(node, neighbor));
+                } while(nh.getCounter(h).hasSameRegisters(node, neighbor));
 
                 nh.addEdges(new Edge(node, neighbor));
                 history2 = nh.count(node);
@@ -228,7 +222,7 @@ public class TestRecalculation {
 
             IGraph graph = setupRandomGraph();
             DynamicVertexCover dvc = new DynamicVertexCover(graph);
-            DANF danf = TestUtils.runHyperBall(graph, dvc, h, log2m).getKey();
+            DANF danf = new DANF(dvc,h,log2m,graph);
 
             Set<Long> addedNodes = addRandomEdgesWithUniqueFromNodes(graph, danf);
 

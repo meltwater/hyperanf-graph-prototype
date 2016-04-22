@@ -47,9 +47,15 @@ public class TestHistoryInit {
             SimulatedGraph graph = TestUtils.genRandomGraph(maxNodes);
             DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-            DANF danf = new DANF(dvc, h, graph);
+            DANF danf = new DANF(dvc, h, log2m, graph);
 
-            HyperLolLolCounterArray[] calculatedHistory = runHyperBallAndSaveEveryIteration(graph, danf, h, log2m);
+            HyperLolLolCounterArray[] calculatedHistory = new HyperLolLolCounterArray[h];
+            HyperBoll hyperBoll = new HyperBoll(graph,log2m,danf.getCounter(h).getJenkinsSeed());
+            hyperBoll.init();
+            for (int i = 1; i <= h ; i++) {
+                hyperBoll.iterate();
+                calculatedHistory[i-1] = (HyperLolLolCounterArray) hyperBoll.getCounter().clone();
+            }
 
             /* Check that the counters are correct for all nodes in all steps */
             for (int i = 1; i <= h; i++) {
@@ -68,34 +74,6 @@ public class TestHistoryInit {
                 }
             }
         }
-    }
-
-
-    /**
-     * Runs HyperBoll and for every iteration (which corresponds to a history level) we save the calculated counter.
-     * The returned array can be used to compare against the histories added in {@code danf}
-     * @param graph The graph to run HyperBoll on
-     * @param danf The DANF to add history to
-     * @param h The number of steps to run
-     * @param log2m -
-     * @return A h long array where each index i is the counter from the i'th step of HyperBoll.
-     * @throws IOException
-     */
-    private HyperLolLolCounterArray[] runHyperBallAndSaveEveryIteration(IGraph graph, DANF danf, int h, int log2m) throws IOException {
-        HyperBoll hyperBoll = new HyperBoll(graph, log2m);
-        HyperLolLolCounterArray[] calculatedHistory = new HyperLolLolCounterArray[h];
-        hyperBoll.init();
-        for (int i = 1; i <= h; i++) {
-            hyperBoll.iterate();
-            HyperLolLolCounterArray currentCounter = hyperBoll.getCounter();
-
-            calculatedHistory[i-1] = (HyperLolLolCounterArray) currentCounter.clone();
-            danf.addHistory(currentCounter, i);
-        }
-
-        hyperBoll.close();
-
-        return calculatedHistory;
     }
 
     private void setupRandomParameters() {

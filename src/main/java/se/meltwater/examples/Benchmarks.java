@@ -629,19 +629,8 @@ public class Benchmarks {
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
         System.out.println("Calculating Transpose");
-        DANF danf = new DANF(dvc, h, graph);
 
-        System.out.println("Starting HyperBall");
-        HyperBoll hyperBoll = new HyperBoll(graph, log2m);
-        hyperBoll.init();
-        for (int i = 1; i <= h; i++) {
-            System.out.println("HyperBoll iteration: " + i);
-            hyperBoll.iterate();
-            danf.addHistory(hyperBoll.getCounter(), i);
-        }
-        hyperBoll.close();
-
-        return danf;
+        return new DANF(dvc, h, log2m,graph);
     }
 
     /**
