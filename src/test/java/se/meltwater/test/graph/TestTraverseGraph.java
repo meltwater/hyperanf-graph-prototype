@@ -27,7 +27,7 @@ public class TestTraverseGraph {
 
     private TraverseGraph graph;
     private int numNodes;
-    private static final int maxNumNodes = 1000;
+    private static final int maxNumNodes = 100;
     private Random rand;
 
     private void setupGraph() throws IOException {

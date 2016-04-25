@@ -50,8 +50,8 @@ public class TestEffectPropagation {
     @Test
     public void testDANFSameAsHyperBallOnImmutableGraphs() throws IOException, InterruptedException {
         Random rand = new Random();
-        log2m = rand.nextInt(7)+4;
-        h = rand.nextInt(5)+1;
+        log2m = rand.nextInt(4)+4;
+        h = rand.nextInt(3)+1;
 
         BVGraph g1 = BVGraph.load("testGraphs/noBlocksUk");
         BVGraph g2 = BVGraph.load("testGraphs/wordassociationNoBlocks");
