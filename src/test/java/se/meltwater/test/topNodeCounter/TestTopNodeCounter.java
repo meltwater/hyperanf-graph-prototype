@@ -146,4 +146,35 @@ public class TestTopNodeCounter {
         }
         return nodesInEdgesToAdd;
     }
+
+    @Test
+    public void testSortedListIsUnchangedAfterSameEdgeInsertions() throws InterruptedException {
+        final int nMax = 100;
+
+        int iteration = 0;
+        while(iteration++ < maxIterations) {
+            SimulatedGraph graph = new SimulatedGraph();
+            graph.addNode(0);
+
+            DANF danf = new DANF(h, log2m, graph, seed);
+            TopNodeCounter topNodeCounter = new TopNodeCounter(danf, updateIntervalms, percentageChange, minNodeCount);
+
+            SimulatedGraph graphToInsert = TestUtils.genRandomGraph(nMax);
+            Edge[] edgesToAdd = graphToInsert.getAllEdges();
+            danf.addEdges(edgesToAdd);
+            topNodeCounter.updateNodeSets(edgesToAdd);
+
+            TreeSet<Pair<Double, Long>> valuesAfterFirstInsertion =  topNodeCounter.getNodesSortedByValue();
+            Pair[] valuesAfterFirstInsertionArray = new Pair[valuesAfterFirstInsertion.size()];
+            valuesAfterFirstInsertionArray = valuesAfterFirstInsertion.toArray(valuesAfterFirstInsertionArray);
+
+            danf.addEdges(edgesToAdd);
+            topNodeCounter.updateNodeSets(edgesToAdd);
+            TreeSet<Pair<Double, Long>> valuesAfterSecondInsertion =  topNodeCounter.getNodesSortedByValue();
+            Pair[] valuesAfterSecondInsertionArray = new Pair[valuesAfterSecondInsertion.size()];
+            valuesAfterSecondInsertionArray = valuesAfterFirstInsertion.toArray(valuesAfterSecondInsertionArray);
+
+            assertArrayEquals(valuesAfterFirstInsertionArray, valuesAfterSecondInsertionArray);
+        }
+    }
 }
