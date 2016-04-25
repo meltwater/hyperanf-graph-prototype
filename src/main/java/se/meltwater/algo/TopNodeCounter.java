@@ -3,18 +3,22 @@ package se.meltwater.algo;
 import javafx.util.Pair;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
-import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
- * @author Simon Lindhén
- * @author Johan Nilsson Hansen
- *
  *  Provides a continuously updated TreeSet, sorted by the nodes' HLL value. Useful for maintaining
  *  the top nodes in DANF.
+ *
+ *  Must be updated whenever DANF is updated, else node values might be wrong.
+ *
+ *  Usage:
+ *  danf.addEdges(newEdges);
+ *  topNodeCounter.updateNodeSets(newEdges);
+ *
+ *  @author Simon Lindhén
+ *  @author Johan Nilsson Hansen
  */
 public class TopNodeCounter {
 
@@ -22,23 +26,51 @@ public class TopNodeCounter {
     private TreeSet<Pair<Double, Long>> nodesSortedByValue;
     private HashMap<Long, Double> updatedNodesWithValue;
     private long timeOfLastUpdate;
-    private static final long UPDATE_INTERVAL_MS = 1000 * 10;
-    private static final double CHANGE_THREASHOLD_PERCENTAGE = 1.5;
-    private static final double MIN_NODE_COUNT = 10;
+    private final long updateIntervalms;
+    private final double percentageChangeLimit;
+    private final double minNodeCountLimit;
     private Consumer<Set<Pair<Double, Long>>> rapidChangeCallback;
 
-    public TopNodeCounter(DANF danf) {
+    /**
+     * Creates a new TopNodeCounter, where the sorted node set is updated
+     * after {@code updateIntervalms} and nodes are reported as rapidly changing
+     * if their danf value increase by at least {@code percentageChangeLimit}
+     * and have at least {@code minNodeCountLimit} danf value.
+     *
+     * To use a callback function for whenever a set of rapidly changing
+     * nodes have been detected, use {@link #setRapidChangeCallback(Consumer)}.
+     *
+     * @param danf The initiated DANF
+     * @param updateIntervalms The time to update the sorted set, in milli seconds
+     * @param percentageChangeLimit The percentage increase to mark a node as rapidly changing
+     * @param minNodeCountLimit The least danf value a node must have to be considered for rapidly changing
+     */
+    public TopNodeCounter(DANF danf, long updateIntervalms, double percentageChangeLimit, long minNodeCountLimit) {
         this.danf = danf;
         initNodeSets(danf.getGraph());
         rapidChangeCallback = null;
+        this.updateIntervalms = updateIntervalms;
+        this.percentageChangeLimit = percentageChangeLimit;
+        this.minNodeCountLimit = minNodeCountLimit;
     }
 
+    /**
+     * This callback will be called whenever a set of rapidly changing
+     * nodes are detected. The argument to the callback will be the
+     * percentage increase of the DANF value, along with the node id.
+     * @param rapidChangeCallback
+     */
     public void setRapidChangeCallback( Consumer<Set<Pair<Double, Long>>> rapidChangeCallback) {
         this.rapidChangeCallback = rapidChangeCallback;
     }
 
+    /**
+     * Adds all current nodes with values in DANF to the interally
+     * sorted list of nodes/value pairs.
+     * @param graph The graph containing all nodes in DANF
+     */
     private void initNodeSets(IGraph graph) {
-        nodesSortedByValue = new TreeSet<Pair<Double, Long>>(nodeScoreComparator());
+        nodesSortedByValue = new TreeSet<>(nodeScoreComparator());
         updatedNodesWithValue = new HashMap<>();
         timeOfLastUpdate = System.currentTimeMillis();
         for (long node = 0; node < graph.getNumberOfNodes(); node++) {
@@ -46,12 +78,18 @@ public class TopNodeCounter {
         }
     }
 
+    /**
+     * Updates the node/value pairs for all nodes present in an edge in {@code edges}
+     * If {@code UPDATE_INTERVAL_MS} time has passed, the sorted list of nodes/values
+     * is updated, else the nodes are kept in a temporal set until enough time has passed.
+     * A set of the rapidly changing nodes is generated and, if set, the rapidChangeCallback is called.
+     * @param edges Newly added edges
+     */
     public void updateNodeSets(Edge ... edges) {
-        insertUpdatedValues(edges);
+        insertUpdatedValuesToTemporalSet(edges);
         long currentTime = System.currentTimeMillis();
-        //TreeMap<Double, Long> nodesWithPercentageChange = new TreeMap<Double, Long>();
-        TreeSet<Pair<Double, Long>> nodesWithPercentageChange = new TreeSet<Pair<Double, Long>>(nodeScoreComparator());
-        if(currentTime - timeOfLastUpdate > UPDATE_INTERVAL_MS) {
+        TreeSet<Pair<Double, Long>> nodesWithPercentageChange = new TreeSet<>(nodeScoreComparator());
+        if(currentTime - timeOfLastUpdate > updateIntervalms) {
             mergeNodeSets(nodesWithPercentageChange);
             timeOfLastUpdate = currentTime;
 
@@ -61,6 +99,14 @@ public class TopNodeCounter {
         }
     }
 
+    /**
+     * Merges the temporal node/value set with the full set.
+     * Any node present in the temporal set is first removed
+     * from the full set, and then inserted with its new value.
+     * If the value have changed more than a certain percentage,
+     * the node/value pair is added to {@code nodesWithPercentageChange}
+     * @param nodesWithPercentageChange A set to add rapidly changing nodes to
+     */
     private void mergeNodeSets(TreeSet<Pair<Double, Long>> nodesWithPercentageChange) {
         Iterator<Pair<Double, Long>> it = nodesSortedByValue.iterator();
         while(it.hasNext()) {
@@ -69,7 +115,7 @@ public class TopNodeCounter {
             if(currentValue != null) { //If null, then the value haven't changed
                 double previousValue = pair.getKey();
                 double valueChange = currentValue / previousValue;
-                if(valueChange > CHANGE_THREASHOLD_PERCENTAGE) {
+                if(valueChange > percentageChangeLimit && previousValue > minNodeCountLimit) {
                     nodesWithPercentageChange.add(new Pair(valueChange, pair.getValue()));
                 }
 
@@ -85,22 +131,25 @@ public class TopNodeCounter {
         return nodesSortedByValue;
     }
 
-    private void insertUpdatedValues(Edge ... edges) {
+    /**
+     * Inserts all nodes in {@code edges} in to the temporal set, along with
+     * their danf values.
+     * @param edges
+     */
+    private void insertUpdatedValuesToTemporalSet(Edge ... edges) {
         for (int i = 0; i < edges.length; i++) {
             Edge edge = edges[i];
 
-            double fromCount = danf.count(edge.from, danf.getMaxH());
-            if(fromCount > MIN_NODE_COUNT) {
-                updatedNodesWithValue.put(edge.from, fromCount);
-            }
-
-            double toCount = danf.count(edge.to, danf.getMaxH());
-            if(toCount > MIN_NODE_COUNT) {
-                updatedNodesWithValue.put(edge.to, toCount);
-            }
+            updatedNodesWithValue.put(edge.from, danf.count(edge.from, danf.getMaxH()));
+            updatedNodesWithValue.put(edge.to, danf.count(edge.to, danf.getMaxH()));
         }
     }
 
+    /**
+     * Returns a comparator that sorts on the key but
+     * equals on the value.
+     * @return
+     */
     private Comparator<Pair<Double,Long>> nodeScoreComparator(){
         return (o1,o2) -> {
             int ret = o2.getKey().compareTo(o1.getKey());
