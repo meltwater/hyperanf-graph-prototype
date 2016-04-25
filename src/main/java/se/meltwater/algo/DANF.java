@@ -22,6 +22,7 @@ import java.util.Map;
  *
  */
 public class DANF {
+
     private IGraph graph;
     private IGraph graphTranspose;
     private IDynamicVertexCover vc;
@@ -69,6 +70,10 @@ public class DANF {
         }catch (IOException e){
             throw new RuntimeException("Something went wrong with the temporary graph files", e);
         }
+    }
+
+    public IGraph getGraph() {
+        return graph;
     }
 
     public int getMaxH(){
