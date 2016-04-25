@@ -48,30 +48,54 @@ public class TestHistoryInit {
             SimulatedGraph graph = TestUtils.genRandomGraph(maxNodes);
 
             DANF danf = new DANF(h, log2m, graph);
-            IDynamicVertexCover dvc = danf.getDynamicVertexCover();
 
-            HyperLolLolCounterArray[] calculatedHistory = new HyperLolLolCounterArray[h];
-            HyperBoll hyperBoll = new HyperBoll(graph,log2m,danf.getCounter(h).getJenkinsSeed());
-            hyperBoll.init();
-            for (int i = 1; i <= h ; i++) {
-                hyperBoll.iterate();
-                calculatedHistory[i-1] = (HyperLolLolCounterArray) hyperBoll.getCounter().clone();
-            }
+            HyperLolLolCounterArray[] calculatedHistory = getCorrectCounters(graph, danf);
+            checkNodeCountersCorrect(graph, danf, calculatedHistory);
 
-            /* Check that the counters are correct for all nodes in all steps */
-            for (int i = 1; i <= h; i++) {
-                for (int node = 0; node < graph.getNumberOfNodes(); node++) {
-                    if (dvc.isInVertexCover(node) || i == h) {
-                        /* For all i != h danf will have the node mapped to another index, so we make sure
-                         * we get the same value from that mapped index. For i == h all nodes should be
-                          * in danf and have a value*/
-                        assertEquals(calculatedHistory[i - 1].count(node), danf.count(node, i), epsilon);
-                    } else {
-                        final int constNode = node; /* Final required for lambda function, uhh */
-                        final int constI = i;
-                        /* Nodes outside VC shouldnt have any values for i != h and should give exception */
-                        TestUtils.assertGivesException(() -> danf.count(constNode, constI));
-                    }
+
+        }
+    }
+
+    /**
+     * Uses HyperBoll to calculate the correct counters for all nodes in all steps.
+     * @param graph
+     * @param danf
+     * @return
+     * @throws IOException
+     */
+    private HyperLolLolCounterArray[] getCorrectCounters(SimulatedGraph graph, DANF danf) throws IOException {
+        HyperLolLolCounterArray[] calculatedHistory = new HyperLolLolCounterArray[h];
+        HyperBoll hyperBoll = new HyperBoll(graph,log2m,danf.getCounter(h).getJenkinsSeed());
+        hyperBoll.init();
+        for (int i = 1; i <= h ; i++) {
+            hyperBoll.iterate();
+            calculatedHistory[i-1] = (HyperLolLolCounterArray) hyperBoll.getCounter().clone();
+        }
+        return calculatedHistory;
+    }
+
+    /**
+     * Check that the counters are correct for all nodes in all steps
+     *
+     * @param graph
+     * @param danf
+     * @param calculatedHistory
+     */
+    private void checkNodeCountersCorrect(SimulatedGraph graph, DANF danf, HyperLolLolCounterArray[] calculatedHistory) {
+
+        IDynamicVertexCover dvc = danf.getDynamicVertexCover();
+        for (int i = 1; i <= h; i++) {
+            for (int node = 0; node < graph.getNumberOfNodes(); node++) {
+                if (dvc.isInVertexCover(node) || i == h) {
+                    /* For all i != h danf will have the node mapped to another index, so we make sure
+                     * we get the same value from that mapped index. For i == h all nodes should be
+                      * in danf and have a value*/
+                    assertEquals(calculatedHistory[i - 1].count(node), danf.count(node, i), epsilon);
+                } else {
+                    final int constNode = node; /* Final required for lambda function, uhh */
+                    final int constI = i;
+                    /* Nodes outside VC shouldnt have any values for i != h and should give exception */
+                    TestUtils.assertGivesException(() -> danf.count(constNode, constI));
                 }
             }
         }

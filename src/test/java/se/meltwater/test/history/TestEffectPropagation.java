@@ -40,6 +40,13 @@ public class TestEffectPropagation {
     int log2m;
     int h;
 
+    /**
+     *
+     * Checks that DANF generates the same result as HyperBall would
+     *
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Test
     public void testDANFSameAsHyperBallOnImmutableGraphs() throws IOException, InterruptedException {
         Random rand = new Random();
@@ -63,9 +70,26 @@ public class TestEffectPropagation {
 
     }
 
+
+    private void testDANFSameAsHyperBall(IGraph g1, Edge[] additionalEdges, IGraph mergedGraph) throws IOException, InterruptedException {
+
+        long seed = Util.randomSeed();
+        DANF danf = new DANF(h,log2m,g1,seed);
+
+        danf.addEdges(additionalEdges);
+
+        HyperBoll hyperBoll = new HyperBoll(mergedGraph, log2m, seed);
+        hyperBoll.run(h);
+        HyperLolLolCounterArray hll = hyperBoll.getCounter();
+        for (long i = 0; i < mergedGraph.getNumberOfNodes() ; i++) {
+            assertEquals("Node " + i,hll.count(i),danf.count(i,h),epsilon);
+        }
+
+    }
+
     /**
      *
-     *
+     * Checks that DANF is the same as HyperBall for a simulated graph
      *
      * @throws IOException
      * @throws InterruptedException
@@ -84,108 +108,94 @@ public class TestEffectPropagation {
             int numEdges = rand.nextInt((int)Math.pow(numExtraNodes,1));
             Edge[] additionalEdges = TestUtils.generateEdges(numExtraNodes,numEdges);
 
-            SimulatedGraph mergedGraph = (SimulatedGraph) g1.clone();
-            mergedGraph.addEdges(additionalEdges);
-            testDANFSameAsHyperBall(g1,additionalEdges,mergedGraph);
+            compareHyperBollAndDanf(g1,additionalEdges);
 
         }
     }
 
-    private void testDANFSameAsHyperBall(IGraph g1, Edge[] additionalEdges, IGraph mergedGraph) throws IOException, InterruptedException {
 
-        //IGraph clone = (IGraph) ((SimulatedGraph)g1).clone();
-        long seed = Util.randomSeed();
-        DANF danf = new DANF(h,log2m,g1,seed);
-
-        danf.addEdges(additionalEdges);
-
-        HyperBoll hyperBoll = new HyperBoll(mergedGraph, log2m, seed);
-        hyperBoll.run(h);
-        HyperLolLolCounterArray hll = hyperBoll.getCounter();
-        for (long i = 0; i < mergedGraph.getNumberOfNodes() ; i++) {
-            assertEquals("Node " + i,hll.count(i),danf.count(i,h),epsilon);
-        }
-
-    }
-
+    /**
+     *
+     * Checks that DANF is the same as HyperBall for a simulated graph
+     *
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Test
     public void testStaticRandomGraph3() throws IOException, InterruptedException {
-      //  while(true) {
-            long seed = 1607655446946170955L;
-            h = 3;
-            log2m = 8;
+        h = 3;
+        log2m = 8;
 
-            SimulatedGraph graph = new SimulatedGraph();
-            graph.addNode(4);
-            graph.addEdges(new Edge(0, 3), new Edge(2, 1), new Edge(2, 3), new Edge(3, 0), new Edge(3, 2));
+        SimulatedGraph graph = new SimulatedGraph();
+        graph.addNode(4);
+        graph.addEdges(new Edge(0, 3), new Edge(2, 1), new Edge(2, 3), new Edge(3, 0), new Edge(3, 2));
 
-            SimulatedGraph mergedGraph = (SimulatedGraph) graph.clone();
-            mergedGraph.addEdges(new Edge(0, 2));
-
-            DANF danf = new DANF(h,log2m,graph,seed);
-
-            danf.addEdges(new Edge(0, 2));
-
-            HyperBoll hyperBoll = new HyperBoll(mergedGraph,log2m,seed);
-            hyperBoll.run(h);
-            HyperLolLolCounterArray hll = hyperBoll.getCounter();
-            for (long i = 0; i < mergedGraph.getNumberOfNodes(); i++) {
-                assertEquals("Node " + i, hll.count(i), danf.count(i, h), epsilon);
-            }
-        //}
+        compareHyperBollAndDanf(graph,new Edge(0,2));
     }
 
+
+    /**
+     *
+     * Checks that DANF is the same as HyperBall for a simulated graph
+     *
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Test
     public void testStaticRandomGraph2() throws IOException, InterruptedException {
-        long seed = 4405387622461906011L;
+
         h = 3;
         log2m = 8;
 
         SimulatedGraph graph = new SimulatedGraph();
         graph.addNode(3);
         graph.addEdges(new Edge(1,1),new Edge(2,1));
-
-        SimulatedGraph mergedGraph = (SimulatedGraph) graph.clone();
-        mergedGraph.addEdges(new Edge(0,2));
-
-        DANF danf = new DANF(h,log2m,graph,seed);
-
-        danf.addEdges(new Edge(0, 2));
-
-        HyperBoll hyperBoll = new HyperBoll(mergedGraph,log2m,seed);
-        hyperBoll.run(h);
-        HyperLolLolCounterArray hll = hyperBoll.getCounter();
-        for (long i = 0; i < mergedGraph.getNumberOfNodes(); i++) {
-            assertEquals("Node " + i, hll.count(i), danf.count(i, h), epsilon);
-        }
+        compareHyperBollAndDanf(graph,new Edge(0,2));
 
     }
 
+
+    /**
+     *
+     * Checks that DANF is the same as HyperBall for a simulated graph
+     *
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Test
     public void testStaticRandomGraph() throws IOException, InterruptedException {
 
         h = 3;
         log2m = 6;
-        long seed = -6861637300863366465L;
-
 
         SimulatedGraph graph = new SimulatedGraph();
         graph.addNode(0);
-        graph.addEdges();
-        SimulatedGraph mergedGraph = (SimulatedGraph) graph.clone();
-        mergedGraph.addEdges(new Edge(0, 0), new Edge(0, 1), new Edge(1, 3));
+        Edge[] edgesToAdd = {new Edge(0,1), new Edge(1, 3), new Edge(0,0)};
 
-        DANF danf = new DANF(h,log2m,graph,seed);
+        compareHyperBollAndDanf(graph, edgesToAdd);
 
-        danf.addEdges(new Edge(0, 1), new Edge(1, 3), new Edge(0,0));
+    }
 
-        HyperBoll hyperBoll = new HyperBoll(mergedGraph,log2m,seed);
-        hyperBoll.run(h);
-        HyperLolLolCounterArray hll = hyperBoll.getCounter();
-        for (long i = 0; i < mergedGraph.getNumberOfNodes(); i++) {
+    private void compareHyperBollAndDanf(SimulatedGraph graph, Edge ... edgesToAdd) throws IOException, InterruptedException {
+        HyperLolLolCounterArray hll = mergeAndCalculateCounters(graph,edgesToAdd);
+
+        DANF danf = new DANF(h,log2m,graph, hll.getJenkinsSeed());
+
+        danf.addEdges(edgesToAdd);
+
+        for (long i = 0; i < danf.getGraph().getNumberOfNodes(); i++) {
             assertEquals("Node " + i, hll.count(i), danf.count(i, h), epsilon);
         }
+    }
 
+    private HyperLolLolCounterArray mergeAndCalculateCounters(SimulatedGraph originalGraph, Edge ... edges) throws IOException {
+
+        SimulatedGraph mergedGraph = (SimulatedGraph) originalGraph.clone();
+        mergedGraph.addEdges(edges);
+
+        HyperBoll hyperBoll = new HyperBoll(mergedGraph,log2m);
+        hyperBoll.run(h);
+        return hyperBoll.getCounter();
     }
 
     /**
