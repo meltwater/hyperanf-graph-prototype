@@ -148,6 +148,8 @@
                     </dependency>
                 </dependencies>
                 <configuration>
+                    <parallel>classes</parallel>
+                    <forkCount>1C</forkCount>
                     <includes>
                         <include>**/Test*.java</include>
                     </includes>
