@@ -7,6 +7,7 @@ import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
+import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.io.IOException;
@@ -39,8 +40,12 @@ public class DANF {
 
     private final int STATIC_LOLOL = 0;
 
-    public DANF(IDynamicVertexCover vertexCover, int h, int log2m, IGraph graph){
-        this(vertexCover,h,log2m,graph,Util.randomSeed());
+    public DANF(int h, int log2m, IGraph graph){
+        this(new DynamicVertexCover(graph),h,log2m,graph,Util.randomSeed());
+    }
+
+    public DANF(int h, int log2m, IGraph graph, long seed){
+        this(new DynamicVertexCover(graph),h,log2m,graph,seed);
     }
 
     public DANF(IDynamicVertexCover vertexCover, int h, int log2m, IGraph graph, long seed){
@@ -78,6 +83,10 @@ public class DANF {
 
     public int getMaxH(){
         return h;
+    }
+
+    public IDynamicVertexCover getDynamicVertexCover() {
+        return vc;
     }
 
     public HyperLolLolCounterArray getCounter(int h){

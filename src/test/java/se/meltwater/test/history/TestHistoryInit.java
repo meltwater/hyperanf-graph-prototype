@@ -8,6 +8,7 @@ import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 import se.meltwater.test.TestUtils;
 import se.meltwater.vertexcover.DynamicVertexCover;
+import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.io.IOException;
 import java.util.Random;
@@ -45,9 +46,9 @@ public class TestHistoryInit {
 
             setupRandomParameters();
             SimulatedGraph graph = TestUtils.genRandomGraph(maxNodes);
-            DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-            DANF danf = new DANF(dvc, h, log2m, graph);
+            DANF danf = new DANF(h, log2m, graph);
+            IDynamicVertexCover dvc = danf.getDynamicVertexCover();
 
             HyperLolLolCounterArray[] calculatedHistory = new HyperLolLolCounterArray[h];
             HyperBoll hyperBoll = new HyperBoll(graph,log2m,danf.getCounter(h).getJenkinsSeed());

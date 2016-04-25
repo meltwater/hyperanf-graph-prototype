@@ -95,7 +95,7 @@ public class TestEffectPropagation {
 
         //IGraph clone = (IGraph) ((SimulatedGraph)g1).clone();
         long seed = Util.randomSeed();
-        DANF danf = new DANF(new DynamicVertexCover(g1),h,log2m,g1,seed);
+        DANF danf = new DANF(h,log2m,g1,seed);
 
         danf.addEdges(additionalEdges);
 
@@ -122,8 +122,7 @@ public class TestEffectPropagation {
             SimulatedGraph mergedGraph = (SimulatedGraph) graph.clone();
             mergedGraph.addEdges(new Edge(0, 2));
 
-            DynamicVertexCover vc = new DynamicVertexCover(graph);
-            DANF danf = new DANF(vc,h,log2m,graph,seed);
+            DANF danf = new DANF(h,log2m,graph,seed);
 
             danf.addEdges(new Edge(0, 2));
 
@@ -149,8 +148,7 @@ public class TestEffectPropagation {
         SimulatedGraph mergedGraph = (SimulatedGraph) graph.clone();
         mergedGraph.addEdges(new Edge(0,2));
 
-        DynamicVertexCover vc = new DynamicVertexCover(graph);
-        DANF danf = new DANF(vc,h,log2m,graph,seed);
+        DANF danf = new DANF(h,log2m,graph,seed);
 
         danf.addEdges(new Edge(0, 2));
 
@@ -177,8 +175,7 @@ public class TestEffectPropagation {
         SimulatedGraph mergedGraph = (SimulatedGraph) graph.clone();
         mergedGraph.addEdges(new Edge(0, 0), new Edge(0, 1), new Edge(1, 3));
 
-        DynamicVertexCover vc = new DynamicVertexCover(graph);
-        DANF danf = new DANF(vc,h,log2m,graph,seed);
+        DANF danf = new DANF(h,log2m,graph,seed);
 
         danf.addEdges(new Edge(0, 1), new Edge(1, 3), new Edge(0,0));
 
@@ -377,9 +374,8 @@ public class TestEffectPropagation {
         SimulatedGraph graph = new SimulatedGraph();
         graph.addNode(0);
 
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        DANF danf = new DANF(dvc,h,log2m,graph,fixedSeed);
+        DANF danf = new DANF(h,log2m,graph,fixedSeed);
 
         danf.addEdges(new Edge(2, 0), new Edge(1, 2));
 
@@ -404,9 +400,7 @@ public class TestEffectPropagation {
         graph.addNode(0);
         graph.addNode(1);
 
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
-
-        DANF danf = new DANF(dvc,h,log2m,graph,fixedSeed);
+        DANF danf = new DANF(h,log2m,graph,fixedSeed);
 
         danf.addEdges(new Edge(2, 3), new Edge(3, 1), new Edge(2, 0)  );
 
@@ -420,9 +414,7 @@ public class TestEffectPropagation {
         graph.addNode(maxStartNode);
         graph.addEdges(edges);
 
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
-
-        return new DANF(dvc,h,log2m,graph,fixedSeed);
+        return new DANF(h,log2m,graph,fixedSeed);
 
     }
 }

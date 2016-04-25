@@ -65,9 +65,7 @@ public class TestRecalculation {
         graph.addNode(2);
         graph.addEdge(new Edge(0,1));
 
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
-
-        DANF danf = new DANF(dvc,h,log2m,graph,fixedSeed);
+        DANF danf = new DANF(h,log2m,graph,fixedSeed);
 
         danf.addEdges(new Edge(newNode, 0), new Edge(newNode, 2));
 
@@ -90,9 +88,7 @@ public class TestRecalculation {
         SimulatedGraph graph = new SimulatedGraph();
         graph.addNode(0); /* Must be a node in the graph for HBoll */
 
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
-
-        DANF danf = new DANF(dvc,h,log2m,graph,fixedSeed);
+        DANF danf = new DANF(h,log2m,graph,fixedSeed);
 
         danf.addEdges(new Edge(2, 1), new Edge(1, 2));
 
@@ -130,9 +126,7 @@ public class TestRecalculation {
         graph.addEdge(new Edge(3,0));
         graph.addEdge(new Edge(2,0));
 
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
-
-        DANF danf = new DANF(dvc,h,log2m,graph,fixedSeed);
+        DANF danf = new DANF(h,log2m,graph,fixedSeed);
 
         danf.addEdges(new Edge(5,3),new Edge(4,2));
 
@@ -152,17 +146,16 @@ public class TestRecalculation {
             setupRandomParameters();
 
             SimulatedGraph graph = TestUtils.genRandomGraph(100);
-            DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-            DANF danf = new DANF(dvc,h,log2m,graph);
+            DANF danf = new DANF(h,log2m,graph);
 
-            addEdgeAndAssertIncreasedCount(danf, dvc, graph);
+            addEdgeAndAssertIncreasedCount(danf, graph);
         }
     }
 
-    public void addEdgeAndAssertIncreasedCount(DANF nh, IDynamicVertexCover vc, SimulatedGraph graph) throws InterruptedException {
+    public void addEdgeAndAssertIncreasedCount(DANF nh, SimulatedGraph graph) throws InterruptedException {
 
-
+        IDynamicVertexCover vc = nh.getDynamicVertexCover();
         double[] history, history2;
         Random rand = new Random();
         LazyLongIterator it = vc.getNodesInVertexCoverIterator();
@@ -221,12 +214,11 @@ public class TestRecalculation {
             setupRandomParameters();
 
             IGraph graph = setupRandomGraph();
-            DynamicVertexCover dvc = new DynamicVertexCover(graph);
-            DANF danf = new DANF(dvc,h,log2m,graph);
+            DANF danf = new DANF(h,log2m,graph);
 
             Set<Long> addedNodes = addRandomEdgesWithUniqueFromNodes(graph, danf);
 
-            assertNodesCanBeAccessed(danf, dvc, addedNodes);
+            assertNodesCanBeAccessed(danf, addedNodes);
         }
     }
 
@@ -262,7 +254,8 @@ public class TestRecalculation {
      * Tests that all nodes in the list can be accessed.
      * @param nodes
      */
-    private void assertNodesCanBeAccessed(DANF danf, DynamicVertexCover dvc, Set<Long> nodes) {
+    private void assertNodesCanBeAccessed(DANF danf, Set<Long> nodes) {
+        IDynamicVertexCover dvc = danf.getDynamicVertexCover();
         for (Long addedNode : nodes) {
             if (dvc.isInVertexCover(addedNode)) {
                 assertTrue(danf.count(addedNode) != null);

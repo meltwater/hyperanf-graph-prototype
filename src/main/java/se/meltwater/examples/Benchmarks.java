@@ -529,7 +529,7 @@ public class Benchmarks {
         System.out.println("Loading graph");
         IGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
 
-        DANF danf = runHyperBoll(log2m, h, graph);
+        DANF danf = new DANF(h,log2m,graph);
 
         PrintWriter writer = new PrintWriter(dataFile);
         writer.println("#" + dateString + " " + graphName + " " + edgesToAdd + " edges will be inserted into DANF in bulks of " +
@@ -614,23 +614,6 @@ public class Benchmarks {
             long to = ThreadLocalRandom.current().nextLong(maxNewNodes );
             edges[i] = new Edge(from, to);
         }
-    }
-
-    /**
-     * Runs hyperboll on the graph and returns the initiated danf resulted by hyperboll.
-     * @param log2m
-     * @param h
-     * @param graph
-     * @return
-     * @throws IOException
-     */
-    private static DANF runHyperBoll(int log2m, int h, IGraph graph) throws IOException {
-        System.out.println("Calculating VC");
-        DynamicVertexCover dvc = new DynamicVertexCover(graph);
-
-        System.out.println("Calculating Transpose");
-
-        return new DANF(dvc, h, log2m,graph);
     }
 
     /**
