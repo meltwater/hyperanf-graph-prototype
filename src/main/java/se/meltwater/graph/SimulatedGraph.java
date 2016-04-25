@@ -68,7 +68,6 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
 
         if(!iteratorNeighbors.containsKey(node)) {
             numNodes = Math.max(node+1,numNodes);
-            iteratorNeighbors.put(node, new TreeSet<>());
         }
 
     }
