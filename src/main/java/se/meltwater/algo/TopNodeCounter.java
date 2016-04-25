@@ -89,7 +89,7 @@ public class TopNodeCounter {
         insertUpdatedValuesToTemporalSet(edges);
         long currentTime = System.currentTimeMillis();
         TreeSet<Pair<Double, Long>> nodesWithPercentageChange = new TreeSet<>(nodeScoreComparator());
-        if(currentTime - timeOfLastUpdate > updateIntervalms) {
+        if(currentTime - timeOfLastUpdate >= updateIntervalms) {
             mergeNodeSets(nodesWithPercentageChange);
             timeOfLastUpdate = currentTime;
 
