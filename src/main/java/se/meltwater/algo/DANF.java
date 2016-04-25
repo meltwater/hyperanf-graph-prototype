@@ -239,7 +239,7 @@ public class DANF {
      * @param node
      * @return
      */
-    private long getNodeIndex(long node, int h){
+    private synchronized long getNodeIndex(long node, int h){
 
         checkH(h);
         if (h == this.h) {
