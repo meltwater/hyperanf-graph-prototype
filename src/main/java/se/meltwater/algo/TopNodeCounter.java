@@ -1,5 +1,6 @@
 package se.meltwater.algo;
 
+import it.unimi.dsi.logging.ProgressLogger;
 import javafx.util.Pair;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
@@ -23,13 +24,16 @@ import java.util.function.Consumer;
 public class TopNodeCounter {
 
     private DANF danf;
-    private TreeSet<Pair<Double, Long>> nodesSortedByValue;
-    private HashMap<Long, Double> updatedNodesWithValue;
+    private BoundedTreeSet<Pair<Double, Long>> nodesSortedByValue;
+
+    private HashMap<Long, Double> updatedNodesWithValueBeforeUpdate;
+    private HashMap<Long, Double> updatedNodesWithValueAfterUpdate;
     private long timeOfLastUpdate;
     private final long updateIntervalms;
     private final double percentageChangeLimit;
     private final double minNodeCountLimit;
     private Consumer<Set<Pair<Double, Long>>> rapidChangeCallback;
+    private final int counterCapacity;
 
     /**
      * Creates a new TopNodeCounter, where the sorted node set is updated
@@ -45,13 +49,15 @@ public class TopNodeCounter {
      * @param percentageChangeLimit The percentage increase to mark a node as rapidly changing
      * @param minNodeCountLimit The least danf value a node must have to be considered for rapidly changing
      */
-    public TopNodeCounter(DANF danf, long updateIntervalms, double percentageChangeLimit, long minNodeCountLimit) {
+    public TopNodeCounter(DANF danf, long updateIntervalms, double percentageChangeLimit, long minNodeCountLimit, int counterCapacity) {
         this.danf = danf;
-        initNodeSets(danf.getGraph());
         rapidChangeCallback = null;
         this.updateIntervalms = updateIntervalms;
         this.percentageChangeLimit = percentageChangeLimit;
         this.minNodeCountLimit = minNodeCountLimit;
+        this.counterCapacity = counterCapacity;
+
+        initNodeSets(danf.getGraph());
     }
 
     /**
@@ -70,12 +76,22 @@ public class TopNodeCounter {
      * @param graph The graph containing all nodes in DANF
      */
     private void initNodeSets(IGraph graph) {
-        nodesSortedByValue = new TreeSet<>(nodeScoreComparator());
-        updatedNodesWithValue = new HashMap<>();
+        System.out.println("Initing TopNodes");
+        ProgressLogger pl = new ProgressLogger();
+        pl.expectedUpdates = graph.getNumberOfNodes();
+
+        nodesSortedByValue = new BoundedTreeSet<>(counterCapacity ,nodeScoreComparator());
+        updatedNodesWithValueBeforeUpdate = new HashMap<>();
+        updatedNodesWithValueAfterUpdate = new HashMap<>();
         timeOfLastUpdate = System.currentTimeMillis();
+
+        pl.start();
         for (long node = 0; node < graph.getNumberOfNodes(); node++) {
             nodesSortedByValue.add(new Pair<>(danf.count(node, danf.getMaxH()), node));
+            pl.update(1);
         }
+        pl.done();
+        pl.logger.info( pl.toString() );
     }
 
     /**
@@ -85,12 +101,13 @@ public class TopNodeCounter {
      * A set of the rapidly changing nodes is generated and, if set, the rapidChangeCallback is called.
      * @param edges Newly added edges
      */
-    public void updateNodeSets(Edge ... edges) {
-        insertUpdatedValuesToTemporalSet(edges);
+    public void updateNodeSetsAfter(Edge ... edges) {
+        insertUpdatedValuesToTemporalSet(updatedNodesWithValueAfterUpdate, true, edges);
+
         long currentTime = System.currentTimeMillis();
-        TreeSet<Pair<Double, Long>> nodesWithPercentageChange = new TreeSet<>(nodeScoreComparator());
         if(currentTime - timeOfLastUpdate >= updateIntervalms) {
-            mergeNodeSets(nodesWithPercentageChange);
+            mergeNodeSets();
+            TreeSet<Pair<Double, Long>> nodesWithPercentageChange = getRapidlyChangingNodes();
             timeOfLastUpdate = currentTime;
 
             if(rapidChangeCallback != null) {
@@ -99,32 +116,43 @@ public class TopNodeCounter {
         }
     }
 
+    public void updateNodeSetsBefore(Edge ... edges) {
+        insertUpdatedValuesToTemporalSet(updatedNodesWithValueBeforeUpdate, false, edges);
+    }
+
     /**
      * Merges the temporal node/value set with the full set.
      * Any node present in the temporal set is first removed
      * from the full set, and then inserted with its new value.
-     * If the value have changed more than a certain percentage,
-     * the node/value pair is added to {@code nodesWithPercentageChange}
-     * @param nodesWithPercentageChange A set to add rapidly changing nodes to
      */
-    private void mergeNodeSets(TreeSet<Pair<Double, Long>> nodesWithPercentageChange) {
+    private void mergeNodeSets() {
         Iterator<Pair<Double, Long>> it = nodesSortedByValue.iterator();
         while(it.hasNext()) {
             Pair<Double, Long> pair = it.next();
-            Double currentValue = updatedNodesWithValue.get(pair.getValue());
+            Double currentValue = updatedNodesWithValueAfterUpdate.get(pair.getValue());
             if(currentValue != null) { //If null, then the value haven't changed
-                double previousValue = pair.getKey();
-                double valueChange = currentValue / previousValue;
-                if(valueChange > percentageChangeLimit && previousValue > minNodeCountLimit) {
-                    nodesWithPercentageChange.add(new Pair(valueChange, pair.getValue()));
-                }
-
                 it.remove();
             }
         }
 
-        updatedNodesWithValue.forEach((key, value) -> nodesSortedByValue.add(new Pair<>(value, key)));
-        updatedNodesWithValue.clear();
+        updatedNodesWithValueAfterUpdate.forEach((key, value) -> nodesSortedByValue.add(new Pair<>(value, key)));
+    }
+
+    private TreeSet<Pair<Double, Long>> getRapidlyChangingNodes() {
+        TreeSet<Pair<Double, Long>> nodesWithPercentageChange = new TreeSet<>(nodeScoreComparator());
+
+        updatedNodesWithValueAfterUpdate.forEach( (node, newValue) -> {
+            double oldValue = updatedNodesWithValueBeforeUpdate.get(node);
+            double percentageChange = newValue / oldValue;
+            if(percentageChange > percentageChangeLimit && oldValue >= minNodeCountLimit) {
+                nodesWithPercentageChange.add(new Pair<>(percentageChange, node));
+            }
+        });
+
+        updatedNodesWithValueAfterUpdate.clear();
+        updatedNodesWithValueBeforeUpdate.clear();
+
+        return nodesWithPercentageChange;
     }
 
     public TreeSet<Pair<Double, Long>> getNodesSortedByValue() {
@@ -136,12 +164,24 @@ public class TopNodeCounter {
      * their danf values.
      * @param edges
      */
-    private void insertUpdatedValuesToTemporalSet(Edge ... edges) {
+    private void insertUpdatedValuesToTemporalSet(Map<Long, Double> map, boolean overrideOldValues, Edge ... edges) {
         for (int i = 0; i < edges.length; i++) {
             Edge edge = edges[i];
 
-            updatedNodesWithValue.put(edge.from, danf.count(edge.from, danf.getMaxH()));
-            updatedNodesWithValue.put(edge.to, danf.count(edge.to, danf.getMaxH()));
+            addLongDoublePairToMap(map, overrideOldValues, edge.from);
+            addLongDoublePairToMap(map, overrideOldValues, edge.to);
+        }
+    }
+
+    private void addLongDoublePairToMap(Map<Long, Double> map, boolean overrideOldValues, long node) {
+        if(overrideOldValues || !map.containsKey(node)) {
+            double value;
+            try {
+                value = danf.count(node, danf.getMaxH());
+            } catch (IllegalArgumentException e ) {
+                value = 1; //All nodes have 1 value in the beginning
+            }
+            map.put(node, value);
         }
     }
 
@@ -150,7 +190,7 @@ public class TopNodeCounter {
      * equals on the value.
      * @return
      */
-    private Comparator<Pair<Double,Long>> nodeScoreComparator(){
+    public static Comparator<Pair<Double,Long>> nodeScoreComparator(){
         return (o1,o2) -> {
             int ret = o2.getKey().compareTo(o1.getKey());
             return ret == 0 ? o2.getValue().compareTo(o1.getValue()) : ret;
