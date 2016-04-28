@@ -355,6 +355,10 @@ public class HyperBoll implements SafelyCloseable {
         this( g, gt, log2m, null, 0, 0,0,false, false, false, null, seed );
     }
 
+    public HyperBoll( final IGraph g, final IGraph gt, final int log2m, final long seed , ProgressLogger pl) {
+        this( g, gt, log2m, pl, 0, 0,0,false, false, false, null, seed );
+    }
+
     /** Creates a new HyperBoll instance using default values.
      *
      * @param g the graph whose neighbourhood function you want to compute.

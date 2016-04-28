@@ -3,6 +3,7 @@ package se.meltwater.algo;
 import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
+import it.unimi.dsi.logging.ProgressLogger;
 import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
@@ -65,7 +66,7 @@ public class DANF {
             insertNodeToCounterIndex(node);
         }
 
-        HyperBoll hyperBoll = new HyperBoll(graph,graphTranspose,log2m,seed);
+        HyperBoll hyperBoll = new HyperBoll(graph,graphTranspose,log2m,seed, new ProgressLogger());
         hyperBoll.init();
         try {
             for (int i = 1; i <= h; i++) {
