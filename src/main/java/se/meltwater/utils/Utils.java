@@ -1,6 +1,6 @@
 package se.meltwater.utils;
 
-//import com.javamex.classmexer.MemoryUtil;
+import com.javamex.classmexer.MemoryUtil;
 
 import java.util.ArrayList;
 
@@ -31,7 +31,6 @@ public class Utils {
 
 
     public static long getMemoryUsage(Object obj) {
-        //return MemoryUtil.deepMemoryUsageOf(obj, MemoryUtil.VisibilityFilter.ALL);
-        return 0L;
+        return MemoryUtil.deepMemoryUsageOf(obj, MemoryUtil.VisibilityFilter.ALL);
     }
 }
