@@ -20,162 +20,68 @@ public class StandardBreadthFirst {
 
     private ExecutorService threadPool;
     private final Integer syncInt = 0;
-    private int threadsLeft;
-    private final int maxThreads;
-    private volatile int activeThreads;
+    private final int nrThreads;
 
-    private SortedSet<Long> nodesToGetIteratorFor;
-    private ConcurrentHashMap<Long, NodeIterator> nodeIterators;
 
     public StandardBreadthFirst() {
-        int nrThreads = 2;//Runtime.getRuntime().availableProcessors();
-        threadPool = Executors.newFixedThreadPool(nrThreads);
-        threadsLeft = nrThreads;
-        maxThreads = nrThreads;
-        activeThreads = nrThreads;
-
-        nodesToGetIteratorFor = Collections.synchronizedSortedSet(new TreeSet<>());
-        nodeIterators = new ConcurrentHashMap<>();
+        nrThreads = Runtime.getRuntime().availableProcessors();
     }
 
 
-    private void fetchIteratorsOrWait(IGraph graph) {
-        synchronized (syncInt) {
-            if (--threadsLeft == 0) {
-
-                nodesToGetIteratorFor.forEach(node -> {
-                    System.out.println("Fetching iterator for node: " + node);
-                    NodeIterator nodeIterator = graph.getNodeIterator(node);
-                    nodeIterator.nextLong();
-                    nodeIterators.put(node, nodeIterator);
-                });
-
-                nodesToGetIteratorFor.clear();
-
-                threadsLeft = activeThreads;
-                syncInt.notifyAll();
-            } else {
-                try {
-                    System.out.println("Thread " + Thread.currentThread().getId() + " is now waiting for other threads");
-                    syncInt.wait();
-                    System.out.println("Thread " + Thread.currentThread().getId() + " is now alive again");
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    System.exit(31);
-                }
-            }
-        }
-    }
 
     public void breadthFirstSearch(long[] sources, IGraph graph, int maxSteps) {
-        for (int i = 0; i < sources.length; i++) {
-            nodesToGetIteratorFor.add(sources[i]);
-        }
+        threadPool = Executors.newFixedThreadPool(nrThreads);
 
-        final int threadBulkSize = sources.length / maxThreads;
-        ArrayList<Future<?>> futures = new ArrayList<>();
+        for (int i = 0; i <  sources.length; i++) {
+            final int sourceIndex = i;
+            threadPool.submit(() -> {
+                long currentNode = sources[sourceIndex];
 
-        for (int i = 0; i < maxThreads ; i++) {
-            final int finalI = i;
+                LongArrayFIFOQueue currentQueue = new LongArrayFIFOQueue();
+                LongArrayFIFOQueue nextQueue = new LongArrayFIFOQueue();
+                currentQueue.enqueue(currentNode);
+                LongArrayBitVector nodesChecked = LongArrayBitVector.ofLength(graph.getNumberOfNodes());
+                nodesChecked.set(currentNode);
+                int h = 0;
 
-            futures.add(threadPool.submit(() -> {
+                while (h <= maxSteps) {
+                    long curr = currentQueue.dequeueLong();
 
-                int startBfsIndex = finalI * threadBulkSize;
-                int endBfsIndex = Math.min(startBfsIndex + threadBulkSize, sources.length);
-                int currentIndex = startBfsIndex;
+                    long d ;
+                    long[][] successors;
+                    NodeIterator currentNodeIterator;
+                    synchronized (StandardBreadthFirst.this) {
+                        currentNodeIterator = graph.getNodeIterator(curr);
+                    }
+                        currentNodeIterator.nextLong();
+                        d = currentNodeIterator.outdegree();
+                        successors = currentNodeIterator.successorBigArray();
 
-                while(currentIndex < endBfsIndex) {
-                    long currentNode = sources[currentIndex];
+                    /* Visit all neighbors */
+                    while (d != 0) {
+                        long succ = LongBigArrays.get(successors, d-1);
 
-                    int h = 0;
-                    LongArrayFIFOQueue currentQueue = new LongArrayFIFOQueue();
-                    LongArrayFIFOQueue nextQueue = new LongArrayFIFOQueue();
-                    currentQueue.enqueue(currentNode);
-                    LongArrayBitVector nodesChecked = LongArrayBitVector.ofLength(graph.getNumberOfNodes());
-                    nodesChecked.set(currentNode);
-
-
-
-             /* Do bfs from current node */
-                    while (h <= maxSteps) {
-                        fetchIteratorsOrWait(graph);
-
-                        if(currentQueue.isEmpty()) {
-                            h++;
-                            continue;
+                        if (!nodesChecked.get(succ)) {
+                            nodesChecked.set(succ);
+                            nextQueue.enqueue(succ);
                         }
-
-                        long curr = currentQueue.dequeueLong();
-                        NodeIterator currentNodeIterator = nodeIterators.get(curr);
-                        long d = currentNodeIterator.outdegree();
-
-                        long[][] successors;
-                        synchronized (StandardBreadthFirst.this) {
-                            successors = currentNodeIterator.successorBigArray();
-                        }
-
-                /* Visit all neighbors */
-                        while (d != 0) {
-                            long succ = LongBigArrays.get(successors, d-1);
-
-                            if (!nodesChecked.get(succ)) {
-                                nodesChecked.set(succ);
-                                nextQueue.enqueue(succ);
-
-                                if (!nodeIterators.containsKey(succ)) {
-                                    nodesToGetIteratorFor.add(succ);
-                                }
-                            }
-                            d--;
-                        }
-
-                        if (currentQueue.isEmpty()) {
-                            currentQueue = nextQueue;
-                            nextQueue = new LongArrayFIFOQueue();
-                            h++;
-                            System.out.println("Thread " + Thread.currentThread().getId() + ". h is now: " + h);
-                        }
+                        d--;
                     }
 
-                    currentIndex++;
-                }
-
-                synchronized (syncInt) {
-                    activeThreads--;
-                    if(--threadsLeft == 0) {
-                        syncInt.notifyAll();
+                    if (currentQueue.isEmpty()) {
+                        currentQueue = nextQueue;
+                        nextQueue = new LongArrayFIFOQueue();
+                        h++;
                     }
-                }
-                System.out.println("Thread " + Thread.currentThread().getId() + " is now finished");
-            }));
-        }
-
-        try {
-            futures.forEach(future -> {
-                try {
-                    future.get(); // raises ExecutionException for any uncaught exception in child
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    System.exit(0);
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                    System.exit(0);
                 }
             });
-
-        } catch (Exception e) {
-            System.out.println("** RuntimeException from thread ");
-            e.getCause().printStackTrace(System.out);
-            System.exit(0);
         }
 
         threadPool.shutdown();
         try {
-            threadPool.awaitTermination(100, TimeUnit.DAYS);
+            threadPool.awaitTermination(2, TimeUnit.HOURS);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
-
-
 }
