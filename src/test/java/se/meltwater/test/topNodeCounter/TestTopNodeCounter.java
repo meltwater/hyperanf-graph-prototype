@@ -30,9 +30,12 @@ public class TestTopNodeCounter {
     final int h = 5;
     final int log2m = 7;
     final int updateIntervalms = 0;
-    final double percentageChange = 1.0;
+    final double percentageChange = 1.1;
     final int minNodeCount = 0;
     final long seed = 0L;
+
+    final int nMax = 100;
+    final int counterCapacity = nMax;
 
     /**
      * Tests that the callback is called when an edge is added
@@ -44,7 +47,7 @@ public class TestTopNodeCounter {
         IGraph graph = new SimulatedGraph();
         graph.addEdges(new Edge(0,1));
         DANF danf = new DANF(h, log2m, graph);
-        TopNodeCounter topNodeCounter = new TopNodeCounter(danf, updateIntervalms, percentageChange, minNodeCount );
+        TopNodeCounter topNodeCounter = new TopNodeCounter(danf, updateIntervalms, percentageChange, minNodeCount, counterCapacity);
 
         AtomicBoolean wasCalled = new AtomicBoolean(false);
         topNodeCounter.setRapidChangeCallback(set -> {
@@ -52,8 +55,10 @@ public class TestTopNodeCounter {
         });
 
         Edge[] edgesToAdd = {new Edge(0,1)};
+
+        topNodeCounter.updateNodeSetsBefore(edgesToAdd);
         danf.addEdges(edgesToAdd);
-        topNodeCounter.updateNodeSets(edgesToAdd);
+        topNodeCounter.updateNodeSetsAfter(edgesToAdd);
 
         assertTrue(wasCalled.get());
     }
@@ -70,7 +75,7 @@ public class TestTopNodeCounter {
         graph.addNode(0);
 
         DANF danf = new DANF(h, log2m, graph, seed);
-        TopNodeCounter topNodeCounter = new TopNodeCounter(danf, updateIntervalms, percentageChange, minNodeCount );
+        TopNodeCounter topNodeCounter = new TopNodeCounter(danf, updateIntervalms, percentageChange, minNodeCount, counterCapacity );
 
         topNodeCounter.setRapidChangeCallback(set -> {
             assertEquals(1, set.size()); // Only node 0 should have had its value changed
@@ -86,8 +91,9 @@ public class TestTopNodeCounter {
         });
 
         Edge[] edgesToAdd = {new Edge(nodeThatShouldChange,1)};
+        topNodeCounter.updateNodeSetsBefore(edgesToAdd);
         danf.addEdges(edgesToAdd);
-        topNodeCounter.updateNodeSets(edgesToAdd);
+        topNodeCounter.updateNodeSetsAfter(edgesToAdd);
     }
 
     @Test
@@ -95,23 +101,22 @@ public class TestTopNodeCounter {
      * Tests that all nodes that should be in the sorted node/value list are in it.
      */
     public void testAllNodesAreInSortedList() throws InterruptedException {
-        final int nMax = 100;
-
         int iteration = 0;
         while(iteration++ < maxIterations) {
             SimulatedGraph graph = new SimulatedGraph();
             graph.addNode(0);
 
             DANF danf = new DANF(h, log2m, graph, seed);
-            TopNodeCounter topNodeCounter = new TopNodeCounter(danf, updateIntervalms, percentageChange, minNodeCount);
+            TopNodeCounter topNodeCounter = new TopNodeCounter(danf, updateIntervalms, percentageChange, minNodeCount, counterCapacity);
 
             SimulatedGraph graphToInsert = TestUtils.genRandomGraph(nMax);
             Edge[] edgesToAdd = graphToInsert.getAllEdges();
+            topNodeCounter.updateNodeSetsBefore(edgesToAdd);
             danf.addEdges(edgesToAdd);
-            topNodeCounter.updateNodeSets(edgesToAdd);
+            topNodeCounter.updateNodeSetsAfter(edgesToAdd);
 
             HashSet<Long> nodesInEdgesToAdd = getNodesInEdges(edgesToAdd);
-            HashSet<Long> nodesInSortedSet = getNodesFromSetPair(topNodeCounter);
+            HashSet<Long> nodesInSortedSet  = getNodesFromSetPair(topNodeCounter);
 
             assertEquals(nodesInSortedSet.size(), nodesInEdgesToAdd.size());
         }
@@ -149,7 +154,6 @@ public class TestTopNodeCounter {
 
     @Test
     public void testSortedListIsUnchangedAfterSameEdgeInsertions() throws InterruptedException {
-        final int nMax = 100;
 
         int iteration = 0;
         while(iteration++ < maxIterations) {
@@ -157,19 +161,21 @@ public class TestTopNodeCounter {
             graph.addNode(0);
 
             DANF danf = new DANF(h, log2m, graph, seed);
-            TopNodeCounter topNodeCounter = new TopNodeCounter(danf, updateIntervalms, percentageChange, minNodeCount);
+            TopNodeCounter topNodeCounter = new TopNodeCounter(danf, updateIntervalms, percentageChange, minNodeCount, counterCapacity);
 
             SimulatedGraph graphToInsert = TestUtils.genRandomGraph(nMax);
             Edge[] edgesToAdd = graphToInsert.getAllEdges();
+            topNodeCounter.updateNodeSetsBefore(edgesToAdd);
             danf.addEdges(edgesToAdd);
-            topNodeCounter.updateNodeSets(edgesToAdd);
+            topNodeCounter.updateNodeSetsAfter(edgesToAdd);
 
             TreeSet<Pair<Double, Long>> valuesAfterFirstInsertion =  topNodeCounter.getNodesSortedByValue();
             Pair[] valuesAfterFirstInsertionArray = new Pair[valuesAfterFirstInsertion.size()];
             valuesAfterFirstInsertionArray = valuesAfterFirstInsertion.toArray(valuesAfterFirstInsertionArray);
 
+            topNodeCounter.updateNodeSetsBefore(edgesToAdd);
             danf.addEdges(edgesToAdd);
-            topNodeCounter.updateNodeSets(edgesToAdd);
+            topNodeCounter.updateNodeSetsAfter(edgesToAdd);
             TreeSet<Pair<Double, Long>> valuesAfterSecondInsertion =  topNodeCounter.getNodesSortedByValue();
             Pair[] valuesAfterSecondInsertionArray = new Pair[valuesAfterSecondInsertion.size()];
             valuesAfterSecondInsertionArray = valuesAfterFirstInsertion.toArray(valuesAfterSecondInsertionArray);
