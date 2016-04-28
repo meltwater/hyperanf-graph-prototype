@@ -1,5 +1,6 @@
 package se.meltwater.test.graph;
 
+import com.google.common.collect.Lists;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import org.junit.Test;
@@ -9,6 +10,7 @@ import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.LongStream;
 
@@ -305,7 +307,58 @@ public class TestSimulatedGraph {
         }
     }
 
+    /**
+     * Tests that the added edges to the graph exists, the old ones remain, and no
+     * edges are created from nothing.
+     * @throws IOException
+     */
+    @Test
+    public void testAddedEdgesCorrect() throws IOException {
+        SimulatedGraph graph = new SimulatedGraph();
+        int numNodes;
+        Random rand = new Random();
 
+        for(int i = 0; i< 100; i++) {
+
+            numNodes = rand.nextInt(maxNodes)+1;
+            ArrayList<Edge> edgesBefore = getEdgesBefore(graph);
+
+            ArrayList<Edge> newEdges = generateNewEdges(numNodes,graph);
+            removeEdgesAppearingInGraph(edgesBefore, newEdges,graph);
+            assertEquals(0,newEdges.size());
+            assertEquals(0,edgesBefore.size());
+
+        }
+
+    }
+
+    private void removeEdgesAppearingInGraph(ArrayList<Edge> edgesBefore, ArrayList<Edge> newEdges, SimulatedGraph graph) {
+        graph.iterateAllEdges(e ->{
+            assertTrue(newEdges.contains(e) || edgesBefore.contains(e));
+            while (newEdges.remove(e)) ;
+            while (edgesBefore.remove(e));
+            return null;
+        });
+
+    }
+
+    private ArrayList<Edge> generateNewEdges(int numNodes, SimulatedGraph graph) {
+        int numEdges = maxNodes;
+        ArrayList<Edge> edges = Lists.newArrayList(TestUtils.generateEdges(numNodes, numEdges));
+
+        Edge[] edgeArr = edges.toArray(new Edge[edges.size()]);
+        graph.addEdges(edgeArr);
+        return edges;
+    }
+
+    private ArrayList<Edge> getEdgesBefore(SimulatedGraph graph) {
+        ArrayList<Edge> edgesBefore = new ArrayList<>();
+        graph.iterateAllEdges(e -> {
+            edgesBefore.add(e);
+            return null;
+        });
+        return edgesBefore;
+    }
 
 
 }

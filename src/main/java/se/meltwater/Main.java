@@ -97,9 +97,10 @@ public class Main {
         for(int i=0; i<1000 ; i++)
             bfsSources[i] = rand.nextLong(graph.numNodes());
 
-        MSBreadthFirst MSBFS = new MSBreadthFirst(bfsSources,new ImmutableGraphWrapper(graph));
+        MSBreadthFirst MSBFS = new MSBreadthFirst(new ImmutableGraphWrapper(graph));
 
-        MSBFS.breadthFirstSearch();
+        MSBFS.breadthFirstSearch(bfsSources);
+        MSBFS.close();
 
     }
 

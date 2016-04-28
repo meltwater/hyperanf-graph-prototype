@@ -5,6 +5,8 @@ import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Test;
 import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.graph.Edge;
@@ -52,8 +54,9 @@ public class TestMSBFS {
             MSBreadthFirst.Traveler[] travelers = Utils.repeat(t,sources.length, new MSBreadthFirst.Traveler[0]);
             AtomicBoolean noNull = new AtomicBoolean(true);
             MSBreadthFirst.Visitor v = (long x, BitSet y, BitSet z, int d, MSBreadthFirst.Traveler t2) -> {if(t2 == null) noNull.set(false);};
-            MSBreadthFirst msbfs = new MSBreadthFirst(sources,travelers,graph,v);
-            msbfs.breadthFirstSearch();
+            MSBreadthFirst msbfs = new MSBreadthFirst(graph);
+            msbfs.breadthFirstSearch(sources,v,travelers);
+            msbfs.close();
             assertTrue(noNull.get());
         }
     }
@@ -83,7 +86,9 @@ public class TestMSBFS {
         long[] bfsSources = new long[]{0, 1};
         AtomicInteger merges = new AtomicInteger(0);
         MSBreadthFirst.Traveler[] travs = new CountMergesTraveler[]{new CountMergesTraveler(merges), new CountMergesTraveler(merges)};
-        new MSBreadthFirst(bfsSources, travs, graph, correctMergesVisitor()).breadthFirstSearch();
+        MSBreadthFirst bfs = new MSBreadthFirst(graph);
+        bfs.breadthFirstSearch(bfsSources, correctMergesVisitor(), travs);
+        bfs.close();
         assertEquals(1, merges.get());
 
     }
@@ -149,7 +154,7 @@ public class TestMSBFS {
         while(iteration++ < maxIterations ) {
             int numNodes = new Random().nextInt(maxGraphSize - 1) + 1; /* Make sure numNodes always positive */
             SimulatedGraph graph = TestUtils.genRandomGraph(numNodes);
-            //testGraph(graph);
+            testGraph(graph);
         }
     }
 
@@ -170,8 +175,9 @@ public class TestMSBFS {
      */
     public void testGraph(IGraph graph) throws InterruptedException {
         long[] bfsSources = generateSources(graph.getNumberOfNodes());
-        MSBreadthFirst msbfs = new MSBreadthFirst(bfsSources, graph);
-        BitSet[][] seen = msbfs.breadthFirstSearch();
+        MSBreadthFirst msbfs = new MSBreadthFirst(graph);
+        BitSet[][] seen = msbfs.breadthFirstSearch(bfsSources);
+        msbfs.close();
         checkValidSeen(bfsSources, seen, graph);
     }
 
@@ -184,8 +190,9 @@ public class TestMSBFS {
         IGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
         long[] bfsSources = generateSources(graph.getNumberOfNodes());
         ArrayList<AssertionError> errors = new ArrayList<>();
-        MSBreadthFirst msbfs = new MSBreadthFirst(bfsSources, graph, onlySourcesVisitor(bfsSources, errors));
-        msbfs.breadthFirstSearch();
+        MSBreadthFirst msbfs = new MSBreadthFirst(graph);
+        msbfs.breadthFirstSearch(bfsSources,onlySourcesVisitor(bfsSources, errors));
+        msbfs.close();
         assertEquals(0,errors.size());
     }
 
@@ -224,8 +231,9 @@ public class TestMSBFS {
         long[] bfsSources = generateSources( graph.getNumberOfNodes());
         ArrayList<AssertionError> errors = new ArrayList<>();
 
-        MSBreadthFirst msbfs = new MSBreadthFirst(bfsSources, graph,neighborsCorrect(bfsSources,graph,errors));
-        msbfs.breadthFirstSearch();
+        MSBreadthFirst msbfs = new MSBreadthFirst(graph);
+        msbfs.breadthFirstSearch(bfsSources,neighborsCorrect(bfsSources,graph,errors));
+        msbfs.close();
 
         assertEquals(errors.size() + " visitors reported assertion errors" ,0,errors.size());
     }
@@ -327,7 +335,7 @@ public class TestMSBFS {
                 while (d-- != 0) {
                     long succ = succs.nextLong();
 
-                    if (!nodesChecked.get(succ)) {
+                    if (!nodesChecked.getBoolean(succ)) {
                         nodesChecked.set(succ);
                         queue.enqueue(succ);
 

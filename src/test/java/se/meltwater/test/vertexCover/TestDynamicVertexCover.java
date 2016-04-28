@@ -3,6 +3,8 @@ package se.meltwater.test.vertexCover;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import org.junit.Test;
+import se.meltwater.algo.DANF;
+import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
@@ -400,10 +402,5 @@ public class TestDynamicVertexCover {
             node = node + 1;
         }
 
-        /*long[] nodesInVC = vc.getNodesInVertexCover();
-        LazyLongIterator vcIterator = vc.getNodesInVertexCoverIterator();
-        for (long node: nodesInVC ) {
-            assertEquals(node,vcIterator.nextLong());
-        }*/
     }
 }

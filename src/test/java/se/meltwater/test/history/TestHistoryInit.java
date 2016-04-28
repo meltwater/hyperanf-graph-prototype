@@ -52,6 +52,7 @@ public class TestHistoryInit {
             HyperLolLolCounterArray[] calculatedHistory = getCorrectCounters(graph, danf);
             checkNodeCountersCorrect(graph, danf, calculatedHistory);
 
+            danf.close();
 
         }
     }
@@ -71,6 +72,7 @@ public class TestHistoryInit {
             hyperBoll.iterate();
             calculatedHistory[i-1] = (HyperLolLolCounterArray) hyperBoll.getCounter().clone();
         }
+        hyperBoll.close();
         return calculatedHistory;
     }
 

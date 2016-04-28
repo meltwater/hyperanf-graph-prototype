@@ -80,10 +80,12 @@ public class TestEffectPropagation {
 
         HyperBoll hyperBoll = new HyperBoll(mergedGraph, log2m, seed);
         hyperBoll.run(h);
+        hyperBoll.close();
         HyperLolLolCounterArray hll = hyperBoll.getCounter();
         for (long i = 0; i < mergedGraph.getNumberOfNodes() ; i++) {
             assertEquals("Node " + i,hll.count(i),danf.count(i,h),epsilon);
         }
+        danf.close();
 
     }
 
@@ -186,6 +188,7 @@ public class TestEffectPropagation {
         for (long i = 0; i < danf.getGraph().getNumberOfNodes(); i++) {
             assertEquals("Node " + i, hll.count(i), danf.count(i, h), epsilon);
         }
+        danf.close();
     }
 
     private HyperLolLolCounterArray mergeAndCalculateCounters(SimulatedGraph originalGraph, Edge ... edges) throws IOException {
@@ -195,6 +198,7 @@ public class TestEffectPropagation {
 
         HyperBoll hyperBoll = new HyperBoll(mergedGraph,log2m);
         hyperBoll.run(h);
+        hyperBoll.close();
         return hyperBoll.getCounter();
     }
 
@@ -211,6 +215,8 @@ public class TestEffectPropagation {
 
         danf.addEdges(new Edge(0, 1));
         assertArrayEquals(new double[]{2.0,2.0,2.0,2.0}, danf.count(0), epsilon);
+
+        danf.close();
     }
 
     /**
@@ -227,6 +233,8 @@ public class TestEffectPropagation {
         danf.addEdges(new Edge(0, 1),new Edge(0,1));
 
         assertArrayEquals(new double[]{2.0,2.0,2.0,2.0}, danf.count(0), epsilon);
+
+        danf.close();
     }
 
 
@@ -257,6 +265,8 @@ public class TestEffectPropagation {
         assertEquals(3.0f, danf.count(1, h), epsilon);
         assertArrayEquals(new double[]{2.0,2.0,2.0,2.0}, danf.count(2), epsilon);
         assertEquals(1.0f, danf.count(3, h), epsilon);
+
+        danf.close();
     }
 
 
@@ -288,6 +298,7 @@ public class TestEffectPropagation {
         assertEquals(1.0f, danf.count(2, h), epsilon);
         assertEquals(1.0f, danf.count(3, h), epsilon);
         assertArrayEquals(new double[]{3.0,3.0,3.0,3.0}, danf.count(newNode), epsilon);
+        danf.close();
     }
 
     /**
@@ -318,6 +329,7 @@ public class TestEffectPropagation {
         assertArrayEquals(new double[]{2.0,3.0,3.0,3.0}, danf.count(0), epsilon);
         assertArrayEquals(new double[]{2.0,3.0,3.0,3.0}, danf.count(1), epsilon);
 
+        danf.close();
 
     }
 
@@ -342,6 +354,8 @@ public class TestEffectPropagation {
         assertArrayEquals(new double[]{2.0,3.0,3.0},danf.count(2),epsilon);
         assertArrayEquals(new double[]{2.0,3.0,4.0},danf.count(1),epsilon);
         assertEquals(4.0,danf.count(0,h),epsilon);
+
+        danf.close();
 
     }
 
@@ -369,6 +383,7 @@ public class TestEffectPropagation {
         assertArrayEquals(new double[]{2.0,2.0,2.0,2.0}, danf.count(1), epsilon);
         assertArrayEquals(new double[]{2.0,2.0,2.0,2.0}, danf.count(newNode1), epsilon);
         assertArrayEquals(new double[]{1.0,1.0,1.0,1.0}, danf.count(newNode2), epsilon);
+        danf.close();
     }
 
     /**
@@ -391,6 +406,7 @@ public class TestEffectPropagation {
 
         assertArrayEquals(new double[]{2.0,2.0,2.0}, danf.count(2), epsilon);
         assertEquals(3.0, danf.count(1,h), epsilon);
+        danf.close();
     }
 
     /**
@@ -416,6 +432,7 @@ public class TestEffectPropagation {
 
         assertArrayEquals(new double[]{3.0,4.0,4.0}, danf.count(2), epsilon);
         assertArrayEquals(new double[]{2.0,2.0,2.0}, danf.count(3), epsilon);
+        danf.close();
     }
 
     private DANF setupGraphAndRunHyperBall( int h, int log2m, long maxStartNode, Edge ... edges) throws IOException {

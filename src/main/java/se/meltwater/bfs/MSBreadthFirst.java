@@ -7,11 +7,9 @@ import se.meltwater.graph.IGraph;
 
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -24,22 +22,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MSBreadthFirst {
 
     private IGraph graph;
-    private long[] bfsSources;
     private int numSources;
     private int threadsLeft;
     private Visitor visitor;
     private Traveler[][] travelers;
     private Traveler[][] travelersNext;
-    private Traveler[] originalTravelers;
-    private long waitTime;
-    private TimeUnit waitTimeUnit;
-    private final static int DEFAULT_WAIT_TIME = 1;
-    private final static TimeUnit DEFAULT_WAIT_TIME_UNIT = TimeUnit.HOURS;
-    private Throwable threadException = null;
-    private boolean controlledInterrupt = false;
+    private boolean threadFailure;
+
+    private ExecutorService threadManager;
+    private int threads;
+    private static AtomicInteger threadFactoryID = new AtomicInteger(0);
 
     private AtomicBoolean visitHadContent;
-    private int threads;
     private BitSet[][] visit;
     private BitSet[][] seen;
     private BitSet[][] visitNext;
@@ -47,80 +41,25 @@ public class MSBreadthFirst {
     private boolean hasTraveler;
 
     /**
-     * Initialize a Breadth-first search in {@code graph} from the nodes in {@code bfsSources}
-     * @param bfsSources The source nodes to start BFS's from. The index of a node is used as an identifier for
-     *                   the BFS starting at that node.
+     * Initialize a Breadth-first search in {@code graph}.
+     *
+     * <b>WARNING:</b> Not calling {@link MSBreadthFirst#close()} can quickly eat up
+     * the Heap due to idle threads.
      * @param graph
      */
-    public MSBreadthFirst(long[] bfsSources, IGraph graph){
-        this(bfsSources,graph,null);
-    }
-
-    /**
-     * Initialize a Breadth-first search in {@code graph} from the nodes in {@code bfsSources}. At each new visit,
-     * the passed visitor will be called.
-     * @param bfsSources The source nodes to start BFS's from. The index of a node is used as an identifier for
-     *                   the BFS starting at that node.
-     * @param graph
-     * @param visitor
-     * @param maxWaitTime  The maximum time the algorithm should wait for the threads to finish (default 1 hour)
-     * @param waitTimeUnit The units which {@code maxWaitTime} is expressed in
-     */
-    public MSBreadthFirst(long[] bfsSources, Traveler[] travelers, IGraph graph, Visitor visitor, long maxWaitTime, TimeUnit waitTimeUnit){
-
+    public MSBreadthFirst(IGraph graph){
         this.graph = graph;
-        numSources = bfsSources.length;
-        this.bfsSources = bfsSources;
-        this.visitor = visitor;
-        this.waitTime = maxWaitTime;
-        this.waitTimeUnit = waitTimeUnit;
-        originalTravelers = travelers;
-        hasTraveler = originalTravelers != null;
-        if(travelers == null) {
-            this.travelers = null;
-            this.travelersNext = null;
-        }else {
-            this.travelers = ObjectBigArrays.newBigArray(new Traveler[0][0], graph.getNumberOfNodes());
-            travelersNext = ObjectBigArrays.newBigArray(new Traveler[0][0], graph.getNumberOfNodes());
-        }
-
+        threads = Runtime.getRuntime().availableProcessors();
+        threadManager = Executors.newFixedThreadPool(threads, new MSBreadthFirstThreadFactory(threadFactoryID.getAndIncrement()));
     }
 
     /**
-     * Initialize a Breadth-first search in {@code graph} from the nodes in {@code bfsSources}. At each new visit,
-     * the passed visitor will be called.
-     * @param bfsSources The source nodes to start BFS's from. The index of a node is used as an identifier for
-     *                   the BFS starting at that node.
-     * @param graph
-     * @param visitor
-     * */
-     public MSBreadthFirst(long[] bfsSources, IGraph graph, Visitor visitor){
-         this(bfsSources, null,graph,visitor);
-     }
-
-    /**
-     * Initialize a Breadth-first search in {@code graph} from the nodes in {@code bfsSources}. At each new visit,
-     * the passed visitor will be called.
-     * @param bfsSources The source nodes to start BFS's from. The index of a node is used as an identifier for
-     *                   the BFS starting at that node.
-     * @param travelers
-     * @param graph
-     * @param visitor
-     * */
-    public MSBreadthFirst(long[] bfsSources, Traveler[] travelers, IGraph graph, Visitor visitor){
-        this(bfsSources, travelers,graph,visitor,DEFAULT_WAIT_TIME,DEFAULT_WAIT_TIME_UNIT);
-    }
-
-    /**
-     * Initialize a Breadth-first search in {@code graph} from the nodes in {@code bfsSources}
-     * @param bfsSources The source nodes to start BFS's from. The index of a node is used as an identifier for
-     *                   the BFS starting at that node.
-     * @param graph
-     * @param maxWaitTime  The maximum time the algorithm should wait for the threads to finish (default 1 hour)
-     * @param waitTimeUnit The units which {@code maxWaitTime} is expressed in
+     * Shuts down the threads maintained by this object.
      */
-    public MSBreadthFirst(long[] bfsSources, IGraph graph, long maxWaitTime, TimeUnit waitTimeUnit){
-        this(bfsSources, null,graph,null,maxWaitTime,waitTimeUnit);
+    public void close(){
+        if(!threadManager.isShutdown()) {
+            threadManager.shutdownNow();
+        }
     }
 
     private BitSet[][] createBitsets(){
@@ -135,6 +74,14 @@ public class MSBreadthFirst {
             ObjectBigArrays.set(bsets,node,null);
     }
 
+    public BitSet[][] breadthFirstSearch(long[] bfsSources, Visitor visitor) throws InterruptedException {
+        return breadthFirstSearch(bfsSources,visitor,null);
+    }
+
+    public BitSet[][] breadthFirstSearch(long[] bfsSources) throws InterruptedException {
+        return breadthFirstSearch(bfsSources,null);
+    }
+
     /**
      * Performs a Multi-Source Breadth-first search.
      *
@@ -147,10 +94,19 @@ public class MSBreadthFirst {
      * set bits indicate which bfs's that reached it.
      * @throws InterruptedException
      */
-    public BitSet[][] breadthFirstSearch() throws InterruptedException {
+    public BitSet[][] breadthFirstSearch(long[] bfsSources, Visitor visitor, Traveler[] travelers) throws InterruptedException {
 
-        threadException = null;
-        controlledInterrupt = false;
+        numSources = bfsSources.length;
+        this.visitor = visitor;
+        hasTraveler = travelers != null;
+        if(travelers == null) {
+            this.travelers = null;
+            this.travelersNext = null;
+        }else {
+            this.travelers = ObjectBigArrays.newBigArray(new Traveler[0][0], graph.getNumberOfNodes());
+            travelersNext = ObjectBigArrays.newBigArray(new Traveler[0][0], graph.getNumberOfNodes());
+        }
+        threadFailure = false;
         visit = createBitsets();
         seen = createBitsets();
 
@@ -160,9 +116,9 @@ public class MSBreadthFirst {
             setBfs(visit,node,bfs);
             setBfs(seen,node,bfs);
             if(hasTraveler) {
-                temp = ObjectBigArrays.get(travelers,node);
-                temp = temp == null ? originalTravelers[bfs] : temp.merge(originalTravelers[bfs],0);
-                ObjectBigArrays.set(travelers,node,temp);
+                temp = ObjectBigArrays.get(this.travelers,node);
+                temp = temp == null ? travelers[bfs] : temp.merge(travelers[bfs],0);
+                ObjectBigArrays.set(this.travelers,node,temp);
                 ObjectBigArrays.set(travelersNext,node,temp);
             }
         }
@@ -190,10 +146,12 @@ public class MSBreadthFirst {
 
         visitNext = createBitsets();
         visitHadContent = new AtomicBoolean(true);
-        threads = Runtime.getRuntime().availableProcessors();
+
+        long nodesPerProcessor = graph.getNumberOfNodes() / threads;
+        iteration = 0;
         while(visitHadContent.get()){
 
-            iterate();
+            iterate(nodesPerProcessor);
             iteration++;
 
             if(visitHadContent.get()) {
@@ -209,60 +167,63 @@ public class MSBreadthFirst {
 
     }
 
-
-
-    private void iterate() throws InterruptedException {
-
-        ExecutorService pool = Executors.newFixedThreadPool(threads);
-        long nodesPerProcessor = graph.getNumberOfNodes() / threads;
+    private void iterate(long nodesPerProcessor) throws InterruptedException {
         visitHadContent.set(false);
-        threadsLeft = threads;
         ArrayList<Future<?>> futures = new ArrayList<>(threads);
+        threadsLeft = threads;
 
         for(long i = 0; i < threads; i++) {
             long start = i*nodesPerProcessor;
             long end = i == threads-1 ? graph.getNumberOfNodes() : start + nodesPerProcessor;
-            futures.add(pool.submit(bothPhasesIterator(start,end, graph.getNodeIterator(start))));
+            futures.add(threadManager.submit(bothPhasesIterator(start,end, graph.getNodeIterator(start))));
 
         }
-        pool.shutdown();
-        boolean normalTermination = pool.awaitTermination(waitTime,waitTimeUnit);
-        if(!normalTermination){
-            controlledInterrupt = true;
+        awaitThreads(futures);
+    }
+
+    private void awaitThreads(ArrayList<Future<?>> futures) throws InterruptedException {
+
+        try {
+            for (Future<?> future : futures) {
+                future.get();
+            }
+        }catch (InterruptedException e){
+            if(!threadFailure)
+                throw e;
+        }catch (ExecutionException e) {
+
+            threadFailure = true;
             for(Future<?> future : futures)
                 future.cancel(true);
-            throw new InterruptedException("The time ran out");
-        }
-        if(threadException != null) {
-            throw new RuntimeException("One of the breadth-first search threads threw an Exception",threadException);
+
+            if(e.getCause() instanceof RuntimeException)
+                throw (RuntimeException)e.getCause();
+            else
+                throw new RuntimeException("Some of the breadth-first search threads threw an exception",e.getCause());
         }
     }
 
     /**
      * Used to synchronize all the threads in bothPhasesIterator.
-     * @param forceQuit If not null, Awakes all thread and tells them to terminate
+     *
      * @return True if the thread should continue calculation.
      */
-    private synchronized boolean synchronize(Throwable forceQuit) {
-        if(forceQuit != null){
-            threadException = forceQuit;
+    private synchronized boolean synchronize() throws InterruptedException {
+        if(threadFailure){
             this.notifyAll();
             return false;
         }else {
-            if (threadException != null)
-                return false;
             if (--threadsLeft == 0)
                 this.notifyAll();
             else {
                 try {
                     this.wait();
                 }catch (InterruptedException e){
-                    if(!controlledInterrupt)
-                        threadException = e;
-                    return false;
+                    if(!threadFailure)
+                        throw e;
                 }
             }
-            return threadException == null;
+            return !threadFailure;
         }
     }
 
@@ -278,10 +239,11 @@ public class MSBreadthFirst {
         return () -> {
             try {
                 firstPhaseIterator(endNode, nodeIt);
-                if(synchronize(null) && visitHadContent.get())
+                if(synchronize() && visitHadContent.get())
                     secondPhaseIterator(startNode, endNode);
-            }catch (Throwable e){
-                synchronize(e);
+            }catch (InterruptedException e){
+                if(!threadFailure)
+                    throw new RuntimeException(e);
             }
         };
     }
@@ -393,5 +355,19 @@ public class MSBreadthFirst {
 
     }
 
+    private static class MSBreadthFirstThreadFactory implements ThreadFactory {
+
+        private int factoryID;
+        private AtomicInteger threadID = new AtomicInteger(1);
+
+        public MSBreadthFirstThreadFactory(int factoryID) {
+            this.factoryID = factoryID;
+        }
+
+        @Override
+        public Thread newThread(Runnable r) {
+            return new Thread(r,"MSBreadthFirstPool-" + factoryID + "-thread-" + threadID.getAndIncrement());
+        }
+    }
 
 }

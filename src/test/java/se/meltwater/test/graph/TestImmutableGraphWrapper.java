@@ -9,6 +9,7 @@ import se.meltwater.test.TestUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.Assert.*;
@@ -79,25 +80,60 @@ public class TestImmutableGraphWrapper {
         graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/SameAsSimulated"));
     }
 
+
+
+    /**
+     * Tests that the added edges to the graph exists, the old ones remain, and no
+     * edges are created from nothing.
+     * @throws IOException
+     */
     @Test
     public void testAddedEdgesCorrect() throws IOException {
-        setupGraph();
+        ImmutableGraphWrapper graph = new ImmutableGraphWrapper(BVGraph.loadMapped("testGraphs/SameAsSimulated"));
+        int numNodes;
+        int maxNodes = 100;
+        Random rand = new Random();
 
-        for(int i = 0; i< 10; i++) {
+        for(int i = 0; i< 100; i++) {
 
-            int numEdges = 500;
-            ArrayList<Edge> edges = Lists.newArrayList(TestUtils.generateEdges((int) graph.getNumberOfNodes(), numEdges));
+            numNodes = rand.nextInt(maxNodes)+1;
+            ArrayList<Edge> edgesBefore = getEdgesBefore(graph);
 
-            Edge[] edgeArr = edges.toArray(new Edge[edges.size()]);
-            graph.addEdges(edgeArr);
-            graph.iterateAllEdges((Edge e) -> {
-                while (edges.remove(e));
-                return null;
-            });
-            assertEquals(0,edges.size());
+            ArrayList<Edge> newEdges = generateNewEdges(numNodes, maxNodes,graph);
+            removeEdgesAppearingInGraph(edgesBefore, newEdges,graph);
+            assertEquals(0,newEdges.size());
+            assertEquals(0,edgesBefore.size());
 
         }
 
+    }
+
+    private void removeEdgesAppearingInGraph(ArrayList<Edge> edgesBefore, ArrayList<Edge> newEdges, ImmutableGraphWrapper graph) {
+        graph.iterateAllEdges(e ->{
+            assertTrue(newEdges.contains(e) || edgesBefore.contains(e));
+            while (newEdges.remove(e)) ;
+            while (edgesBefore.remove(e));
+            return null;
+        });
+
+    }
+
+    private ArrayList<Edge> generateNewEdges(int numNodes, int maxNodes, ImmutableGraphWrapper graph) {
+        int numEdges = maxNodes;
+        ArrayList<Edge> edges = Lists.newArrayList(TestUtils.generateEdges(numNodes, numEdges));
+
+        Edge[] edgeArr = edges.toArray(new Edge[edges.size()]);
+        graph.addEdges(edgeArr);
+        return edges;
+    }
+
+    private ArrayList<Edge> getEdgesBefore(ImmutableGraphWrapper graph) {
+        ArrayList<Edge> edgesBefore = new ArrayList<>();
+        graph.iterateAllEdges(e -> {
+            edgesBefore.add(e);
+            return null;
+        });
+        return edgesBefore;
     }
 
 }

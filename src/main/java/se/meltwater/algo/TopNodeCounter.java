@@ -156,4 +156,9 @@ public class TopNodeCounter {
             return ret == 0 ? o2.getValue().compareTo(o1.getValue()) : ret;
         };
     }
+
+    public void close(){
+        danf.close();
+    }
+
 }
