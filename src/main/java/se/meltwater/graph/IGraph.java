@@ -1,8 +1,10 @@
 package se.meltwater.graph;
 
+import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 
+import java.io.IOException;
 import java.util.function.Function;
 
 /**
@@ -38,6 +40,22 @@ public interface IGraph {
     boolean containsNode(long node);
 
     IGraph transpose();
+
+    void store(String outputFile);
+
+    static IGraph load(String inputFile, boolean memoryMapped) {
+        try {
+        if(memoryMapped) {
+            return new ImmutableGraphWrapper(BVGraph.loadMapped(inputFile));
+        } else {
+            return new ImmutableGraphWrapper(BVGraph.load(inputFile));
+        }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
 
 
     /**

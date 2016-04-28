@@ -5,6 +5,7 @@ import it.unimi.dsi.big.webgraph.*;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
+import it.unimi.dsi.logging.ProgressLogger;
 import se.meltwater.utils.Utils;
 
 import java.io.File;
@@ -101,15 +102,24 @@ public class ImmutableGraphWrapper extends AGraph{
      * @param graph The graph to store and reload
      */
     private void storeGraphs(ImmutableGraph graph) {
+        System.out.println("storing");
         try {
             checkFile();
             BVGraph.store(graph, thisPath, 0, 0, -1, -1, 0);
-            this.graph = BVGraph.loadMapped(thisPath);
+            this.graph = BVGraph.load(thisPath);
             originalGraph = this.graph;
             cleanOldFile(oldPath);
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(0);
+        }
+    }
+
+    public void store(String outputFile) {
+        try {
+            BVGraph.store(graph, outputFile, 0, 0, -1, -1, 0, new ProgressLogger());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -223,7 +233,7 @@ public class ImmutableGraphWrapper extends AGraph{
      */
     public IGraph transpose(){
         try {
-            ImmutableGraph transpose = Transform.transposeOffline(graph, (int) graph.numNodes());
+            ImmutableGraph transpose = Transform.transposeOffline(graph, (int) graph.numNodes(), null, new ProgressLogger());
 
             ImmutableGraphWrapper transposeWrapper = new ImmutableGraphWrapper(transpose);
             transposeWrapper.storeGraphs(transpose);
@@ -279,51 +289,4 @@ public class ImmutableGraphWrapper extends AGraph{
                 throw new ConcurrentModificationException("Immutable graph wrapper must never be modified during iteration.");
         }
     }
-
-
-
-    private class SimulatedGraphWrapper extends ImmutableGraph{
-
-        SimulatedGraph graph;
-
-        public SimulatedGraphWrapper(SimulatedGraph graph){
-            this.graph = graph;
-        }
-
-        @Override
-        public long numArcs() {
-            return graph.getNumberOfArcs();
-        }
-
-        @Override
-        public LazyLongIterator successors(long x) {
-            return graph.getSuccessors(x);
-        }
-
-        @Override
-        public NodeIterator nodeIterator(long from) {
-            return graph.getNodeIterator(from);
-        }
-
-        @Override
-        public long numNodes() {
-            return graph.getNumberOfNodes();
-        }
-
-        @Override
-        public boolean randomAccess() {
-            return true;
-        }
-
-        @Override
-        public long outdegree(long l) {
-            return graph.getOutdegree(l);
-        }
-
-        @Override
-        public ImmutableGraph copy() {
-            return new SimulatedGraphWrapper((SimulatedGraph) graph.copy());
-        }
-    }
-
 }

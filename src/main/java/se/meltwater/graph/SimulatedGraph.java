@@ -1,8 +1,11 @@
 package se.meltwater.graph;
 
+import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
+import it.unimi.dsi.logging.ProgressLogger;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -171,6 +174,16 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
         }
 
         return transpose;
+    }
+
+    @Override
+    public void store(String outputFile) {
+        SimulatedGraphWrapper wrapper = new SimulatedGraphWrapper(this);
+        try {
+            BVGraph.store(wrapper, outputFile, 0, 0, -1, -1, 0, new ProgressLogger());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static class SimulatedGraphNodeIterator extends NodeIterator{
