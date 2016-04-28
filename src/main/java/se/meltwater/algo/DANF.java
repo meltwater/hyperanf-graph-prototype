@@ -35,9 +35,12 @@ public class DANF {
     private HyperLolLolCounterArray[] history;
     private int counterLongWords;
 
+    private MSBreadthFirst transposeMSBFS;
+
     private int h;
 
     private long cachedNode = -1, cachedNodeIndex;
+    private boolean closed = false;
 
     private final int STATIC_LOLOL = 0;
 
@@ -56,6 +59,7 @@ public class DANF {
         history = new HyperLolLolCounterArray[h];
         this.graph = graph;
         this.graphTranspose = graph.transpose();
+        transposeMSBFS = new MSBreadthFirst(graphTranspose);
 
         counterIndex = LongBigArrays.newBigArray(vc.getVertexCoverSize());
 
@@ -75,6 +79,22 @@ public class DANF {
             }
         }catch (IOException e){
             throw new RuntimeException("Something went wrong with the temporary graph files", e);
+        }finally {
+            try {
+                hyperBoll.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Shuts down the MSBreadthFirst threads
+     */
+    public void close(){
+        if(!closed) {
+            transposeMSBFS.close();
+            closed = true;
         }
     }
 
@@ -363,8 +383,7 @@ public class DANF {
             travelers[j] = new PropagationTraveler(calculateHistory(edges[i].to));
             fromNodes[j] = edges[i].from;
             if(j == partitionSize-1) {
-                MSBreadthFirst msbfs = new MSBreadthFirst(fromNodes, travelers, graphTranspose, propagateVisitor());
-                msbfs.breadthFirstSearch();
+                transposeMSBFS.breadthFirstSearch(fromNodes, propagateVisitor(), travelers);
                 if(edges.length-i-1 < partitionSize) {
                     travelers = new PropagationTraveler[edges.length - i - 1];
                     fromNodes = new long[edges.length - i - 1];
@@ -374,8 +393,7 @@ public class DANF {
         }
 
         if(fromNodes.length > 0) {
-            MSBreadthFirst msbfs = new MSBreadthFirst(fromNodes, travelers, graphTranspose, propagateVisitor());
-            msbfs.breadthFirstSearch();
+            transposeMSBFS.breadthFirstSearch(fromNodes, propagateVisitor(), travelers);
         }
 
     }

@@ -126,8 +126,9 @@ public class Benchmarks {
         };
 
         long startTime = System.currentTimeMillis();
-        MSBreadthFirst msbfs = new MSBreadthFirst(sources, graph,visitor);
-        msbfs.breadthFirstSearch();
+        MSBreadthFirst msbfs = new MSBreadthFirst(graph);
+        msbfs.breadthFirstSearch(sources,visitor);
+        msbfs.close();
         long endTime = System.currentTimeMillis();
         return endTime - startTime;
     }
@@ -299,7 +300,7 @@ public class Benchmarks {
      */
     public static void benchmarkDVCInsertionsReal() throws IOException {
         final String dateString = getDateString();
-        final String graphName = "it-2004";
+        final String graphName = "noBlocksUk";
         final String graphFile = "testGraphs/" + graphName;
         final String dataFile = dataFolder + "DvcInsertionsReal" + dateString + ".data";
 
@@ -569,6 +570,8 @@ public class Benchmarks {
             printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime, graph);
             lastTime = currentTime;
         }
+
+        danf.close();
     }
 
     @Deprecated // TODO remove this function and replace with util funcion
@@ -593,11 +596,11 @@ public class Benchmarks {
         System.out.print("Time per bulk: " + timePerBulkSeconds + "s. ");
         System.out.print("DPS: " + dps + ". ");
         System.out.print("Heap size: " + heapSize + " Gb. ");
-        System.out.print("NrArcs: " + graph.getNumberOfArcs() + " ");
+        System.out.print("NrArcs: " + 0/*graph.getNumberOfArcs()*/ + " ");
         System.out.print("NrNodes: " + graph.getNumberOfNodes() + " ");
         System.out.println("Total time: " + elapsedTimeSinceStart + "s.");
 
-        writer.println(modifiedInMillions + " " + dps + " " + heapSize + " " + elapsedTimeSinceStart  + " " + graph.getNumberOfArcs() + " " + graph.getNumberOfNodes());
+        writer.println(modifiedInMillions + " " + dps + " " + heapSize + " " + elapsedTimeSinceStart  + " " + /*graph.getNumberOfArcs()*/0 + " " + graph.getNumberOfNodes());
     }
 
     /**
@@ -627,13 +630,13 @@ public class Benchmarks {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        //Benchmarks.benchmarkEdgeInsertionsDanfReal();
+        Benchmarks.benchmarkEdgeInsertionsDanfReal();
         //Benchmarks.benchmarkDVCInsertionsSimluated();
         //Benchmarks.benchmarkDVCInsertionsReal();
         //Benchmarks.benchmarkDVCDeletionsSimulated();
         //Benchmarks.benchmarkDVCDeletionsReal();
         //Benchmarks.benchmarkUnionVsStored();
         //Benchmarks.benchmarkStdBfs();
-        Benchmarks.compareSimulatedAndTraverseGraph();
+        //Benchmarks.compareSimulatedAndTraverseGraph();
     }
 }

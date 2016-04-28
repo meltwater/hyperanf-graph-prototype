@@ -73,6 +73,8 @@ public class TestRecalculation {
         final double counterValue = danf.count(newNode, h);
 
         assertEquals(expectedValue, counterValue , epsilon);
+
+        danf.close();
     }
 
     /**
@@ -94,6 +96,8 @@ public class TestRecalculation {
 
         assertEquals(2.0, danf.count(1, h), epsilon);
         assertEquals(2.0, danf.count(2, h), epsilon);
+
+        danf.close();
     }
 
     /**
@@ -132,6 +136,8 @@ public class TestRecalculation {
 
         assertEquals(4.0, danf.count(4, h), epsilon);
         assertEquals(4.0, danf.count(5, h), epsilon);
+
+        danf.close();
     }
 
     /**
@@ -150,6 +156,8 @@ public class TestRecalculation {
             DANF danf = new DANF(h,log2m,graph);
 
             addEdgeAndAssertIncreasedCount(danf, graph);
+
+            danf.close();
         }
     }
 
@@ -219,6 +227,8 @@ public class TestRecalculation {
             Set<Long> addedNodes = addRandomEdgesWithUniqueFromNodes(graph, danf);
 
             assertNodesCanBeAccessed(danf, addedNodes);
+
+            danf.close();
         }
     }
 

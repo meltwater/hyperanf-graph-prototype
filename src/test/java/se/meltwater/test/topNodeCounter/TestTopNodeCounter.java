@@ -61,6 +61,8 @@ public class TestTopNodeCounter {
         topNodeCounter.updateNodeSetsAfter(edgesToAdd);
 
         assertTrue(wasCalled.get());
+
+        danf.close();
     }
 
     /**
@@ -94,6 +96,7 @@ public class TestTopNodeCounter {
         topNodeCounter.updateNodeSetsBefore(edgesToAdd);
         danf.addEdges(edgesToAdd);
         topNodeCounter.updateNodeSetsAfter(edgesToAdd);
+        danf.close();
     }
 
     @Test
@@ -119,6 +122,8 @@ public class TestTopNodeCounter {
             HashSet<Long> nodesInSortedSet  = getNodesFromSetPair(topNodeCounter);
 
             assertEquals(nodesInSortedSet.size(), nodesInEdgesToAdd.size());
+
+            danf.close();
         }
     }
 
@@ -181,6 +186,8 @@ public class TestTopNodeCounter {
             valuesAfterSecondInsertionArray = valuesAfterFirstInsertion.toArray(valuesAfterSecondInsertionArray);
 
             assertArrayEquals(valuesAfterFirstInsertionArray, valuesAfterSecondInsertionArray);
+
+            danf.close();
         }
     }
 }

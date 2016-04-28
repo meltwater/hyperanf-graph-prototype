@@ -54,6 +54,7 @@ public class TestDanf {
             for (int node = 0; node < graph.getNumberOfNodes(); node++) {
                 assertEquals(countersAfterFirstInsertion[node], countersAfterSecondInsertion[node], epsilon);
             }
+            danf.close();
         }
     }
 
@@ -82,6 +83,8 @@ public class TestDanf {
         for (int node = 0; node < graph.getNumberOfNodes(); node++) {
             assertEquals(countersAfterFirstInsertion[node], countersAfterSecondInsertion[node], epsilon);
         }
+
+        danf.close();
     }
 
 }
