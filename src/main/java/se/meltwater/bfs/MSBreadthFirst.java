@@ -2,6 +2,7 @@ package se.meltwater.bfs;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 import se.meltwater.graph.IGraph;
 
@@ -183,23 +184,36 @@ public class MSBreadthFirst {
 
     private void awaitThreads(ArrayList<Future<?>> futures) throws InterruptedException {
 
-        try {
+        int running = threads;
+        boolean superBreak = false;
+        while (true) {
             for (Future<?> future : futures) {
-                future.get();
+                try {
+                    future.get(2, TimeUnit.SECONDS);
+                    if(running-- == 0){
+                        superBreak = true;
+                    }
+                } catch (InterruptedException e) {
+                    if (!threadFailure) {
+                        throw e;
+                    }else {
+                        superBreak = true;
+                    }
+                } catch (ExecutionException e) {
+
+                    threadFailure = true;
+                    for (Future<?> future2 : futures)
+                        future2.cancel(true);
+
+                    if (e.getCause() instanceof RuntimeException)
+                        throw (RuntimeException) e.getCause();
+                    else
+                        throw new RuntimeException("Some of the breadth-first search threads threw an exception", e.getCause());
+                } catch (TimeoutException e) {
+                }
             }
-        }catch (InterruptedException e){
-            if(!threadFailure)
-                throw e;
-        }catch (ExecutionException e) {
-
-            threadFailure = true;
-            for(Future<?> future : futures)
-                future.cancel(true);
-
-            if(e.getCause() instanceof RuntimeException)
-                throw (RuntimeException)e.getCause();
-            else
-                throw new RuntimeException("Some of the breadth-first search threads threw an exception",e.getCause());
+            if(superBreak)
+                break;
         }
     }
 
@@ -238,7 +252,7 @@ public class MSBreadthFirst {
     private Runnable bothPhasesIterator(long startNode, long endNode, NodeIterator nodeIt){
         return () -> {
             try {
-                firstPhaseIterator(endNode, nodeIt);
+                firstPhaseIterator(startNode,endNode, nodeIt);
                 if(synchronize() && visitHadContent.get())
                     secondPhaseIterator(startNode, endNode);
             }catch (InterruptedException e){
@@ -248,9 +262,11 @@ public class MSBreadthFirst {
         };
     }
 
-    private void firstPhaseIterator(long endNode, NodeIterator nodeIt){
-        long node;
-        while(nodeIt.hasNext() && (node = nodeIt.nextLong()) < endNode) {
+    private void firstPhaseIterator(long startNode, long endNode, NodeIterator nodeIt){
+        long prevNode = startNode;
+        if(startNode < endNode)
+            nodeIt.nextLong();
+        for(long node = startNode; node < endNode; node++) {
             BitSet visitN = ObjectBigArrays.get(visit,node);
             if (visitN == null || visitN.cardinality() == 0) continue;
 
@@ -259,6 +275,8 @@ public class MSBreadthFirst {
                 if(visitN.cardinality() == 0) continue;
             }
 
+            nodeIt.skip(node-prevNode);
+            prevNode = node;
 
             visitHadContent.set(true);
             LazyLongIterator neighbors = nodeIt.successors();
