@@ -12,9 +12,11 @@ import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Simon Lindhén
@@ -260,17 +262,15 @@ public class DANF {
      * @param node
      * @return
      */
-    private synchronized long getNodeIndex(long node, int h){
+    private long getNodeIndex(long node, int h){
 
         checkH(h);
         if (h == this.h) {
             return node;
         }
 
-        if(cachedNode == node)
-            return cachedNodeIndex;
 
-        return cachedNodeIndex = LongBigArrays.get(counterIndex,cachedNode = node);
+        return LongBigArrays.get(counterIndex,node);
     }
 
     /**
@@ -399,33 +399,47 @@ public class DANF {
     }
 
     private MSBreadthFirst.Visitor propagateVisitor(){
+        boolean needsSync = !history[STATIC_LOLOL].longwordAligned;
         return (long visitNode, BitSet bfsVisits, BitSet seen, int d, MSBreadthFirst.Traveler t) -> {
+            int depth = d + 1;
 
-                int depth = d + 1;
+            PropagationTraveler propTraver = (PropagationTraveler) t;
 
-                PropagationTraveler propTraver = (PropagationTraveler) t;
+            if (vc.isInVertexCover(visitNode)) {
+                long[] visitNodeBits = new long[counterLongWords];
+                long visitNodeIndex;
+                int index;
+                for (int i = 0; i < h + 1 - depth; i++) {
+                    visitNodeIndex = getNodeIndex(visitNode, i + depth);
+                    index = i + depth - 1;
+                    history[index].getCounter(visitNodeIndex, visitNodeBits);
 
-                if (vc.isInVertexCover(visitNode)) {
-                    long[] visitNodeBits = new long[counterLongWords];
-                    long visitNodeIndex;
-                    for (int i = 0; i < h + 1 - depth; i++) {
-                        visitNodeIndex = getNodeIndex(visitNode,i+depth);
-                        history[i + depth - 1].getCounter(visitNodeIndex, visitNodeBits);
-                        history[i + depth - 1].max(visitNodeBits, propTraver.bits[i]);
+                    history[index].max(visitNodeBits, propTraver.bits[i]);
+
+                    if(needsSync) {
+                        synchronized (history[index]) {
+                            history[index].setCounter(visitNodeBits, visitNodeIndex);
+                        }
+                    }else
                         history[i + depth - 1].setCounter(visitNodeBits, visitNodeIndex);
+                }
+            } else {
+                long[] visitNodeBits = new long[counterLongWords];
+                history[h - 1].getCounter(visitNode, visitNodeBits);
+
+                history[h - 1].max(visitNodeBits, propTraver.bits[h-depth]);
+
+                if(needsSync) {
+                    synchronized (history[h - 1]) {
+                        history[h - 1].setCounter(visitNodeBits, visitNode);
                     }
-                } else {
-                    long[] visitNodeBits = new long[counterLongWords];
-                    history[h - 1].getCounter(visitNode, visitNodeBits);
-                    history[h - 1].max(visitNodeBits, propTraver.bits[h - depth]);
+                }else
                     history[h - 1].setCounter(visitNodeBits, visitNode);
-                }
+            }
 
-
-                if (depth == h) {
-                    bfsVisits.clear();
-                }
-
+            if (depth == h) {
+                bfsVisits.clear();
+            }
         };
     }
 
