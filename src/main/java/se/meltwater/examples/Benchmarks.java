@@ -8,7 +8,9 @@ import javafx.util.Pair;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import se.meltwater.algo.DANF;
+import se.meltwater.algo.DynamicNeighborhoodFunction;
 import se.meltwater.algo.HyperBoll;
+import se.meltwater.algo.TrivialDynamicANF;
 import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.bfs.StandardBreadthFirst;
 import se.meltwater.graph.Edge;
@@ -341,7 +343,7 @@ public class Benchmarks {
             if(added % bulkSize == 0) {
                 long currentTime = System.currentTimeMillis();
                 printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime, graph);
-                lastTime = currentTime;
+                lastTime = System.currentTimeMillis();
             }
             return null;
         });
@@ -404,7 +406,7 @@ public class Benchmarks {
             if(added % bulkSize == 0) {
                 long currentTime = System.currentTimeMillis();
                 printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime, graph);
-                lastTime = currentTime;
+                lastTime = System.currentTimeMillis();
             }
 
             dvc.deleteEdge(edge, graphTranspose);
@@ -461,7 +463,7 @@ public class Benchmarks {
             if(writer != null) {
                 printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime, graph);
             }
-            lastTime = currentTime;
+            lastTime = System.currentTimeMillis();
         }
     }
 
@@ -505,11 +507,69 @@ public class Benchmarks {
             long currentTime = System.currentTimeMillis();
             printAndLogStatistics(writer, removed, lastTime, startTime, nrDeleted, currentTime, graph );
 
-            lastTime = currentTime;
+            lastTime = System.currentTimeMillis();
             removed += nrDeleted;
         }
     }
 
+    public static void compareDANFToTrivial() throws IOException, InterruptedException {
+        final String dateString = getDateString();
+        final String dataFile = dataFolder + "DANFComparedToTrivial" + dateString + ".data";
+        final String graphName = "noBlocksUk";
+        final String graphFile = graphFolder + graphName;
+
+        final int log2m = 7;
+        final int h = 3;
+        final int edgesToAdd =   100+200+400+800;
+        int bulkSize =      100;
+
+        System.out.println("Loading graph");
+        IGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
+        IGraph graph2 = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
+
+        DANF danf = new DANF(h,log2m,graph);
+        TrivialDynamicANF tanf = new TrivialDynamicANF(h,log2m,graph2);
+
+        PrintWriter writer = new PrintWriter(dataFile);
+        writer.println("#" + dateString + " " + graphName + " " + edgesToAdd + " edges will be inserted into DANF in bulks of " +
+                bulkSize + ". The time measured is the time to insert " + bulkSize + " edges.; h is set to " + h + " and log2m is " + log2m + ";");
+        writer.println("#Modifications DanfDPS DanfMemory TrivialDPS TrivialMemory ElapsedTime nrArcs nrNodes");
+
+        int  added = 0;
+        long totalDanfTime = 0, totalTrivialTime = 0, start = System.currentTimeMillis();
+
+        Edge[] edges;
+
+        System.out.println("Starting edge insertions");
+        while(added < edgesToAdd) {
+            edges = new Edge[bulkSize];
+            generateEdges(graph.getNumberOfNodes(), bulkSize, edges);
+
+            long beforeDanf = System.currentTimeMillis();
+            danf.addEdges(edges);
+            long afterDanf = System.currentTimeMillis();
+            totalDanfTime += afterDanf-beforeDanf;
+
+            long beforeTrivial = System.currentTimeMillis();
+            tanf.addEdges(edges);
+            long afterTrivial = System.currentTimeMillis();
+            totalTrivialTime += afterTrivial-beforeTrivial;
+            added += bulkSize;
+
+            writer.println(added + " " + (float)added/totalDanfTime + " " + Utils.getMemoryUsage(danf)/bytesPerGigaByte + " " + (float)added/totalTrivialTime + " " + Utils.getMemoryUsage(tanf)/bytesPerGigaByte + " " + (afterTrivial-start) + " " + added + " " + graph.getNumberOfNodes());
+            System.out.println(added + " edges, " + (float)added/totalDanfTime*1000 + " Danf DPS, " +
+                    (float)Utils.getMemoryUsage(danf)/bytesPerGigaByte + "GB DANF memory, " + (float)added/totalTrivialTime*1000 + " Trivial DPS, " +
+                    (float)Utils.getMemoryUsage(tanf)/bytesPerGigaByte + "GB trivial memory, " + (afterTrivial-start)/1000 + "s total, " + added + " " + graph.getNumberOfNodes());
+
+            bulkSize *= 2;
+
+        }
+
+
+        danf.close();
+
+        writer.close();
+    }
 
     /**
      * Benchmarks the time to insert edges into Danf using a real graph.
@@ -552,7 +612,7 @@ public class Benchmarks {
      * @throws IOException
      * @throws InterruptedException
      */
-    private static void insertEdgesIntoDanf(int edgesToAdd, int bulkSize, IGraph graph, DANF danf, PrintWriter writer) throws IOException, InterruptedException {
+    private static void insertEdgesIntoDanf(int edgesToAdd, int bulkSize, IGraph graph, DynamicNeighborhoodFunction danf, PrintWriter writer) throws IOException, InterruptedException {
         int  added = 0;
         long lastTime = System.currentTimeMillis();
         long startTime = lastTime;
@@ -568,7 +628,7 @@ public class Benchmarks {
 
             long currentTime = System.currentTimeMillis();
             printAndLogStatistics(writer, added, lastTime, startTime, bulkSize, currentTime, graph);
-            lastTime = currentTime;
+            lastTime = System.currentTimeMillis();
         }
 
         danf.close();
@@ -630,7 +690,8 @@ public class Benchmarks {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Benchmarks.benchmarkEdgeInsertionsDanfReal();
+        //Benchmarks.benchmarkEdgeInsertionsDanfReal();
+        compareDANFToTrivial();
         //Benchmarks.benchmarkDVCInsertionsSimluated();
         //Benchmarks.benchmarkDVCInsertionsReal();
         //Benchmarks.benchmarkDVCDeletionsSimulated();

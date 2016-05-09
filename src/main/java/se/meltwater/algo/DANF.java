@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  *
  */
-public class DANF {
+public class DANF implements DynamicNeighborhoodFunction{
 
     private IGraph graph;
     private IGraph graphTranspose;
@@ -125,7 +125,7 @@ public class DANF {
      * @param edges
      * @throws InterruptedException
      */
-    public void addEdges(Edge ... edges) throws InterruptedException {
+    public void addEdges(Edge ... edges)  {
         Map<Long, IDynamicVertexCover.AffectedState> affectedNodes = new HashMap<>();
 
         Edge[] flippedEdges = new Edge[edges.length];
@@ -374,26 +374,32 @@ public class DANF {
      * @param edges
      * @throws InterruptedException
      */
-    private void propagate(Edge ... edges) throws InterruptedException {
+    private void propagate(Edge ... edges) {
 
-        int partitionSize = 5000;
-        PropagationTraveler[] travelers = new PropagationTraveler[Math.min(partitionSize,edges.length)];
-        long[] fromNodes = new long[Math.min(partitionSize,edges.length)];
-        for (int i = 0,j = 0; i < edges.length ; i++,j++) {
-            travelers[j] = new PropagationTraveler(calculateHistory(edges[i].to));
-            fromNodes[j] = edges[i].from;
-            if(j == partitionSize-1) {
-                transposeMSBFS.breadthFirstSearch(fromNodes, propagateVisitor(), travelers);
-                if(edges.length-i-1 < partitionSize) {
-                    travelers = new PropagationTraveler[edges.length - i - 1];
-                    fromNodes = new long[edges.length - i - 1];
+        try {
+
+            int partitionSize = 5000;
+            PropagationTraveler[] travelers = new PropagationTraveler[Math.min(partitionSize, edges.length)];
+            long[] fromNodes = new long[Math.min(partitionSize, edges.length)];
+            for (int i = 0, j = 0; i < edges.length; i++, j++) {
+                travelers[j] = new PropagationTraveler(calculateHistory(edges[i].to));
+                fromNodes[j] = edges[i].from;
+                if (j == partitionSize - 1) {
+                    transposeMSBFS.breadthFirstSearch(fromNodes, propagateVisitor(), travelers);
+                    if (edges.length - i - 1 < partitionSize) {
+                        travelers = new PropagationTraveler[edges.length - i - 1];
+                        fromNodes = new long[edges.length - i - 1];
+                    }
+                    j = -1;
                 }
-                j = -1;
             }
-        }
 
-        if(fromNodes.length > 0) {
-            transposeMSBFS.breadthFirstSearch(fromNodes, propagateVisitor(), travelers);
+            if (fromNodes.length > 0) {
+                transposeMSBFS.breadthFirstSearch(fromNodes, propagateVisitor(), travelers);
+            }
+
+        }catch (InterruptedException e){
+            throw new RuntimeException("An error occurred when performing the breadth first search",e);
         }
 
     }
