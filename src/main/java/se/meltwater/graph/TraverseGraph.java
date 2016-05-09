@@ -147,11 +147,12 @@ public class TraverseGraph extends ImmutableGraph {
     private class TraverseIterator extends NodeIterator{
 
         long curPos = 0;
-        long node = 0;
+        long node = -1;
         long out = 0;
 
         public TraverseIterator(long from){
-            node = from-1;
+            if(from != 0)
+                skip(from);
         }
 
         public long getPosition(){

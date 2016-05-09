@@ -106,7 +106,7 @@ public class HyperLolLolCounterArray implements Serializable, Cloneable {
     /** The mask OR'd with the output of the hash function so that {@link Long#numberOfTrailingZeros(long)} does not return too large a value. */
     private long sentinelMask;
     /** Whether counters are aligned to longwords. */
-    protected final boolean longwordAligned;
+    public final boolean longwordAligned;
     /** A mask for the residual bits of a counter (the {@link #counterSize} <code>%</code> {@link Long#SIZE} lowest bits). */
     protected final long counterResidualMask;
     /** A mask containing a one in the most significant bit of each register (i.e., in positions of the form {@link #registerSize registerSize * (i + 1) - 1}). */
