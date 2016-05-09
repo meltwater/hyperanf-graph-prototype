@@ -40,7 +40,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         this.graph = graph;
 
         long maxNode = graph.getNumberOfNodes();
-        maximalMatching = LongBigArrays.newBigArray(maxNode);
+        maximalMatching = LongBigArrays.newBigArray(Math.max(maxNode, 1));
         LongBigArrays.fill(maximalMatching, -1);
         maximalMatchingLength = LongBigArrays.length(maximalMatching);
 
@@ -241,7 +241,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
 
     private void addEdgeToMaximalMatching(Edge edge) {
         if(edge.from >= maximalMatchingLength) {
-            maximalMatching = LongBigArrays.grow(maximalMatching, (edge.from + 1));
+            maximalMatching = LongBigArrays.ensureCapacity(maximalMatching, getNewLength(maximalMatchingLength, edge.from + 1, resizeFactor));
             long newLength = LongBigArrays.length(maximalMatching);
             LongBigArrays.fill(maximalMatching, maximalMatchingLength, newLength, -1);
             maximalMatchingLength = newLength;
@@ -275,12 +275,15 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         long limit = vertexCover.length();
 
         if (limit < largestNode + 1) {
-            long minimalIncreaseSize = largestNode + 1 - limit;
-            double resizePow = Math.ceil(Math.log((limit + minimalIncreaseSize) / (float)limit ) * (1/Math.log(resizeFactor)));
-            long newLimit = (long)(limit * Math.pow(resizeFactor, resizePow));
-
+            long minimalNewLength = largestNode + 1;
+            long newLimit = getNewLength(vertexCover.length(), minimalNewLength, resizeFactor);
             vertexCover.length(newLimit);
         }
+    }
+
+    private long getNewLength(long oldLength, long minNewLength, float resizeFactor) {
+        double resizePow = Math.max(Math.ceil(Math.log(minNewLength / (double)oldLength ) * (1 / Math.log(resizeFactor))), resizeFactor);
+        return (long)(oldLength * Math.pow(resizeFactor, resizePow));
     }
 
     @Override
