@@ -39,21 +39,27 @@ public class ImmutableGraphWrapper extends AGraph{
     private int thisID;
     private int fileVersion = 0;
 
-    private int unionVsGraphMemoryRatioThreashold = 2;
-    private final int dataStructureOverheadFactor = 10;
+    private float unionVsGraphMemoryRatioThreashold ;
+    private final int dataStructureOverheadFactor = 11;
     private long graphHeapUsageBytes;
     private long additionalGraphHeapUsageBytes;
 
-
     public ImmutableGraphWrapper(ImmutableGraph graph) {
+        this(graph, 8.0f);
+    }
+
+    public ImmutableGraphWrapper(ImmutableGraph graph, float unionVsGraphMemoryRatioThreashold) {
         thisID = graphID++;
         additionalEdges = new SimulatedGraph();
         originalGraph = graph;
         this.graph = graph;
+        this.unionVsGraphMemoryRatioThreashold = unionVsGraphMemoryRatioThreashold;
 
         graphHeapUsageBytes = Utils.getMemoryUsage(graph);
         additionalGraphHeapUsageBytes = Utils.getMemoryUsage(additionalEdges);
     }
+
+
 
     public void close(){
         if(thisPath != null){
@@ -191,7 +197,7 @@ public class ImmutableGraphWrapper extends AGraph{
 
     @Override
     public IGraph copy(){
-        return new ImmutableGraphWrapper(graph.copy());
+        return new ImmutableGraphWrapper(graph.copy(), unionVsGraphMemoryRatioThreashold);
     }
 
     @Override
@@ -235,7 +241,7 @@ public class ImmutableGraphWrapper extends AGraph{
         try {
             ImmutableGraph transpose = Transform.transposeOffline(graph, (int) graph.numNodes(), null, new ProgressLogger());
 
-            ImmutableGraphWrapper transposeWrapper = new ImmutableGraphWrapper(transpose);
+            ImmutableGraphWrapper transposeWrapper = new ImmutableGraphWrapper(transpose, unionVsGraphMemoryRatioThreashold);
             transposeWrapper.storeGraphs(transpose);
 
             return transposeWrapper;
@@ -243,6 +249,10 @@ public class ImmutableGraphWrapper extends AGraph{
             e.printStackTrace();
             return null;
         }
+    }
+
+    public long getHeapUsageBytes() {
+        return Utils.getMemoryUsage(originalGraph) + Utils.getMemoryUsage(additionalEdges);
     }
 
     @Override
