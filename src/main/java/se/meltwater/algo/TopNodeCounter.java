@@ -28,6 +28,8 @@ public class TopNodeCounter {
 
     private HashMap<Long, Double> updatedNodesWithValueBeforeUpdate;
     private HashMap<Long, Double> updatedNodesWithValueAfterUpdate;
+    private HashMap<Long, Double> rapidlyChangingNodes;
+
     private long timeOfLastUpdate;
     private final long updateIntervalms;
     private final double percentageChangeLimit;
@@ -83,6 +85,7 @@ public class TopNodeCounter {
         nodesSortedByValue = new BoundedTreeSet<>(counterCapacity ,nodeScoreComparator());
         updatedNodesWithValueBeforeUpdate = new HashMap<>();
         updatedNodesWithValueAfterUpdate = new HashMap<>();
+        rapidlyChangingNodes = new HashMap<>();
         timeOfLastUpdate = System.currentTimeMillis();
 
         pl.start();
@@ -108,6 +111,16 @@ public class TopNodeCounter {
         if(currentTime - timeOfLastUpdate >= updateIntervalms) {
             mergeNodeSets();
             TreeSet<Pair<Double, Long>> nodesWithPercentageChange = getRapidlyChangingNodes();
+
+            nodesWithPercentageChange.stream().forEach(pair -> {
+                Double value = rapidlyChangingNodes.get(pair.getValue());
+                if(value == null) {
+                    rapidlyChangingNodes.put(pair.getValue(), pair.getKey());
+                } else {
+                    rapidlyChangingNodes.put(pair.getValue(), pair.getKey() * value);
+                }
+            });
+
             timeOfLastUpdate = currentTime;
 
             if(rapidChangeCallback != null) {
@@ -115,6 +128,13 @@ public class TopNodeCounter {
             }
         }
     }
+
+    public HashMap<Long, Double> getRapidlyChangedNodes() {
+        HashMap<Long, Double> ret = rapidlyChangingNodes;
+        rapidlyChangingNodes = new HashMap<>();
+        return ret;
+    }
+
 
     public void updateNodeSetsBefore(Edge ... edges) {
         insertUpdatedValuesToTemporalSet(updatedNodesWithValueBeforeUpdate, false, edges);
