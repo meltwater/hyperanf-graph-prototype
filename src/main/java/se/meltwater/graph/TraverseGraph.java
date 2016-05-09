@@ -243,6 +243,7 @@ public class TraverseGraph extends ImmutableGraph {
                 if(e.to != prevToNode){
                     addNeighbor(e.to);
                 }
+                edgesLeft--;
             }
             length = i;
             LongBigArrays.set(newNodes,outIndex,outDegree);
