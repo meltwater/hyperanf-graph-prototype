@@ -15,7 +15,11 @@ import java.io.IOException;
 import java.util.function.BiConsumer;
 
 /**
- * TODO Class description
+ * A dynamic approximate neighborhood function.
+ *
+ * <b>Warning:</b> This implementation is very slow and was only implemented to be compared
+ * to DANF. Use DANF if you want to calculate the approximate neighborhood function dynamically.
+ * @see DANF
  *
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
@@ -26,10 +30,32 @@ public class TrivialDynamicANF implements DynamicNeighborhoodFunction{
     private HyperLolLolCounterArray counters;
     private IGraph graph, transposeGraph;
 
+    /**
+     *
+     * <b>Warning:</b> This implementation is very slow and was only implemented to be compared
+     * to DANF. Use DANF if you want to calculate the approximate neighborhood function dynamically.
+     *
+     * @see DANF
+     *
+     * @param h
+     * @param log2m
+     * @param graph
+     */
     public TrivialDynamicANF(int h, int log2m, IGraph graph){
         this(h,log2m,graph, Util.randomSeed());
     }
 
+    /**
+     *
+     * <b>Warning:</b> This implementation is very slow and was only implemented to be compared
+     * to DANF. Use DANF if you want to calculate the approximate neighborhood function dynamically.
+     *
+     * @see DANF
+     *
+     * @param h
+     * @param log2m
+     * @param graph
+     */
     public TrivialDynamicANF(int h, int log2m, IGraph graph, long seed){
 
         this.graph = graph;
@@ -52,14 +78,47 @@ public class TrivialDynamicANF implements DynamicNeighborhoodFunction{
         return Utils.getMemoryUsage(counters) + graph.getMemoryUsageBytes() + transposeGraph.getMemoryUsageBytes();
     }
 
+
+    /**
+     *
+     * Returns the graph which the neighborhood function is calculated on.
+     *
+     * <b>Warning:</b> This implementation is very slow and was only implemented to be compared
+     * to DANF. Use DANF if you want to calculate the approximate neighborhood function dynamically.
+     *
+     * @see DANF
+     *
+     */
     public IGraph getGraph(){
         return graph;
     }
 
+    /**
+     *
+     * Returns the approximate neighborhood function of the given node
+     *
+     * <b>Warning:</b> This implementation is very slow and was only implemented to be compared
+     * to DANF. Use DANF if you want to calculate the approximate neighborhood function dynamically.
+     *
+     * @see DANF
+     *
+     * @param node
+     */
     public double count(long node){
         return counters.count(node);
     }
 
+    /**
+     *
+     * Adds the given edges to the graph and updates the neighborhood function.
+     *
+     * <b>Warning:</b> This implementation is very slow and was only implemented to be compared
+     * to DANF. Use DANF if you want to calculate the approximate neighborhood function dynamically.
+     *
+     * @see DANF
+     *
+     * @param edges
+     */
     public void addEdges(Edge... edges){
         Edge[] flipped = new Edge[edges.length];
         long maxNode = 0;
@@ -88,7 +147,7 @@ public class TrivialDynamicANF implements DynamicNeighborhoodFunction{
     @Override
     public void close() {}
 
-    public void addEdge(Edge edge){
+    private void addEdge(Edge edge){
         long[][] toAdd = collectHistory(edge.to);
         propagateHistory(edge.from,toAdd);
     }
@@ -121,7 +180,7 @@ public class TrivialDynamicANF implements DynamicNeighborhoodFunction{
                 long node = queue.dequeueLong();
                 onVisit.accept(node,i);
 
-                if(i+1 <= h) {
+                if(i+1 < h) {
                     NodeIterator nodeIt = graph.getNodeIterator(node);
                     nodeIt.nextLong();
                     long degree = nodeIt.outdegree();
