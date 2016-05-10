@@ -4,6 +4,7 @@ import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.logging.ProgressLogger;
+import se.meltwater.utils.Utils;
 
 import java.io.IOException;
 import java.util.*;
@@ -184,6 +185,11 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public long getMemoryUsageBytes() {
+        return Utils.getMemoryUsage(this);
     }
 
     private static class SimulatedGraphNodeIterator extends NodeIterator{

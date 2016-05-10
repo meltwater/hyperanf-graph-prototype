@@ -30,7 +30,7 @@ public class Utils {
 
 
 
-    public static long getMemoryUsage(Object obj) {
+    public static long getMemoryUsage(Object ... obj) {
         return MemoryUtil.deepMemoryUsageOf(obj, MemoryUtil.VisibilityFilter.ALL);
     }
 }

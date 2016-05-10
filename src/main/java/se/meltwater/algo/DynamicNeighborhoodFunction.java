@@ -13,4 +13,6 @@ public interface DynamicNeighborhoodFunction {
     void addEdges(Edge... edges);
     void close();
 
+    long getMemoryUsageBytes();
+
 }

@@ -9,6 +9,7 @@ import it.unimi.dsi.logging.ProgressLogger;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
+import se.meltwater.utils.Utils;
 
 import java.io.IOException;
 import java.util.function.BiConsumer;
@@ -44,6 +45,11 @@ public class TrivialDynamicANF implements DynamicNeighborhoodFunction{
         }
         counters = hb.getCounter();
 
+    }
+
+    @Override
+    public long getMemoryUsageBytes() {
+        return Utils.getMemoryUsage(counters) + graph.getMemoryUsageBytes() + transposeGraph.getMemoryUsageBytes();
     }
 
     public IGraph getGraph(){

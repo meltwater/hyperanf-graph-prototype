@@ -46,7 +46,7 @@ public class Benchmarks {
     private static int added = 0;
     private static long lastTime;
 
-    final static String graphFolder = "files/";
+    final static String graphFolder = "testGraphs/";
     final static String dataFolder = "files/";
 
 
@@ -253,9 +253,9 @@ public class Benchmarks {
             addedEdges += bulkSize;
 
             if(addedEdges % (maxAddedEdges / nrSamples) == 0 ) {
-                float storedGraphSizeGigaBytes = graphStored.getHeapUsageBytes() / (float) bytesPerGigaByte;
-                float alwaysUnionGraphSizeGigaBytes = graphAlwaysUnion.getHeapUsageBytes() / (float) bytesPerGigaByte;
-                float sometimesUnionGraphSizeGigaBytes = graphSometimesUnion.getHeapUsageBytes() / (float) bytesPerGigaByte;
+                float storedGraphSizeGigaBytes = graphStored.getMemoryUsageBytes() / (float) bytesPerGigaByte;
+                float alwaysUnionGraphSizeGigaBytes = graphAlwaysUnion.getMemoryUsageBytes() / (float) bytesPerGigaByte;
+                float sometimesUnionGraphSizeGigaBytes = graphSometimesUnion.getMemoryUsageBytes() / (float) bytesPerGigaByte;
 
                 long nrArcs = 0;
 
@@ -563,8 +563,8 @@ public class Benchmarks {
 
         final int log2m = 7;
         final int h = 3;
-        final int edgesToAdd =   100+200+400+800;
-        int bulkSize =      100;
+        final int maxBulkSize = 6400;
+        int bulkSize =      640;
 
         System.out.println("Loading graph");
         IGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
@@ -574,9 +574,9 @@ public class Benchmarks {
         TrivialDynamicANF tanf = new TrivialDynamicANF(h,log2m,graph2);
 
         PrintWriter writer = new PrintWriter(dataFile);
-        writer.println("#" + dateString + " " + graphName + " " + edgesToAdd + " edges will be inserted into DANF in bulks of " +
+        writer.println("%" + dateString + " " + graphName + " " + maxBulkSize + " edges will be inserted into DANF in bulks of " +
                 bulkSize + ". The time measured is the time to insert " + bulkSize + " edges.; h is set to " + h + " and log2m is " + log2m + ";");
-        writer.println("#Modifications DanfDPS DanfMemory TrivialDPS TrivialMemory ElapsedTime nrArcs nrNodes");
+        writer.println("%BulkSize DanfEPS DanfMemory TrivialEPS TrivialMemory ElapsedTime nrArcs nrNodes");
 
         int  added = 0;
         long totalDanfTime = 0, totalTrivialTime = 0, start = System.currentTimeMillis();
@@ -584,7 +584,7 @@ public class Benchmarks {
         Edge[] edges;
 
         System.out.println("Starting edge insertions");
-        while(added < edgesToAdd) {
+        while(bulkSize <= maxBulkSize) {
             edges = new Edge[bulkSize];
             generateEdges(graph.getNumberOfNodes(), bulkSize, edges);
 
@@ -599,12 +599,15 @@ public class Benchmarks {
             totalTrivialTime += afterTrivial-beforeTrivial;
             added += bulkSize;
 
-            writer.println(added + " " + (float)added/totalDanfTime + " " + Utils.getMemoryUsage(danf)/bytesPerGigaByte + " " + (float)added/totalTrivialTime + " " + Utils.getMemoryUsage(tanf)/bytesPerGigaByte + " " + (afterTrivial-start) + " " + added + " " + graph.getNumberOfNodes());
-            System.out.println(added + " edges, " + (float)added/totalDanfTime*1000 + " Danf DPS, " +
-                    (float)Utils.getMemoryUsage(danf)/bytesPerGigaByte + "GB DANF memory, " + (float)added/totalTrivialTime*1000 + " Trivial DPS, " +
-                    (float)Utils.getMemoryUsage(tanf)/bytesPerGigaByte + "GB trivial memory, " + (afterTrivial-start)/1000 + "s total, " + added + " " + graph.getNumberOfNodes());
+            writer.println(bulkSize + " " + (float)added/totalDanfTime*1000 + " " + danf.getMemoryUsageBytes()/(float)bytesPerGigaByte
+                    + " " + (float)added/totalTrivialTime*1000 + " " + tanf.getMemoryUsageBytes()/(float)bytesPerGigaByte
+                    + " " + (afterTrivial-start) + " " + added + " " + graph.getNumberOfNodes());
+            writer.flush();
+            System.out.println(bulkSize + " edges, " + (float)added/totalDanfTime*1000 + " Danf DPS, " +
+                    (float)danf.getMemoryUsageBytes()/bytesPerGigaByte + "GB DANF memory, " + (float)added/totalTrivialTime*1000 + " Trivial DPS, " +
+                    (float)tanf.getMemoryUsageBytes()/bytesPerGigaByte + "GB trivial memory, " + (afterTrivial-start)/1000 + "s total, " + added + " " + graph.getNumberOfNodes());
 
-            bulkSize *= 2;
+            bulkSize += 640;
 
         }
 
@@ -736,7 +739,7 @@ public class Benchmarks {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         //Benchmarks.benchmarkEdgeInsertionsDanfReal();
-        compareDANFToTrivial();
+        //compareDANFToTrivial();
         //Benchmarks.benchmarkDVCInsertionsSimluated();
         //Benchmarks.benchmarkDVCInsertionsReal();
         //Benchmarks.benchmarkDVCDeletionsSimulated();
@@ -746,3 +749,4 @@ public class Benchmarks {
         //Benchmarks.compareSimulatedAndTraverseGraph();
     }
 }
+v

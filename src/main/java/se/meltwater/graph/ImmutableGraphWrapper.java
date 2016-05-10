@@ -251,7 +251,8 @@ public class ImmutableGraphWrapper extends AGraph{
         }
     }
 
-    public long getHeapUsageBytes() {
+    @Override
+    public long getMemoryUsageBytes() {
         return Utils.getMemoryUsage(originalGraph) + Utils.getMemoryUsage(additionalEdges);
     }
 

@@ -57,6 +57,8 @@ public interface IGraph {
         return null;
     }
 
+    public long getMemoryUsageBytes();
+
 
     /**
      * Iterates all edges in the graph and calls the lambda function for each edge.

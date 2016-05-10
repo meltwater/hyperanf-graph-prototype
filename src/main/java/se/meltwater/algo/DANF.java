@@ -8,6 +8,7 @@ import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
 import se.meltwater.hyperlolol.HyperLolLolCounterArray;
+import se.meltwater.utils.Utils;
 import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
@@ -45,6 +46,10 @@ public class DANF implements DynamicNeighborhoodFunction{
     private boolean closed = false;
 
     private final int STATIC_LOLOL = 0;
+
+    public long getMemoryUsageBytes() {
+        return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes() + Utils.getMemoryUsage(vc, counterIndex, history, transposeMSBFS);
+    }
 
     public DANF(int h, int log2m, IGraph graph){
         this(new DynamicVertexCover(graph),h,log2m,graph,Util.randomSeed());
