@@ -48,7 +48,9 @@ public class DANF implements DynamicNeighborhoodFunction{
     private final int STATIC_LOLOL = 0;
 
     public long getMemoryUsageBytes() {
-        return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes() + Utils.getMemoryUsage(vc, counterIndex, history, transposeMSBFS);
+        return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes() +
+                Utils.getMemoryUsage(vc, counterIndex, history) +
+                transposeMSBFS.getMemoryUsageBytes(trav -> (long)((PropagationTraveler)trav).bits.length*counterLongWords*Long.BYTES);
     }
 
     public DANF(int h, int log2m, IGraph graph){
@@ -77,7 +79,7 @@ public class DANF implements DynamicNeighborhoodFunction{
             insertNodeToCounterIndex(node);
         }
 
-        HyperBoll hyperBoll = new HyperBoll(graph,graphTranspose,log2m,seed, new ProgressLogger());
+        HyperBoll hyperBoll = new HyperBoll(graph,graphTranspose,log2m,seed/*, new ProgressLogger()*/);
         hyperBoll.init();
         try {
             for (int i = 1; i <= h; i++) {
@@ -410,7 +412,7 @@ public class DANF implements DynamicNeighborhoodFunction{
     }
 
     private MSBreadthFirst.Visitor propagateVisitor(){
-        boolean needsSync = !history[STATIC_LOLOL].longwordAligned;
+        boolean needsSync = true;//!history[STATIC_LOLOL].longwordAligned;
         return (long visitNode, BitSet bfsVisits, BitSet seen, int d, MSBreadthFirst.Traveler t) -> {
             int depth = d + 1;
 

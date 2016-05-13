@@ -1,24 +1,31 @@
 package se.meltwater.bfs;
 
+import com.javamex.classmexer.MemoryUtil;
+import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
+import it.unimi.dsi.logging.ProgressLogger;
 import se.meltwater.graph.IGraph;
+import se.meltwater.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 
 /**
- * @author Simon Lindhén
- * @author Johan Nilsson Hansen
  *
  * A class to perform Multi-source Breadth-first searches on graphs using the algorithm
  * developed in the paper: "The More the Merrier: Efficient Multi-Source Graph Traversal"
+ *
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
  */
 public class MSBreadthFirst {
 
@@ -52,6 +59,30 @@ public class MSBreadthFirst {
         this.graph = graph;
         threads = Runtime.getRuntime().availableProcessors();
         threadManager = Executors.newFixedThreadPool(threads, new MSBreadthFirstThreadFactory(threadFactoryID.getAndIncrement()));
+    }
+
+    public long getMemoryUsageBytes(Function<Traveler,Long> travelerSize){
+        long bytes = 0;
+        bytes += MemoryUtil.memoryUsageOf(travelers)+MemoryUtil.memoryUsageOf(travelersNext) + Utils.getMemoryUsage(visit,seen,visitNext);
+        HashSet<Traveler> uniqueTravs = new HashSet<>();
+        long totalTravs = 0;
+        if(hasTraveler) {
+            for (long i = 0; i < ObjectBigArrays.length(visit); i++) {
+                if(ObjectBigArrays.get(travelers,i) != null) {
+                    uniqueTravs.add(ObjectBigArrays.get(travelers, i));
+                    totalTravs++;
+                }
+                if(ObjectBigArrays.get(travelersNext,i) != null) {
+                    uniqueTravs.add(ObjectBigArrays.get(travelersNext, i));
+                    totalTravs++;
+                }
+            }
+            for (Traveler uniqueTrav : uniqueTravs) {
+                bytes += travelerSize.apply(uniqueTrav);
+            }
+            System.out.println(uniqueTravs.size() + " unique travelers out of " + totalTravs + ".");
+        }
+        return bytes;
     }
 
     /**
@@ -120,7 +151,7 @@ public class MSBreadthFirst {
                 temp = ObjectBigArrays.get(this.travelers,node);
                 temp = temp == null ? travelers[bfs] : temp.merge(travelers[bfs],0);
                 ObjectBigArrays.set(this.travelers,node,temp);
-                ObjectBigArrays.set(travelersNext,node,temp);
+                //ObjectBigArrays.set(travelersNext,node,temp);
             }
         }
 
@@ -316,15 +347,15 @@ public class MSBreadthFirst {
     }
 
     private void secondPhaseIterator(long startNode, long endNode){
-        BitSet visitN;
+        BitSet visitNextBits;
         for(long node = startNode; node < endNode ; node++) {
-            visitN = ObjectBigArrays.get(visitNext,node);
-            if(visitN == null || visitN.cardinality() == 0) continue;
+            visitNextBits = ObjectBigArrays.get(visitNext,node);
+            if(visitNextBits == null || visitNextBits.cardinality() == 0) continue;
 
             if(ObjectBigArrays.get(seen,node) == null)
                 ObjectBigArrays.set(seen,node,new BitSet(numSources));
-            visitN.andNot(ObjectBigArrays.get(seen,node));
-            ObjectBigArrays.get(seen,node).or(visitN);
+            visitNextBits.andNot(ObjectBigArrays.get(seen,node));
+            ObjectBigArrays.get(seen,node).or(visitNextBits);
         }
     }
 
