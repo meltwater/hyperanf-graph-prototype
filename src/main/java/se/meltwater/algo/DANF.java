@@ -47,11 +47,42 @@ public class DANF implements DynamicNeighborhoodFunction{
 
     private final int STATIC_LOLOL = 0;
 
+    public long getMemoryUsageGraphBytes() {
+        return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes();
+    }
+
+    public long getMemoryUsageCounterBytes() {
+         return Utils.getMemoryUsage(counterIndex) + Utils.getMemoryUsage(history);
+    }
+
+    public long getMemoryUsageVCBytes() {
+        return vc.getMemoryUsageBytes();
+    }
+
+    public long getMemoryUsageMsBfsBytes() {
+        return transposeMSBFS.getMemoryUsageBytes(trav -> (long)((PropagationTraveler)trav).bits.length*counterLongWords*Long.BYTES);
+    }
+
     public long getMemoryUsageBytes() {
+
+        long msbfsBytes = transposeMSBFS.getMemoryUsageBytes(trav -> (long)((PropagationTraveler)trav).bits.length*counterLongWords*Long.BYTES);
+        long otherBytes = Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes;
+
+        System.out.println("Ratio: " + msbfsBytes / (float)otherBytes);
+
+        System.out.println("Graph: " + graph.getMemoryUsageBytes() + ". transpose: " + graphTranspose.getMemoryUsageBytes() +
+                           ". vc: " + Utils.getMemoryUsage(vc) + ". counterIndex: " + Utils.getMemoryUsage(counterIndex) + ". history: " + Utils.getMemoryUsage(history) + ". " +
+                           "MSBFS: " + msbfsBytes +
+                           ". Ratio: " + (float)msbfsBytes/(Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes) +
+                           ". Ratio history:" + (float)Utils.getMemoryUsage(history)/((Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes)));
+
+        System.out.println("VC Size: " + vc.getVertexCoverSize() + ", Total nodes: " + graph.getNumberOfNodes() + ", ratio: " + vc.getVertexCoverSize() / (float)graph.getNumberOfNodes() );
+
         return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes() +
                 Utils.getMemoryUsage(vc, counterIndex, history) +
                 transposeMSBFS.getMemoryUsageBytes(trav -> (long)((PropagationTraveler)trav).bits.length*counterLongWords*Long.BYTES);
     }
+
 
     public DANF(int h, int log2m, IGraph graph){
         this(new DynamicVertexCover(graph),h,log2m,graph,Util.randomSeed());
@@ -385,7 +416,7 @@ public class DANF implements DynamicNeighborhoodFunction{
 
         try {
 
-            int partitionSize = 5000;
+            int partitionSize = 10000;
             PropagationTraveler[] travelers = new PropagationTraveler[Math.min(partitionSize, edges.length)];
             long[] fromNodes = new long[Math.min(partitionSize, edges.length)];
             for (int i = 0, j = 0; i < edges.length; i++, j++) {

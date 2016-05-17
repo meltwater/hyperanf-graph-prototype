@@ -27,4 +27,6 @@ public interface IDynamicVertexCover {
 
     long getVertexCoverSize();
 
+    long getMemoryUsageBytes();
+
 }

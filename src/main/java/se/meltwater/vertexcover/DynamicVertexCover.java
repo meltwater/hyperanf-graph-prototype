@@ -1,16 +1,15 @@
 package se.meltwater.vertexcover;
 
+import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import se.meltwater.graph.Edge;
 import se.meltwater.graph.IGraph;
+import se.meltwater.utils.Utils;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Simon Lindhén
@@ -48,6 +47,11 @@ public class DynamicVertexCover implements IDynamicVertexCover {
             insertEdge(edge);
             return null;
         });
+    }
+
+
+    public long getMemoryUsageBytes() {
+        return maximalMatchingLength * Long.BYTES + vertexCover.length() / Byte.SIZE;
     }
 
 

@@ -576,7 +576,7 @@ public class Benchmarks {
         PrintWriter writer = new PrintWriter(dataFile);
         writer.println("%" + dateString + " " + graphName + " " + maxBulkSize + " edges will be inserted into DANF in bulks of " +
                 bulkSize + ". The time measured is the time to insert " + bulkSize + " edges.; h is set to " + h + " and log2m is " + log2m + ";");
-        writer.println("%BulkSize DanfEPS DanfMemory TrivialEPS TrivialMemory ElapsedTime nrArcs nrNodes");
+        writer.println("%BulkSize DanfEPS DanfGraphMemory DanfCounterMemory DanfVcMemory DanfMsbfsMemory TrivialEPS TrivialMemory ElapsedTime nrArcs nrNodes");
 
         int  added = 0;
         long totalDanfTime = 0, totalTrivialTime = 0, start = System.currentTimeMillis();
@@ -599,26 +599,42 @@ public class Benchmarks {
             totalTrivialTime += afterTrivial-beforeTrivial;
             added += bulkSize;
 
-            writer.println(bulkSize + " " + (float)added/totalDanfTime*1000 + " " + danf.getMemoryUsageBytes()/(float)bytesPerGigaByte
-                    + " " + (float)added/totalTrivialTime*1000 + " " + tanf.getMemoryUsageBytes()/(float)bytesPerGigaByte
+            float danfGraphGB = danf.getMemoryUsageGraphBytes()/(float)bytesPerGigaByte ;
+            float danfCounterGB = danf.getMemoryUsageCounterBytes()/(float)bytesPerGigaByte;
+            float danfVCGB = danf.getMemoryUsageVCBytes() / (float) bytesPerGigaByte;
+            float danfMSBFSGB = danf.getMemoryUsageMsBfsBytes() / (float) bytesPerGigaByte;
+            float danfTotalMemory = danfGraphGB + danfCounterGB + danfVCGB + danfMSBFSGB;
+
+            /*float danfGraphGB = 0;
+            float danfCounterGB = 0;
+            float danfVCGB = 0;
+            float danfMSBFSGB = 0;
+            float danfTotalMemory = 0;*/
+
+            float danfEps = (float) added / totalDanfTime * 1000;
+            float trivialEps = (float) added / totalTrivialTime * 1000;
+
+            long totalTimeSeconds = (afterTrivial - start) / 1000;
+
+            writer.println(bulkSize + " " + danfEps + " " + danfGraphGB+ " " + danfCounterGB + " " + danfVCGB + " " + danfMSBFSGB
+                    + " " + trivialEps + " " + 0
                     + " " + (afterTrivial-start) + " " + added + " " + graph.getNumberOfNodes());
             writer.flush();
-            System.out.println(bulkSize + " edges, " + (float)added/totalDanfTime*1000 + " Danf DPS, " +
-                    (float)danf.getMemoryUsageBytes()/bytesPerGigaByte + "GB DANF memory, " + (float)added/totalTrivialTime*1000 + " Trivial DPS, " +
-                    (float)tanf.getMemoryUsageBytes()/bytesPerGigaByte + "GB trivial memory, " + (afterTrivial-start)/1000 + "s total, " + added + " " + graph.getNumberOfNodes());
+
+
+            System.out.println(bulkSize + " edges, " + danfEps + " Danf DPS, " +
+                    danfTotalMemory + "GB DANF memory, " + trivialEps + " Trivial DPS, " +
+                    tanf.getMemoryUsageBytes()/(float)bytesPerGigaByte + "GB trivial memory, " + totalTimeSeconds + "s total, " + added + " " + graph.getNumberOfNodes());
 
             bulkSize += 640;
-
         }
 
-
         danf.close();
-
         writer.close();
     }
 
     /**
-     * Benchmarks the time to insert edges into Danf using a real graph.
+     * Benchmarks the time to insert edges into Dvanf using a real graph.
      * @throws IOException
      * @throws InterruptedException
      */
