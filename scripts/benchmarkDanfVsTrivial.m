@@ -1,4 +1,4 @@
-data = load ('../files/DANFComparedToTrivial2016-05-16-10:43:13.data');
+data = load ('../files/DANFComparedToTrivial2016-05-17-09:48:41.data');
 
 pageWidth  = 426.79135;
 pageHeight = pageWidth / sqrt(2);
@@ -18,8 +18,8 @@ hold on;
 HP1(2) = plot(x, y2, 's-', 'color', [0.5, 0, 0],'markersize', 4, 'markerfacecolor', [0.5, 0, 0], 'displayname', 'Trivial' );
 hold off;
 
-set(HP1,'Linewidth', 2); 
-ylim([0, 4100]);
+set(HP1,'Linewidth', 2);    
+%ylim([0, 4100]);
 xlim([0,6400]);
 ax = gca;
 ax.XTick = [0, 3200, 6400];
@@ -51,8 +51,9 @@ HP2(5) = plot(x, y5, 's-', 'color', [0.5, 0, 0],'markersize', 4, 'markerfacecolo
 hold off;
 
 set(HP2,'Linewidth', 2); 
-ylim([0, 0.6]);
+ylim([0, 2.5]);
 xlim([0,6400]);
+xlabel('Bulk size');
 ax = gca;
 ax.XTick = [0, 3200, 6400];
 xlabel ('Bulk size', 'fontsize', 16);
@@ -66,16 +67,16 @@ set(gca, 'ticklength', [0.02, 0.05]);
 
 
 %BOTH
-set(gcf,'NextPlot','add');
-axes;
-h = title('It-2004' , 'fontsize', 16, 'interpreter', 'latex');
-set(gca,'Visible','off');
-set(h,'Visible','on'); 
+%set(gcf,'NextPlot','add');
+%axes;
+%h = title('In-2004' , 'fontsize', 16, 'interpreter', 'latex');
+%set(gca,'Visible','off');
+%set(h,'Visible','on'); 
 
 
 % PRINT PDF
 
-filename = 'BenchmarkDanfVsTrivial.pdf';
+filename = 'benchmarkDanfVsTrivial.pdf';
 
 set(Hfig , 'units', 'points', 'paperunits', 'points', 'paperposition',  [0, 0, pageWidth, pageHeight], 'papersize', [pageWidth, pageHeight], 'position', [0, 0, pageWidth, pageHeight], 'name', filename, 'filename', filename);
 
