@@ -67,7 +67,7 @@ public class MSBreadthFirst {
         HashSet<Traveler> uniqueTravs = new HashSet<>();
         long totalTravs = 0;
         if(hasTraveler) {
-            for (long i = 0; i < ObjectBigArrays.length(visit); i++) {
+            for (long i = 0; i < ObjectBigArrays.length(travelers); i++) {
                 if(ObjectBigArrays.get(travelers,i) != null) {
                     uniqueTravs.add(ObjectBigArrays.get(travelers, i));
                     totalTravs++;
@@ -294,11 +294,16 @@ public class MSBreadthFirst {
     }
 
     private void firstPhaseIterator(long startNode, long endNode, NodeIterator nodeIt){
-        long prevNode = startNode;
+        //Declaring all local variables to skip unnecessary reallocation
+        long prevNode = startNode, degree, neighbor;
+        Traveler nodeTraveler, toSet;
+        LazyLongIterator neighbors;
+        BitSet visitN, visitNeigh;
+        boolean wasNull;
         if(startNode < endNode)
             nodeIt.nextLong();
         for(long node = startNode; node < endNode; node++) {
-            BitSet visitN = ObjectBigArrays.get(visit,node);
+            visitN = ObjectBigArrays.get(visit,node);
             if (visitN == null || visitN.cardinality() == 0) continue;
 
             if (visitor != null) {
@@ -310,15 +315,18 @@ public class MSBreadthFirst {
             prevNode = node;
 
             visitHadContent.set(true);
-            LazyLongIterator neighbors = nodeIt.successors();
-            long degree = nodeIt.outdegree();
-            long neighbor;
-            BitSet visitNeigh;
+            neighbors = nodeIt.successors();
+            nodeTraveler = null;
+            if(hasTraveler) {
+                nodeTraveler = ObjectBigArrays.get(travelers, node);
+                nodeTraveler.markShouldClone();
+            }
+            degree = nodeIt.outdegree();
             for (long d = 0; d < degree; d++) {
                 neighbor = neighbors.nextLong();
 
                 visitNeigh = ObjectBigArrays.get(visitNext,neighbor);
-                boolean wasNull = visitNeigh == null;
+                wasNull = visitNeigh == null;
 
                 synchronized (wasNull ? this : ObjectBigArrays.get(visitNext,neighbor)) {
                     if(wasNull) {
@@ -330,9 +338,9 @@ public class MSBreadthFirst {
                     }
 
                     if(hasTraveler) {
-                        Traveler toSet = ObjectBigArrays.get(travelers,node);
+                        toSet = nodeTraveler;
                         if (visitNeigh.cardinality() != 0)
-                            toSet = toSet.merge(ObjectBigArrays.get(travelersNext,neighbor),iteration+1);
+                            toSet = ObjectBigArrays.get(travelersNext,neighbor).merge(toSet,iteration+1);
                         ObjectBigArrays.set(travelersNext,neighbor,toSet);
                     }
                     visitNeigh.or(visitN);
@@ -342,6 +350,8 @@ public class MSBreadthFirst {
                     }
                 }
             }
+            if(hasTraveler)
+                ObjectBigArrays.set(travelers,node,null);
 
         }
     }
@@ -384,7 +394,16 @@ public class MSBreadthFirst {
     /**
      * A traveler can be used to propagate data along with the BFS
      */
-    public interface Traveler{
+    public abstract static class Traveler{
+
+        private boolean shouldClone = false;
+
+        void markShouldClone(){ shouldClone = true; }
+
+        /**
+         * @return true if the object should be cloned on a merge.
+         */
+        protected boolean shouldClone(){ return shouldClone; }
 
         /**
          *
@@ -392,15 +411,18 @@ public class MSBreadthFirst {
          * called for the same node in parallel. As the MSBFS propagates its BFS's in bulk
          * the travelers has to merge when two travelers reach a node at the same time.
          *
-         * Note that the new traveler should not have the same reference as either this
-         * traveler or {@code mergeWith} as changes to these travelers would change
-         * the travelers that are at other nodes as well.
+         * If {@link Traveler#shouldClone()} returns true, a completely new traveler should be returned
+         * that does not have the same reference as this object nor {@code mergeWith}. This to prevent
+         * a change from occurring on a different node at the same time.
+         *
+         * If {@link Traveler#shouldClone()} returns false, it is safe to simply modify
+         * this object as the merged one and return this. <b>But do not modify {@code mergeWith}</b>
          *
          * @param mergeWith The other traveler arriving at a given node at the same time.
          * @param depth The current depth of the BFS
          * @return The merged traveler
          */
-        Traveler merge(Traveler mergeWith, int depth);
+        public abstract Traveler merge(Traveler mergeWith, int depth);
 
     }
 
