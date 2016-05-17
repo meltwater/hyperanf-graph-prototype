@@ -40,15 +40,73 @@ import java.util.stream.LongStream;
  */
 public class Benchmarks {
 
-    private static float chanceNewNode = 1.1f;
+    private static float chanceNewNode = 1.0f;
     private static long bytesPerGigaByte = 1024 * 1024 * 1024;
 
     private static int added = 0;
     private static long lastTime;
 
-    final static String graphFolder = "testGraphs/";
+    final static String graphFolder = "files/";
     final static String dataFolder = "files/";
 
+
+    public static void benchmarkDanfVsHanf() throws IOException {
+
+        final int log2m = 4;
+        final int h = 3;
+        int bulkSize = 20000;
+        final int bulkSizeIncrease = 20000;
+        final int maxBulkSize = 20000;
+        final long seed = 0L;
+
+
+        final String graphName = "it-2004";
+        final String graphFile = graphFolder + graphName;
+        final String dateString = getDateString();
+        final String dataFile  = dataFolder + "benchmarkDanfVsHanf" + dateString + ".data";
+
+        ImmutableGraphWrapper graph = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile));
+        ImmutableGraphWrapper graph2 = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile));
+
+
+        DANF danf = new DANF(h, log2m, graph , seed);
+
+        PrintWriter writer = new PrintWriter(dataFile);
+        writer.println("%" + dateString + " " + graphName + "; The time measured is the time to insert the edges in to DANF and to perform a complete recalculation of HBall");
+        writer.println("%BulkSize DANFTimeMs HBollTimeMs");
+
+        Edge[] edges;
+
+        System.out.println("Starting edge insertions");
+        while(bulkSize <= maxBulkSize) {
+            edges = new Edge[bulkSize];
+            generateEdges(graph.getNumberOfNodes(), bulkSize, edges);
+
+            System.out.println("Starting Danf");
+            long beforeDanf = System.currentTimeMillis();
+            danf.addEdges(edges);
+            long afterDanf = System.currentTimeMillis();
+            long danfTotalTime = afterDanf - beforeDanf;
+
+            System.out.println("Starting HBall");
+            long beforeHBALL = System.currentTimeMillis();
+            graph2.addEdges(edges);
+            HyperBoll hyperBoll = new HyperBoll(graph, log2m, seed);
+            hyperBoll.init();
+            for (int i = 1; i < h; i++) {
+                hyperBoll.run();
+            }
+            long afterHBALL = System.currentTimeMillis();
+            long HBallTotalTime = afterHBALL - beforeHBALL;
+            hyperBoll.close();
+
+            System.out.println("DANF Total: " + danfTotalTime + " ms, HBALL Total: " + HBallTotalTime + " ms.");
+            writer.println(bulkSize + " " + danfTotalTime + " " + HBallTotalTime);
+            writer.flush();
+
+            bulkSize += bulkSizeIncrease;
+        }
+    }
 
 
     /**
@@ -734,7 +792,7 @@ public class Benchmarks {
      * @param edges
      */
     private static void generateEdges(long currentMaxNode, int bulkSize, Edge[] edges) {
-        long maxNewNodes = (long)(currentMaxNode * chanceNewNode) + 100;
+        long maxNewNodes = (long)(currentMaxNode * chanceNewNode);
 
         for (int i = 0; i < bulkSize; i++) {
             long from = ThreadLocalRandom.current().nextLong(maxNewNodes );
