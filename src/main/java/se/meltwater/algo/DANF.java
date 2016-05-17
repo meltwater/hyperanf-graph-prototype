@@ -487,7 +487,7 @@ public class DANF implements DynamicNeighborhoodFunction{
         };
     }
 
-    private class PropagationTraveler implements MSBreadthFirst.Traveler{
+    private class PropagationTraveler extends MSBreadthFirst.Traveler{
         public long[][] bits;
 
         public PropagationTraveler(long[][] bits){
@@ -498,15 +498,16 @@ public class DANF implements DynamicNeighborhoodFunction{
         public MSBreadthFirst.Traveler merge(MSBreadthFirst.Traveler mergeWith, int d) {
 
                 int depth = d + 1;
-                long[][] clonedBits = new long[h + 1 - depth][counterLongWords];
+                long[][] clonedBits = shouldClone() ? new long[h + 1 - depth][counterLongWords] : bits;
                 PropagationTraveler otherTraveler = (PropagationTraveler) mergeWith;
 
                 for (int i = 0; i < clonedBits.length; i++) {
-                    clonedBits[i] = bits[i].clone();
+                    if(shouldClone())
+                        clonedBits[i] = bits[i].clone();
                     history[STATIC_LOLOL].max(clonedBits[i], otherTraveler.bits[i]);
                 }
 
-                return new PropagationTraveler(clonedBits);
+                return shouldClone() ? new PropagationTraveler(clonedBits) : this;
 
 
         }

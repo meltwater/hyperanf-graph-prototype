@@ -50,7 +50,7 @@ public class TestMSBFS {
             SimulatedGraph graph = TestUtils.genRandomGraph((int)numNodes);
             numNodes = graph.getNumberOfNodes();
             long sources[] = TestUtils.generateRandomNodes(numNodes,(int)numNodes,1);
-            MSBreadthFirst.Traveler t = (MSBreadthFirst.Traveler t1, int depth) ->  t1;
+            MSBreadthFirst.Traveler t = new DummyTraveler();
             MSBreadthFirst.Traveler[] travelers = Utils.repeat(t,sources.length, new MSBreadthFirst.Traveler[0]);
             AtomicBoolean noNull = new AtomicBoolean(true);
             MSBreadthFirst.Visitor v = (long x, BitSet y, BitSet z, int d, MSBreadthFirst.Traveler t2) -> {if(t2 == null) noNull.set(false);};
@@ -61,7 +61,12 @@ public class TestMSBFS {
         }
     }
 
-
+    public static class DummyTraveler extends MSBreadthFirst.Traveler{
+        @Override
+        public MSBreadthFirst.Traveler merge(MSBreadthFirst.Traveler mergeWith, int depth) {
+            return this;
+        }
+    }
 
     /**
      * Tests that a traveler merges once and only once for a graph where that should happen. Starts
@@ -127,7 +132,7 @@ public class TestMSBFS {
     /**
      * Used by {@link TestMSBFS#testOneMerge()} to keep track of the number of merges.
      */
-    private class CountMergesTraveler implements MSBreadthFirst.Traveler{
+    private class CountMergesTraveler extends MSBreadthFirst.Traveler{
         private int merges = 0;
         private AtomicInteger totMerges;
 
@@ -137,11 +142,18 @@ public class TestMSBFS {
 
         @Override
         public MSBreadthFirst.Traveler merge(MSBreadthFirst.Traveler mergeWith, int depth) {
-            CountMergesTraveler clone = new CountMergesTraveler(totMerges);
-            clone.merges = ((CountMergesTraveler)mergeWith).merges + merges + 1;
-            totMerges.incrementAndGet();
-            assertEquals(1,depth);
-            return clone;
+            if(shouldClone()) {
+                CountMergesTraveler clone = new CountMergesTraveler(totMerges);
+                clone.merges = ((CountMergesTraveler) mergeWith).merges + merges + 1;
+                totMerges.incrementAndGet();
+                assertEquals(1, depth);
+                return clone;
+            }else{
+                merges += ((CountMergesTraveler) mergeWith).merges + 1;
+                totMerges.incrementAndGet();
+                assertEquals(1,depth);
+                return this;
+            }
         }
     }
 
