@@ -57,7 +57,7 @@ public class MSBreadthFirst {
      */
     public MSBreadthFirst(IGraph graph){
         this.graph = graph;
-        threads = Runtime.getRuntime().availableProcessors();
+        threads = Runtime.getRuntime().availableProcessors() * 2;
         threadManager = Executors.newFixedThreadPool(threads, new MSBreadthFirstThreadFactory(threadFactoryID.getAndIncrement()));
     }
 
@@ -96,8 +96,8 @@ public class MSBreadthFirst {
 
     private BitSet[][] createBitsets(){
         BitSet[][] list = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.getNumberOfNodes());
-        for(long node = 0; node < graph.getNumberOfNodes() ; node++)
-            ObjectBigArrays.set(list,node,null);
+        /*for(long node = 0; node < graph.getNumberOfNodes() ; node++)
+            ObjectBigArrays.set(list,node,null);*/
         return list;
     }
 
