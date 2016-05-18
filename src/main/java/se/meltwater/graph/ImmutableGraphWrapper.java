@@ -129,6 +129,10 @@ public class ImmutableGraphWrapper extends AGraph{
         }
     }
 
+    public void setGraphHeapUsageBytes(long graphHeapUsageBytes) {
+        this.graphHeapUsageBytes = graphHeapUsageBytes;
+    }
+
     @Override
     /**
      * Add {@code edges} to the graph. The additional edges will be saved in an
@@ -242,6 +246,7 @@ public class ImmutableGraphWrapper extends AGraph{
             ImmutableGraph transpose = Transform.transposeOffline(graph, (int) graph.numNodes(), null, new ProgressLogger());
 
             ImmutableGraphWrapper transposeWrapper = new ImmutableGraphWrapper(transpose, unionVsGraphMemoryRatioThreashold);
+            transposeWrapper.setGraphHeapUsageBytes(this.graphHeapUsageBytes);
             transposeWrapper.storeGraphs(transpose);
 
             return transposeWrapper;
