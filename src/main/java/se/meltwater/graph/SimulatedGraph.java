@@ -105,14 +105,14 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
     }
 
     public boolean deleteEdge(Edge edge) {
-        AtomicBoolean wasRemoved = new AtomicBoolean(false);
-        iteratorNeighbors.computeIfPresent(edge.from,(from,toSet) -> {
-            wasRemoved.set(toSet.remove(edge.to));
-            return toSet.isEmpty() ? null : toSet;
-        });
-        if (wasRemoved.get())
-            numArcs--;
-        return wasRemoved.get();
+        Set<Long> neighbors = iteratorNeighbors.get(edge.from);
+        if(neighbors != null) {
+            boolean wasRemoved = neighbors.remove(edge.to);
+            if(wasRemoved)
+                numArcs--;
+            return wasRemoved;
+        }else
+            return false;
     }
 
     public Iterator<Long> getLongIterator(long node){
@@ -198,12 +198,9 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
             currentIndex = startAt-1;
             this.graph = graph;
             outdegree = -1;
-            iterator = graph.iteratorNeighbors.entrySet().iterator();
-            while(iterator.hasNext()){
+            iterator = graph.iteratorNeighbors.tailMap(currentIndex).entrySet().iterator();
+            if(iterator.hasNext())
                 entry = iterator.next();
-                if(entry.getKey() >= currentIndex)
-                    break;
-            }
 
         }
 
