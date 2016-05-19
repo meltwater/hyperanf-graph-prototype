@@ -304,11 +304,11 @@ public class MSBreadthFirst {
             nodeIt.nextLong();
         for(long node = startNode; node < endNode; node++) {
             visitN = ObjectBigArrays.get(visit,node);
-            if (visitN == null || visitN.cardinality() == 0) continue;
+            if (visitN == null || visitN.isEmpty()) continue;
 
             if (visitor != null) {
                 visitor.visit(node,visitN, ObjectBigArrays.get(seen,node),iteration, hasTraveler ? ObjectBigArrays.get(travelers,node) : null);
-                if(visitN.cardinality() == 0) continue;
+                if(visitN.isEmpty()) continue;
             }
 
             nodeIt.skip(node-prevNode);
@@ -339,7 +339,7 @@ public class MSBreadthFirst {
 
                     if(hasTraveler) {
                         toSet = nodeTraveler;
-                        if (visitNeigh.cardinality() != 0)
+                        if (!visitNeigh.isEmpty())
                             toSet = ObjectBigArrays.get(travelersNext,neighbor).merge(toSet,iteration+1);
                         ObjectBigArrays.set(travelersNext,neighbor,toSet);
                     }
@@ -360,7 +360,7 @@ public class MSBreadthFirst {
         BitSet visitNextBits;
         for(long node = startNode; node < endNode ; node++) {
             visitNextBits = ObjectBigArrays.get(visitNext,node);
-            if(visitNextBits == null || visitNextBits.cardinality() == 0) continue;
+            if(visitNextBits == null || visitNextBits.isEmpty()) continue;
 
             if(ObjectBigArrays.get(seen,node) == null)
                 ObjectBigArrays.set(seen,node,new BitSet(numSources));
