@@ -1,13 +1,13 @@
 package se.meltwater.graph;
 
-import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
+import it.unimi.dsi.big.webgraph.*;
+import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.logging.ProgressLogger;
 import se.meltwater.utils.Utils;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Simon Lindhén
@@ -97,13 +97,7 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
             addNode(edge.to);
         }
 
-        TreeSet<Long> neighbors = iteratorNeighbors.get(edge.from);
-
-        if(neighbors == null){
-            neighbors = new TreeSet<>();
-            iteratorNeighbors.put(edge.from,neighbors);
-        }
-        boolean wasAdded = neighbors.add(edge.to);
+        boolean wasAdded = iteratorNeighbors.computeIfAbsent(edge.from,k -> new TreeSet<>()).add(edge.to);
 
         if(wasAdded)
             numArcs++;
@@ -111,14 +105,14 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
     }
 
     public boolean deleteEdge(Edge edge) {
-        Set<Long> neighbors = iteratorNeighbors.get(edge.from);
-        if(neighbors != null) {
-            boolean wasRemoved = neighbors.remove(edge.to);
-            if(wasRemoved)
-                numArcs--;
-            return wasRemoved;
-        }else
-            return false;
+        AtomicBoolean wasRemoved = new AtomicBoolean(false);
+        iteratorNeighbors.computeIfPresent(edge.from,(from,toSet) -> {
+            wasRemoved.set(toSet.remove(edge.to));
+            return toSet.isEmpty() ? null : toSet;
+        });
+        if (wasRemoved.get())
+            numArcs--;
+        return wasRemoved.get();
     }
 
     public Iterator<Long> getLongIterator(long node){
@@ -197,11 +191,13 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
         private long currentIndex;
         private SimulatedGraph graph;
         private long outdegree;
+        private Map.Entry<Long,TreeSet<Long>> entry;
+        boolean reachedEnd = false;
 
         public SimulatedGraphNodeIterator(long startAt, SimulatedGraph graph){
             currentIndex = startAt-1;
             this.graph = graph;
-            outdegree = graph.getOutdegree(startAt);
+            outdegree = -1;
         }
 
         @Override
@@ -218,19 +214,29 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
         public long nextLong() {
             if(!hasNext())
                 return -1;
-            currentIndex++;
-            outdegree = graph.getOutdegree(currentIndex);
-            return currentIndex;
+
+            if(!reachedEnd && outdegree != 0) {
+                entry = graph.iteratorNeighbors.higherEntry(currentIndex);
+                if(entry == null)
+                    reachedEnd = true;
+            }
+            outdegree = reachedEnd || entry.getKey() != currentIndex+1 ? 0 : entry.getValue().size();
+            return ++currentIndex;
         }
 
         @Override
         public LazyLongIterator successors(){
-            return graph.getSuccessors(currentIndex);
+            if(outdegree == -1)
+                throw new IllegalStateException("nextLong never called");
+            return outdegree == 0 ?
+                    LazyLongIterators.EMPTY_ITERATOR :
+                    new SimulatedGraphSuccessorsIterator(entry.getValue().iterator());
+
         }
 
     }
 
-    private class SimulatedGraphSuccessorsIterator implements LazyLongIterator{
+    private static class SimulatedGraphSuccessorsIterator implements LazyLongIterator{
 
         Iterator<Long> it;
 
