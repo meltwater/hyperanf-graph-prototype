@@ -21,7 +21,7 @@ data/
 *.png
 octave*
 tmp*
-
+*.pdf
 
 # Maven files #
 target/

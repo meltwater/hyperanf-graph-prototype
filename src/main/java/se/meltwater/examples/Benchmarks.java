@@ -40,15 +40,73 @@ import java.util.stream.LongStream;
  */
 public class Benchmarks {
 
-    private static float chanceNewNode = 1.1f;
+    private static float chanceNewNode = 1.0f;
     private static long bytesPerGigaByte = 1024 * 1024 * 1024;
 
     private static int added = 0;
     private static long lastTime;
 
-    final static String graphFolder = "testGraphs/";
+    final static String graphFolder = "files/";
     final static String dataFolder = "files/";
 
+
+    public static void benchmarkDanfVsHanf() throws IOException {
+
+        final int log2m = 4;
+        final int h = 3;
+        int bulkSize = 20000;
+        final int bulkSizeIncrease = 20000;
+        final int maxBulkSize = 20000;
+        final long seed = 0L;
+
+
+        final String graphName = "it-2004";
+        final String graphFile = graphFolder + graphName;
+        final String dateString = getDateString();
+        final String dataFile  = dataFolder + "benchmarkDanfVsHanf" + dateString + ".data";
+
+        ImmutableGraphWrapper graph = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile));
+        ImmutableGraphWrapper graph2 = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile));
+
+
+        DANF danf = new DANF(h, log2m, graph , seed);
+
+        PrintWriter writer = new PrintWriter(dataFile);
+        writer.println("%" + dateString + " " + graphName + "; The time measured is the time to insert the edges in to DANF and to perform a complete recalculation of HBall");
+        writer.println("%BulkSize DANFTimeMs HBollTimeMs");
+
+        Edge[] edges;
+
+        System.out.println("Starting edge insertions");
+        while(bulkSize <= maxBulkSize) {
+            edges = new Edge[bulkSize];
+            generateEdges(graph.getNumberOfNodes(), bulkSize, edges);
+
+            System.out.println("Starting Danf");
+            long beforeDanf = System.currentTimeMillis();
+            danf.addEdges(edges);
+            long afterDanf = System.currentTimeMillis();
+            long danfTotalTime = afterDanf - beforeDanf;
+
+            System.out.println("Starting HBall");
+            long beforeHBALL = System.currentTimeMillis();
+            graph2.addEdges(edges);
+            HyperBoll hyperBoll = new HyperBoll(graph, log2m, seed);
+            hyperBoll.init();
+            for (int i = 1; i < h; i++) {
+                hyperBoll.run();
+            }
+            long afterHBALL = System.currentTimeMillis();
+            long HBallTotalTime = afterHBALL - beforeHBALL;
+            hyperBoll.close();
+
+            System.out.println("DANF Total: " + danfTotalTime + " ms, HBALL Total: " + HBallTotalTime + " ms.");
+            writer.println(bulkSize + " " + danfTotalTime + " " + HBallTotalTime);
+            writer.flush();
+
+            bulkSize += bulkSizeIncrease;
+        }
+    }
 
 
     /**
@@ -576,7 +634,7 @@ public class Benchmarks {
         PrintWriter writer = new PrintWriter(dataFile);
         writer.println("%" + dateString + " " + graphName + " " + maxBulkSize + " edges will be inserted into DANF in bulks of " +
                 bulkSize + ". The time measured is the time to insert " + bulkSize + " edges.; h is set to " + h + " and log2m is " + log2m + ";");
-        writer.println("%BulkSize DanfEPS DanfMemory TrivialEPS TrivialMemory ElapsedTime nrArcs nrNodes");
+        writer.println("%BulkSize DanfEPS DanfGraphMemory DanfCounterMemory DanfVcMemory DanfMsbfsMemory TrivialEPS TrivialMemory ElapsedTime nrArcs nrNodes");
 
         int  added = 0;
         long totalDanfTime = 0, totalTrivialTime = 0, start = System.currentTimeMillis();
@@ -599,26 +657,42 @@ public class Benchmarks {
             totalTrivialTime += afterTrivial-beforeTrivial;
             added += bulkSize;
 
-            writer.println(bulkSize + " " + (float)added/totalDanfTime*1000 + " " + danf.getMemoryUsageBytes()/(float)bytesPerGigaByte
-                    + " " + (float)added/totalTrivialTime*1000 + " " + tanf.getMemoryUsageBytes()/(float)bytesPerGigaByte
+            float danfGraphGB = danf.getMemoryUsageGraphBytes()/(float)bytesPerGigaByte ;
+            float danfCounterGB = danf.getMemoryUsageCounterBytes()/(float)bytesPerGigaByte;
+            float danfVCGB = danf.getMemoryUsageVCBytes() / (float) bytesPerGigaByte;
+            float danfMSBFSGB = danf.getMemoryUsageMsBfsBytes() / (float) bytesPerGigaByte;
+            float danfTotalMemory = danfGraphGB + danfCounterGB + danfVCGB + danfMSBFSGB;
+
+            /*float danfGraphGB = 0;
+            float danfCounterGB = 0;
+            float danfVCGB = 0;
+            float danfMSBFSGB = 0;
+            float danfTotalMemory = 0;*/
+
+            float danfEps = (float) added / totalDanfTime * 1000;
+            float trivialEps = (float) added / totalTrivialTime * 1000;
+
+            long totalTimeSeconds = (afterTrivial - start) / 1000;
+
+            writer.println(bulkSize + " " + danfEps + " " + danfGraphGB+ " " + danfCounterGB + " " + danfVCGB + " " + danfMSBFSGB
+                    + " " + trivialEps + " " + 0
                     + " " + (afterTrivial-start) + " " + added + " " + graph.getNumberOfNodes());
             writer.flush();
-            System.out.println(bulkSize + " edges, " + (float)added/totalDanfTime*1000 + " Danf DPS, " +
-                    (float)danf.getMemoryUsageBytes()/bytesPerGigaByte + "GB DANF memory, " + (float)added/totalTrivialTime*1000 + " Trivial DPS, " +
-                    (float)tanf.getMemoryUsageBytes()/bytesPerGigaByte + "GB trivial memory, " + (afterTrivial-start)/1000 + "s total, " + added + " " + graph.getNumberOfNodes());
+
+
+            System.out.println(bulkSize + " edges, " + danfEps + " Danf DPS, " +
+                    danfTotalMemory + "GB DANF memory, " + trivialEps + " Trivial DPS, " +
+                    tanf.getMemoryUsageBytes()/(float)bytesPerGigaByte + "GB trivial memory, " + totalTimeSeconds + "s total, " + added + " " + graph.getNumberOfNodes());
 
             bulkSize += 640;
-
         }
 
-
         danf.close();
-
         writer.close();
     }
 
     /**
-     * Benchmarks the time to insert edges into Danf using a real graph.
+     * Benchmarks the time to insert edges into Dvanf using a real graph.
      * @throws IOException
      * @throws InterruptedException
      */
@@ -718,7 +792,7 @@ public class Benchmarks {
      * @param edges
      */
     private static void generateEdges(long currentMaxNode, int bulkSize, Edge[] edges) {
-        long maxNewNodes = (long)(currentMaxNode * chanceNewNode) + 100;
+        long maxNewNodes = (long)(currentMaxNode * chanceNewNode);
 
         for (int i = 0; i < bulkSize; i++) {
             long from = ThreadLocalRandom.current().nextLong(maxNewNodes );
