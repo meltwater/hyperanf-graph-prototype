@@ -13,10 +13,7 @@ import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -99,6 +96,7 @@ public class DANF implements DynamicNeighborhoodFunction{
         history = new HyperLolLolCounterArray[h];
         this.graph = graph;
         this.graphTranspose = graph.transpose();
+
         transposeMSBFS = new MSBreadthFirst(graphTranspose);
 
         counterIndex = LongBigArrays.newBigArray(vc.getVertexCoverSize());
@@ -110,7 +108,7 @@ public class DANF implements DynamicNeighborhoodFunction{
             insertNodeToCounterIndex(node);
         }
 
-        HyperBoll hyperBoll = new HyperBoll(graph,graphTranspose,log2m,seed/*, new ProgressLogger()*/);
+        HyperBoll hyperBoll = new HyperBoll(graph,graphTranspose,log2m,seed);
         hyperBoll.init();
         try {
             for (int i = 1; i <= h; i++) {
@@ -414,10 +412,14 @@ public class DANF implements DynamicNeighborhoodFunction{
      * @throws InterruptedException
      */
     private void propagate(Edge ... edges) {
+        int partitionSize = 5000;
+
+        if(edges.length > partitionSize * 1.1) {
+            Arrays.sort(edges, (e1, e2) -> (int) (graph.getOutdegree(e1.from) - graph.getOutdegree(e2.from)));
+        }
 
         try {
 
-            int partitionSize = 10000;
             PropagationTraveler[] travelers = new PropagationTraveler[Math.min(partitionSize, edges.length)];
             long[] fromNodes = new long[Math.min(partitionSize, edges.length)];
             for (int i = 0, j = 0; i < edges.length; i++, j++) {
@@ -498,20 +500,16 @@ public class DANF implements DynamicNeighborhoodFunction{
         @Override
         public MSBreadthFirst.Traveler merge(MSBreadthFirst.Traveler mergeWith, int d) {
 
-                int depth = d + 1;
-                long[][] clonedBits = shouldClone() ? new long[h + 1 - depth][counterLongWords] : bits;
-                PropagationTraveler otherTraveler = (PropagationTraveler) mergeWith;
+            int depth = d + 1;
+            long[][] clonedBits = shouldClone() ? new long[h + 1 - depth][counterLongWords] : bits;
+            PropagationTraveler otherTraveler = (PropagationTraveler) mergeWith;
 
-                for (int i = 0; i < clonedBits.length; i++) {
-                    if(shouldClone())
-                        clonedBits[i] = bits[i].clone();
-                    history[STATIC_LOLOL].max(clonedBits[i], otherTraveler.bits[i]);
-                }
-
-                return shouldClone() ? new PropagationTraveler(clonedBits) : this;
-
-
+            for (int i = 0; i < clonedBits.length; i++) {
+                if(shouldClone())
+                    clonedBits[i] = bits[i].clone();
+                history[STATIC_LOLOL].max(clonedBits[i], otherTraveler.bits[i]);
+            }
+            return shouldClone() ? new PropagationTraveler(clonedBits) : this;
         }
     }
-
 }
