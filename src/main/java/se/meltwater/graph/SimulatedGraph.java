@@ -105,14 +105,14 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
     }
 
     public boolean deleteEdge(Edge edge) {
-        AtomicBoolean wasRemoved = new AtomicBoolean(false);
-        iteratorNeighbors.computeIfPresent(edge.from,(from,toSet) -> {
-            wasRemoved.set(toSet.remove(edge.to));
-            return toSet.isEmpty() ? null : toSet;
-        });
-        if (wasRemoved.get())
-            numArcs--;
-        return wasRemoved.get();
+        Set<Long> neighbors = iteratorNeighbors.get(edge.from);
+        if(neighbors != null) {
+            boolean wasRemoved = neighbors.remove(edge.to);
+            if(wasRemoved)
+                numArcs--;
+            return wasRemoved;
+        }else
+            return false;
     }
 
     public Iterator<Long> getLongIterator(long node){
@@ -191,13 +191,17 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
         private long currentIndex;
         private SimulatedGraph graph;
         private long outdegree;
-        private Map.Entry<Long,TreeSet<Long>> entry;
-        boolean reachedEnd = false;
+        private Map.Entry<Long,TreeSet<Long>> entry = null;
+        private Iterator<Map.Entry<Long,TreeSet<Long>>> iterator;
 
         public SimulatedGraphNodeIterator(long startAt, SimulatedGraph graph){
             currentIndex = startAt-1;
             this.graph = graph;
             outdegree = -1;
+            iterator = graph.iteratorNeighbors.tailMap(currentIndex).entrySet().iterator();
+            if(iterator.hasNext())
+                entry = iterator.next();
+
         }
 
         @Override
@@ -215,12 +219,10 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
             if(!hasNext())
                 return -1;
 
-            if(!reachedEnd && outdegree != 0) {
-                entry = graph.iteratorNeighbors.higherEntry(currentIndex);
-                if(entry == null)
-                    reachedEnd = true;
+            if(iterator.hasNext() && currentIndex == entry.getKey()){
+                entry = iterator.next();
             }
-            outdegree = reachedEnd || entry.getKey() != currentIndex+1 ? 0 : entry.getValue().size();
+            outdegree = entry == null || entry.getKey() != currentIndex+1 ? 0 : entry.getValue().size();
             return ++currentIndex;
         }
 
