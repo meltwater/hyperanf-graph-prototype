@@ -377,25 +377,26 @@ public class DANF implements DynamicNeighborhoodFunction{
      * @return
      */
     private long[][] calculateHistory(long node){
-        long[][] historyBits = new long[h + 1][counterLongWords];
+        long[][] historyBits = new long[h][counterLongWords];
         if(vc.isInVertexCover(node)) {
             history[STATIC_LOLOL].add(node, historyBits[0]);
-            for (int i = 1; i < h + 1; i++) {
+            for (int i = 1; i < h; i++) {
                 history[i-1].getCounter(getNodeIndex(node, i), historyBits[i]);
             }
         } else {
             LazyLongIterator successors = graph.getSuccessors(node);
             long degree = graph.getOutdegree(node);
 
-            for (int i = 0; i < h + 1; i++) {
+            for (int i = 0; i < h; i++) {
                 history[STATIC_LOLOL].add(node, historyBits[i]);
             }
 
             while(degree-- > 0 ) {
                 long neighbor = successors.nextLong();
 
-                history[STATIC_LOLOL].add(neighbor, historyBits[1]);
-                for (int i = 1; i < h; i++) {
+                if(h > 1)
+                    history[STATIC_LOLOL].add(neighbor, historyBits[1]);
+                for (int i = 1; i < h-1; i++) {
                     history[STATIC_LOLOL].add(neighbor, historyBits[i + 1]);
 
                     long[] neighborBits = new long[counterLongWords];
