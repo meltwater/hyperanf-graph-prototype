@@ -36,7 +36,7 @@ public class TestEffectPropagation {
 
     final float epsilon = 0.1f;
 
-    final int maxNumNodes = 5;
+    final int maxNumNodes = 100;
     int log2m;
     int h;
 
@@ -50,8 +50,8 @@ public class TestEffectPropagation {
     @Test
     public void testDANFSameAsHyperBallOnImmutableGraphs() throws IOException, InterruptedException {
         Random rand = new Random();
-        log2m = rand.nextInt(4)+4;
-        h = rand.nextInt(3)+1;
+        log2m = 4;//rand.nextInt(4)+4;
+        h = 3;//rand.nextInt(3)+1;
 
         BVGraph g1 = BVGraph.load("testGraphs/noBlocksUk");
         BVGraph g2 = BVGraph.load("testGraphs/wordassociationNoBlocks");
@@ -67,13 +67,12 @@ public class TestEffectPropagation {
         ImmutableGraphWrapper g1g = new ImmutableGraphWrapper(g1);
         testDANFSameAsHyperBall(g1g,additionalEdges,merged);
         g1g.close();
-
     }
 
 
     private void testDANFSameAsHyperBall(IGraph g1, Edge[] additionalEdges, IGraph mergedGraph) throws IOException, InterruptedException {
 
-        long seed = Util.randomSeed();
+        long seed = 0L;//Util.randomSeed();
         DANF danf = new DANF(h,log2m,g1,seed);
 
         danf.addEdges(additionalEdges);
@@ -115,6 +114,27 @@ public class TestEffectPropagation {
         }
     }
 
+    @Test
+    public void testDanfPropagatePruning() throws IOException {
+        long seed = 3901948997029758533L;
+        int h = 3;
+        int log2m = 5;
+
+        SimulatedGraph graph = new SimulatedGraph();
+        graph.addEdges(new Edge(2,1),new Edge(3,2));
+
+        DANF danf = new DANF(h, log2m, graph, seed);
+
+        Edge[] edgesToAdd = {new Edge(1,6),new Edge(2,4)};
+        danf.addEdges(edgesToAdd);
+
+        HyperBoll hyperBoll = new HyperBoll(danf.getGraph(),log2m, seed);
+        hyperBoll.run(h);
+        hyperBoll.close();
+        for (long i = 0; i < danf.getGraph().getNumberOfNodes(); i++) {
+            assertEquals("Node " + i, hyperBoll.getCounter().count(i), danf.count(i, h), epsilon);
+        }
+    }
 
     /**
      *
