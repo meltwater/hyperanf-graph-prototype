@@ -1,4 +1,5 @@
-data = load ('../files/DANFComparedToTrivial2016-05-17-09:48:41.data');
+data = load ('../benchmarkdata/DANFComparedToTrivial2016-05-24-10:18:44.data'); %h = 3
+%data =load('../benchmarkdata/DANFComparedToTrivial2016-05-17-09:48:41.data'); %h = 8
 
 pageWidth  = 426.79135;
 pageHeight = pageWidth / sqrt(2);
@@ -13,7 +14,7 @@ y1 = data(:,2); %DANF EPS
 y2 = data(:,7); %TRIVIAL EPS
 
 sp1 = subplot(1,2,1);
-HP1(1) = plot(x, y1, 'd-', 'color', [0, 0, 0.5],'markersize', 4, 'markerfacecolor', [0, 0, 0.5], 'displayname', 'DANF' );
+HP1(1) = plot(x, y1, 'o-', 'color', [0, 0, 0.5],'markersize', 4, 'markerfacecolor', [0, 0, 0.5], 'displayname', 'DANF' );
 hold on;
 HP1(2) = plot(x, y2, 's-', 'color', [0.5, 0, 0],'markersize', 4, 'markerfacecolor', [0.5, 0, 0], 'displayname', 'Trivial' );
 hold off;
@@ -43,15 +44,34 @@ y3 = data(:,5); %DANF VC MEM
 y4 = data(:,6); %DANF MSBFS MEM
 y5 = data(:,8); %TRIVIAL MEM
 
+map = [
+    0, 0, 0  ;
+    0, 1.0, 0;
+    0, 0, 1.0;
+    1.0, 0, 0;
+    
+];
+cmap = colormap(map);
+
 subplot(1,2,2);
 HP2 = area(x, [y1,y2,y3,y4]);
-set(HP2, {'displayname'}, {'Graph';'Counters';'VC';'MSBFS'} );
+set(HP2, {'displayname'}, {'Graph';'Counters';'VC';'MS-BFS'} );
+
+color = zeros(4,3);
+for i = 1:4
+    index = i * (length(cmap) / 4);
+    cmap(index,:);
+    color(i,:) = cmap(index,:);
+end
+ set(HP2, {'facecolor'}, {color(1,:); color(2,:); color(3,:); color(4,:) } );
+    
 hold on;
 HP2(5) = plot(x, y5, 's-', 'color', [0.5, 0, 0],'markersize', 4, 'markerfacecolor', [0.5, 0, 0], 'displayname', 'Trivial' );
 hold off;
 
-set(HP2,'Linewidth', 2); 
-ylim([0, 2.5]);
+set(HP2,'linestyle', 'none'); 
+set(HP2(5), 'linestyle', '-', 'linewidth', 2 );
+%ylim([0, 2.5]);
 xlim([0,6400]);
 xlabel('Bulk size');
 ax = gca;
