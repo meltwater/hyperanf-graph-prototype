@@ -68,12 +68,6 @@
 
         <dependency>
             <groupId>it.unimi.dsi</groupId>
-            <artifactId>webgraph-big</artifactId>
-            <version>3.3.6</version>
-        </dependency>
-
-        <dependency>
-            <groupId>it.unimi.dsi</groupId>
             <artifactId>webgraph</artifactId>
             <version>3.5.1</version>
         </dependency>
