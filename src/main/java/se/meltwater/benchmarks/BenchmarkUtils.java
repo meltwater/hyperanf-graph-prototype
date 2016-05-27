@@ -36,8 +36,8 @@ public class BenchmarkUtils {
      * Returns the current time as date
      * @return
      */
-    private static String getDateString() {
-        DateFormat dateFormat = new SimpleateFormat("yyyy-MM-dd-HH:mm:ss");
+    public static String getDateString() {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");
         Date date = new Date();
         return dateFormat.format(date);
     }
