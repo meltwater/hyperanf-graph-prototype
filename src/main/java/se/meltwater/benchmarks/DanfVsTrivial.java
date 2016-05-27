@@ -53,7 +53,7 @@ public class DanfVsTrivial {
     public void benchmark() throws IOException, InterruptedException {
 
         IGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
-        IGraph graph2 = new ImmutableGraphWrapper(BVGraph.§loadMapped(graphFile));
+        IGraph graph2 = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
 
         DANF danf = new DANF(h,log2m,graph);
         TrivialDynamicANF tanf = new TrivialDynamicANF(h,log2m,graph2);
