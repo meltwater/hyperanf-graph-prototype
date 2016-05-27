@@ -10,26 +10,38 @@ import java.io.IOException;
 
 
 /**
- * @author Simon Lindhén
- * @author Johan Nilsson Hansen
  *
  * Example for calculating a Vertex Cover on
  * a physical graph file.
+ *
+ * Usage:
+ * <pre>
+ *     {@code
+ *     VertexCoverExample vce = new VertexCoverExample(graphBaseName);
+ *     vce.run();
+  *     }
+ * </pre>
+ *
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
  */
 
-public class VertexCover {
+public class VertexCoverExample {
 
     private DynamicVertexCover dvc;
-
     private long numberOfNodes = 0;
-
     final IGraph graph;
 
     private final ProgressLogger pl;
     private int progress = 0;
     private static int updateInterval = 1000000 - 1;
 
-    public VertexCover(String graphFileName) throws IOException {
+    /**
+     * Initiates the vertex cover example
+     * @param graphFileName The path and basename of the graph file
+     * @throws IOException
+     */
+    public VertexCoverExample(String graphFileName) throws IOException {
         pl = new ProgressLogger();
         graph = new ImmutableGraphWrapper(ImmutableGraph.loadMapped( graphFileName, pl ));
         numberOfNodes = graph.getNumberOfNodes();
@@ -39,6 +51,10 @@ public class VertexCover {
         dvc = new DynamicVertexCover(graph);
     }
 
+    /**
+     * Adds all graph edges to the vertex cover
+     * @throws Exception
+     */
     private void fetchEdgesFromFileAndCalculateVC() throws Exception {
         pl.start();
 
@@ -55,6 +71,10 @@ public class VertexCover {
         pl.stop();
     }
 
+    /**
+     * Runs and prints statistics of the calculated Vertex cover.
+     * @throws Exception
+     */
     public void run () throws Exception {
         long start = System.currentTimeMillis();
         fetchEdgesFromFileAndCalculateVC();
@@ -68,10 +88,7 @@ public class VertexCover {
         System.out.println("Vertex cover of size: " + vertexCoverSize + " : " + nodesInGraph);
         System.out.println("Efficiency rate of " + (double)vertexCoverSize / nodesInGraph) ;
         System.out.println("Elapsed time: " + (float)(end - start)/1000 + "s");
-
-        Thread.sleep(5000);
     }
-
 }
 
 

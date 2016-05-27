@@ -4,13 +4,11 @@ package se.meltwater.examples;
 import com.javamex.classmexer.MemoryUtil;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
+import it.unimi.dsi.bits.LongArrayBitVector;
 import javafx.util.Pair;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
-import se.meltwater.algo.DANF;
-import se.meltwater.algo.DynamicNeighborhoodFunction;
-import se.meltwater.algo.HyperBoll;
-import se.meltwater.algo.TrivialDynamicANF;
+import se.meltwater.algo.*;
 import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.bfs.StandardBreadthFirst;
 import se.meltwater.graph.Edge;
@@ -49,63 +47,65 @@ public class Benchmarks {
     final static String graphFolder = "files/";
     final static String dataFolder = "files/";
 
-
     public static void benchmarkDanfVsHanf() throws IOException {
 
         final int log2m = 4;
         final int h = 3;
-        int bulkSize = 20000;
-        final int bulkSizeIncrease = 20000;
-        final int maxBulkSize = 20000;
+        int bulkSize = 30000;
         final long seed = 0L;
 
-
-        final String graphName = "it-2004";
+        final String graphName = "ljournal-2008";
         final String graphFile = graphFolder + graphName;
-        final String dateString = getDateString();
-        final String dataFile  = dataFolder + "benchmarkDanfVsHanf" + dateString + ".data";
 
-        ImmutableGraphWrapper graph = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile));
-        ImmutableGraphWrapper graph2 = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile));
-
-
-        DANF danf = new DANF(h, log2m, graph , seed);
-
-        PrintWriter writer = new PrintWriter(dataFile);
-        writer.println("%" + dateString + " " + graphName + "; The time measured is the time to insert the edges in to DANF and to perform a complete recalculation of HBall");
-        writer.println("%BulkSize DANFTimeMs HBollTimeMs");
 
         Edge[] edges;
 
-        System.out.println("Starting edge insertions");
-        while(bulkSize <= maxBulkSize) {
-            edges = new Edge[bulkSize];
+        edges = new Edge[bulkSize];
+        int nrSamples = 10;
+
+        long danfTotalTime = 0;
+        long hBallTotalTime = 0;
+
+        for (int i = 0; i < nrSamples; i++) {
+            ImmutableGraphWrapper graph  = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile), 999999);
+            DANF danf = new DANF(h, log2m, graph , seed);
+
             generateEdges(graph.getNumberOfNodes(), bulkSize, edges);
 
-            System.out.println("Starting Danf");
+            System.out.println("Running iteration: " + i);
+            System.out.println("Running DANF");
             long beforeDanf = System.currentTimeMillis();
             danf.addEdges(edges);
             long afterDanf = System.currentTimeMillis();
-            long danfTotalTime = afterDanf - beforeDanf;
+            danfTotalTime += afterDanf - beforeDanf;
+            danf.close();
+            danf = null;
+            graph.close();
+            graph = null;
 
-            System.out.println("Starting HBall");
+            System.out.println("DANF current time: " + danfTotalTime / (i+1));
+
+
+            /*ImmutableGraphWrapper graph2 = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile), 999999);
+            System.out.println("Running HyperBoll");
             long beforeHBALL = System.currentTimeMillis();
             graph2.addEdges(edges);
-            HyperBoll hyperBoll = new HyperBoll(graph, log2m, seed);
+            HyperBoll hyperBoll = new HyperBoll(graph2, log2m, seed);
             hyperBoll.init();
-            for (int i = 1; i < h; i++) {
-                hyperBoll.run();
+            for (int j = 1; j < h; j++) {
+                hyperBoll.iterate();
             }
-            long afterHBALL = System.currentTimeMillis();
-            long HBallTotalTime = afterHBALL - beforeHBALL;
             hyperBoll.close();
+            long afterHBALL = System.currentTimeMillis();
+            hBallTotalTime += afterHBALL - beforeHBALL;
+            graph2.close();
+            graph2 = null;*/
 
-            System.out.println("DANF Total: " + danfTotalTime + " ms, HBALL Total: " + HBallTotalTime + " ms.");
-            writer.println(bulkSize + " " + danfTotalTime + " " + HBallTotalTime);
-            writer.flush();
-
-            bulkSize += bulkSizeIncrease;
+            System.out.println("Currently, Danf: " + danfTotalTime / (i+1) + " HBall: " + hBallTotalTime / (i+1));
         }
+
+        System.out.println("DANF Total: " + danfTotalTime / nrSamples + " ms, HBALL Total: " + hBallTotalTime / nrSamples + " ms.");
+
     }
 
 
@@ -123,7 +123,7 @@ public class Benchmarks {
         final int maxSteps = 8;
         final String dateString = getDateString();
 
-        final String graphName = "SameAsSimulated";
+        final String graphName = "noBlocksUk";
         final String graphFile = graphFolder + graphName;
         final String dataFile  = dataFolder + "benchmarkBfs" + dateString + ".data";
 
@@ -616,7 +616,7 @@ public class Benchmarks {
     public static void compareDANFToTrivial() throws IOException, InterruptedException {
         final String dateString = getDateString();
         final String dataFile = dataFolder + "DANFComparedToTrivial" + dateString + ".data";
-        final String graphName = "noBlocksUk";
+        final String graphName = "in-2004";
         final String graphFile = graphFolder + graphName;
 
         final int log2m = 7;
@@ -675,7 +675,7 @@ public class Benchmarks {
             long totalTimeSeconds = (afterTrivial - start) / 1000;
 
             writer.println(bulkSize + " " + danfEps + " " + danfGraphGB+ " " + danfCounterGB + " " + danfVCGB + " " + danfMSBFSGB
-                    + " " + trivialEps + " " + 0
+                    + " " + trivialEps + " " + tanf.getMemoryUsageBytes()/(float)bytesPerGigaByte
                     + " " + (afterTrivial-start) + " " + added + " " + graph.getNumberOfNodes());
             writer.flush();
 
@@ -814,6 +814,7 @@ public class Benchmarks {
     public static void main(String[] args) throws IOException, InterruptedException {
         //Benchmarks.benchmarkEdgeInsertionsDanfReal();
         //compareDANFToTrivial();
+        Benchmarks.benchmarkDanfVsHanf();
         //Benchmarks.benchmarkDVCInsertionsSimluated();
         //Benchmarks.benchmarkDVCInsertionsReal();
         //Benchmarks.benchmarkDVCDeletionsSimulated();
@@ -823,3 +824,5 @@ public class Benchmarks {
         //Benchmarks.compareSimulatedAndTraverseGraph();
     }
 }
+
+

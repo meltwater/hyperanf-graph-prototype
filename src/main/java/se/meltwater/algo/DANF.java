@@ -3,6 +3,7 @@ package se.meltwater.algo;
 import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.logging.ProgressLogger;
 import se.meltwater.bfs.MSBreadthFirst;
 import se.meltwater.graph.Edge;
@@ -43,6 +44,9 @@ public class DANF implements DynamicNeighborhoodFunction{
     private boolean closed = false;
 
     private final int STATIC_LOLOL = 0;
+
+    private int found = 0;
+    private int visited = 0;
 
     public long getMemoryUsageGraphBytes() {
         return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes();
@@ -414,40 +418,71 @@ public class DANF implements DynamicNeighborhoodFunction{
     private void propagate(Edge ... edges) {
         int partitionSize = 5000;
 
+        LongOpenHashSet otherSourceNodes = new LongOpenHashSet();
         if(edges.length > partitionSize * 1.1) {
-            Arrays.sort(edges, (e1, e2) -> (int) (graph.getOutdegree(e1.from) - graph.getOutdegree(e2.from)));
+
+            double[] values = new double[(int)graph.getNumberOfNodes()];
+            for (int i = 0; i < edges.length; i++) {
+                Edge e = edges[i];
+                //values[(int) e.from] = graph.getOutdegree(e.from);
+                values[(int) e.from] = count(e.from, h);
+            }
+
+            Arrays.sort(edges, (e1, e2) -> Double.compare(values[(int)e1.from], values[(int)e2.from]));
+
+            for (int i = 0; i < edges.length; i++) {
+                otherSourceNodes.add(edges[i].from);
+            }
         }
+
 
         try {
 
             PropagationTraveler[] travelers = new PropagationTraveler[Math.min(partitionSize, edges.length)];
             long[] fromNodes = new long[Math.min(partitionSize, edges.length)];
             for (int i = 0, j = 0; i < edges.length; i++, j++) {
-                travelers[j] = new PropagationTraveler(calculateHistory(edges[i].to));
+
+                long[][] travelerHistory = calculateHistory(edges[i].to);
+                long[] visitorHistory = new long[counterLongWords];
+
+                if(vc.isInVertexCover(edges[i].from)) {
+                    for (int k = 0; k < h; k++) {
+                        long visitNodeIndex = getNodeIndex(edges[i].from, k + 1);
+                        history[k].getCounter(visitNodeIndex, visitorHistory);
+                        history[k].max(travelerHistory[k], visitorHistory);
+                    }
+                }
+
+                travelers[j] = new PropagationTraveler(travelerHistory);
                 fromNodes[j] = edges[i].from;
+                otherSourceNodes.remove(edges[i].from);
                 if (j == partitionSize - 1) {
-                    transposeMSBFS.breadthFirstSearch(fromNodes, propagateVisitor(), travelers);
+                    transposeMSBFS.breadthFirstSearch(fromNodes, propagateVisitor(otherSourceNodes), travelers);
+                    System.out.println("Pruned paths: " + found + " ;Visited : " + visited);
+
                     if (edges.length - i - 1 < partitionSize) {
                         travelers = new PropagationTraveler[edges.length - i - 1];
                         fromNodes = new long[edges.length - i - 1];
                     }
                     j = -1;
+                    System.out.println("Completed: " + i + " nodes.");
                 }
             }
 
             if (fromNodes.length > 0) {
-                transposeMSBFS.breadthFirstSearch(fromNodes, propagateVisitor(), travelers);
+                transposeMSBFS.breadthFirstSearch(fromNodes, propagateVisitor(otherSourceNodes), travelers);
+                System.out.println("Pruned paths: " + found + " ;Visited : " + visited);
             }
 
         }catch (InterruptedException e){
             throw new RuntimeException("An error occurred when performing the breadth first search",e);
         }
-
     }
 
-    private MSBreadthFirst.Visitor propagateVisitor(){
+    private MSBreadthFirst.Visitor propagateVisitor(LongOpenHashSet otherSourceNodes){
         boolean needsSync = true;//!history[STATIC_LOLOL].longwordAligned;
         return (long visitNode, BitSet bfsVisits, BitSet seen, int d, MSBreadthFirst.Traveler t) -> {
+            visited++;
             int depth = d + 1;
 
             PropagationTraveler propTraver = (PropagationTraveler) t;
@@ -470,7 +505,7 @@ public class DANF implements DynamicNeighborhoodFunction{
                     }else
                         history[i + depth - 1].setCounter(visitNodeBits, visitNodeIndex);
                 }
-            } else {
+            } else {//if(!otherSourceNodes.contains(visitNode)){
                 long[] visitNodeBits = new long[counterLongWords];
                 history[h - 1].getCounter(visitNode, visitNodeBits);
 
@@ -484,7 +519,11 @@ public class DANF implements DynamicNeighborhoodFunction{
                     history[h - 1].setCounter(visitNodeBits, visitNode);
             }
 
-            if (depth == h) {
+
+            if (depth == h || otherSourceNodes.contains(visitNode)) {
+                if(otherSourceNodes.contains(visitNode)) {
+                    found++;
+                }
                 bfsVisits.clear();
             }
         };
