@@ -1,11 +1,8 @@
 package se.meltwater.examples;
 
 
-import com.javamex.classmexer.MemoryUtil;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import it.unimi.dsi.bits.LongArrayBitVector;
-import javafx.util.Pair;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import se.meltwater.algo.*;
@@ -22,19 +19,18 @@ import se.meltwater.graph.TraverseGraph;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.instrument.Instrumentation;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.regex.Matcher;
 import java.util.stream.LongStream;
 
 /**
+ *
+ * Class for performing a large variety of benchmarks.
+ *
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
- *         <p>
- *         // TODO Remove copy-paste!
  */
 public class Benchmarks {
 
@@ -56,7 +52,6 @@ public class Benchmarks {
 
         final String graphName = "ljournal-2008";
         final String graphFile = graphFolder + graphName;
-
 
         Edge[] edges;
 
@@ -86,7 +81,7 @@ public class Benchmarks {
             System.out.println("DANF current time: " + danfTotalTime / (i+1));
 
 
-            /*ImmutableGraphWrapper graph2 = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile), 999999);
+            ImmutableGraphWrapper graph2 = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile), 999999);
             System.out.println("Running HyperBoll");
             long beforeHBALL = System.currentTimeMillis();
             graph2.addEdges(edges);
@@ -99,7 +94,7 @@ public class Benchmarks {
             long afterHBALL = System.currentTimeMillis();
             hBallTotalTime += afterHBALL - beforeHBALL;
             graph2.close();
-            graph2 = null;*/
+            graph2 = null;
 
             System.out.println("Currently, Danf: " + danfTotalTime / (i+1) + " HBall: " + hBallTotalTime / (i+1));
         }
@@ -207,7 +202,6 @@ public class Benchmarks {
         int maxNode = maxNumberOfEdges;
         final int samples = 10;
 
-
         final String dateString = getDateString();
         final String dataFile = dataFolder + "benchmarkSimTrav" + dateString + ".data";
 
@@ -218,11 +212,11 @@ public class Benchmarks {
         writer.println("%nrAddedEdges simulatedAddTimeMs simulatedIterateTimeMs simulatedMemoryGB traverseAddTimeMs traverseIterateTimeMs traverseMemoryGB");
 
         TraverseGraph tg = new TraverseGraph();
-        long simulatedAddTotalTime = 0;
+        long simulatedAddTotalTime     = 0;
         long simulatedIterateTotalTime = 0;
 
         SimulatedGraph sim = new SimulatedGraph();
-        long traverseAddTotalTime = 0;
+        long traverseAddTotalTime     = 0;
         long traverseIterateTotalTime = 0;
 
         int nrAddedEdges = 0;
@@ -237,36 +231,58 @@ public class Benchmarks {
             long simulatedIterateStartTime = System.currentTimeMillis();
             sim.iterateAllEdges(e -> null);
             simulatedIterateTotalTime += System.currentTimeMillis() - simulatedIterateStartTime;
-            float simulatedMemoryGB = Utils.getMemoryUsage(sim) / (float)bytesPerGigaByte;
 
             long traverseAddStartTime = System.currentTimeMillis();
             tg.addEdges(edges);
             traverseAddTotalTime += System.currentTimeMillis() - traverseAddStartTime;
 
             long traverseIterateStartTime = System.currentTimeMillis();
-            int i = 0;
-            NodeIterator it = tg.nodeIterator();
-            while(it.hasNext()){
-                it.nextLong();
-                LazyLongIterator neighIt = it.successors();
-                long neighbor;
-                while((neighbor = neighIt.nextLong()) != -1) i++;
-            }
+            iterateAllTraverseEdges(tg);
             traverseIterateTotalTime += System.currentTimeMillis() - traverseIterateStartTime;
-            float traverseMemoryGB = Utils.getMemoryUsage(tg) / (float)bytesPerGigaByte;
 
             nrAddedEdges += edgesBulkSize;
 
             if(nrAddedEdges % (maxNumberOfEdges / samples) == 0) {
-                writer.println(nrAddedEdges + " " + simulatedAddTotalTime + " " + simulatedIterateTotalTime + " " + simulatedMemoryGB + " " + traverseAddTotalTime + " " + traverseIterateTotalTime + " " + traverseMemoryGB);
-                writer.flush();
-                System.out.println("Total nr edges: " + nrAddedEdges);
+                writeSimulatedVsTraverseStatistics(writer, tg, simulatedAddTotalTime, simulatedIterateTotalTime, sim, traverseAddTotalTime, traverseIterateTotalTime, nrAddedEdges);
             }
         }
 
         writer.close();
     }
 
+    private static void writeSimulatedVsTraverseStatistics(PrintWriter writer, TraverseGraph tg, long simulatedAddTotalTime, long simulatedIterateTotalTime, SimulatedGraph sim, long traverseAddTotalTime, long traverseIterateTotalTime, int nrAddedEdges) {
+        float simulatedMemoryGB = Utils.getMemoryUsage(sim) / (float)bytesPerGigaByte;
+        float traverseMemoryGB = Utils.getMemoryUsage(tg) / (float)bytesPerGigaByte;
+
+        writer.println(nrAddedEdges + " " + simulatedAddTotalTime + " " + simulatedIterateTotalTime + " " + simulatedMemoryGB + " " + traverseAddTotalTime + " " + traverseIterateTotalTime + " " + traverseMemoryGB);
+        writer.flush();
+        System.out.println("Total nr edges: " + nrAddedEdges);
+    }
+
+    private static void iterateAllTraverseEdges(TraverseGraph tg) {
+        int i = 0;
+        NodeIterator it = tg.nodeIterator();
+        while(it.hasNext()){
+            it.nextLong();
+            LazyLongIterator neighIt = it.successors();
+            long neighbor;
+            while((neighbor = neighIt.nextLong()) != -1) i++;
+        }
+    }
+
+    /**
+     * Performs a benchmark that compares three different techniques for saving new edges.
+     * Either
+     *   1) Always store the graph to disk after every insertion
+     *   2) Store the graph to disk when a certain memory overhead threashold has been reached
+     *   3) Never store the graph
+     *
+     * Edges not saved to disk is kept in a high level data structure.
+     *
+     * The benchmark measures the memory usage and the time to iterate / add edges in the graph.
+     *
+     * @throws IOException
+     */
     public static void benchmarkUnionVsStored() throws IOException {
         final String dateString = getDateString();
         final String graphName = "in-2004";
@@ -274,12 +290,12 @@ public class Benchmarks {
         final String dataFile = dataFolder + "unionVSStored" + dateString + ".data";
 
         long maxNode = 10000000;
-
         final int maxAddedEdges = 1000000;
         int addedEdges = 0;
-        final int nrSamples = 20;
 
+        final int nrBenchmarkSamples = 20; /* Make sure that nrBenchmarkSamples * bulkSize * k = maxAddedEdges, for any integer k */
         int bulkSize = 5000;
+
         final float ratioThatNeverReaches = 20000000.0f;
         final float ratioThatSometimesReaches = 8.0f;
         final float ratioThatAlwaysReaches = 0.0f;
@@ -287,14 +303,14 @@ public class Benchmarks {
         PrintWriter writer = new PrintWriter(dataFile);
 
         writer.println("%" + dateString + " " + graphName + "; " + bulkSize + "random edges inserted per iteration; The time measured is the time insert edges into the graph. ");
-        writer.println("%Insertions bulkSize ratioBeforeSometimesSave nrNodes nrArcs AlwaysUnionedTimems AlwaysUnionHeapSizeGB SometimesUnionedTimems SometimesUnionHeapSizeGB StoredTimedms StoredHeapSizeGB");
+        writer.println("%Insertions bulkSize ratioBeforeSometimesSave nrNodes AlwaysUnionedTimems AlwaysUnionHeapSizeGB SometimesUnionedTimems SometimesUnionHeapSizeGB StoredTimedms StoredHeapSizeGB");
 
-        ImmutableGraphWrapper graphAlwaysUnion = new ImmutableGraphWrapper(ImmutableGraph.loadMapped(graphFile), ratioThatNeverReaches);
+        ImmutableGraphWrapper graphAlwaysUnion    = new ImmutableGraphWrapper(ImmutableGraph.loadMapped(graphFile), ratioThatNeverReaches);
         ImmutableGraphWrapper graphSometimesUnion = new ImmutableGraphWrapper(ImmutableGraph.loadMapped(graphFile), ratioThatSometimesReaches);
-        ImmutableGraphWrapper graphStored  = new ImmutableGraphWrapper(ImmutableGraph.loadMapped(graphFile), ratioThatAlwaysReaches);
+        ImmutableGraphWrapper graphStored         = new ImmutableGraphWrapper(ImmutableGraph.loadMapped(graphFile), ratioThatAlwaysReaches);
 
-        long storedTimeSinceSample = 0;
-        long alwaysUnionTimeSinceSample = 0;
+        long storedTimeSinceSample         = 0;
+        long alwaysUnionTimeSinceSample    = 0;
         long sometimesUnionTimeSinceSample = 0;
 
         int iteration = 1;
@@ -304,51 +320,54 @@ public class Benchmarks {
             Edge[] edges = new Edge[bulkSize];
             generateEdges(maxNode, bulkSize, edges);
 
-            storedTimeSinceSample += benchmarkInsertEdges(edges, graphStored);
-            alwaysUnionTimeSinceSample  += benchmarkInsertEdges(edges, graphAlwaysUnion);
+            storedTimeSinceSample          += benchmarkInsertEdges(edges, graphStored);
+            alwaysUnionTimeSinceSample     += benchmarkInsertEdges(edges, graphAlwaysUnion);
             sometimesUnionTimeSinceSample  += benchmarkInsertEdges(edges, graphSometimesUnion);
 
             addedEdges += bulkSize;
 
-            if(addedEdges % (maxAddedEdges / nrSamples) == 0 ) {
-                float storedGraphSizeGigaBytes = graphStored.getMemoryUsageBytes() / (float) bytesPerGigaByte;
-                float alwaysUnionGraphSizeGigaBytes = graphAlwaysUnion.getMemoryUsageBytes() / (float) bytesPerGigaByte;
-                float sometimesUnionGraphSizeGigaBytes = graphSometimesUnion.getMemoryUsageBytes() / (float) bytesPerGigaByte;
+            if(addedEdges % (maxAddedEdges / nrBenchmarkSamples) == 0 ) {
+                printStoreVsUnionStatistics(addedEdges, bulkSize, ratioThatSometimesReaches, writer, graphAlwaysUnion, graphSometimesUnion, graphStored, storedTimeSinceSample, alwaysUnionTimeSinceSample, sometimesUnionTimeSinceSample, iteration, iterationOfLastSample);
 
-                long nrArcs = 0;
-
-                int numberOfIterationsBetweenSample = iteration - iterationOfLastSample;
-
-                long averageTimeStoredSinceSample         = storedTimeSinceSample          / numberOfIterationsBetweenSample;
-                long averageTimeAlwaysUnionSinceSample    = alwaysUnionTimeSinceSample     / numberOfIterationsBetweenSample;
-                long averageTimeSometimesUnionSinceSample = sometimesUnionTimeSinceSample  / numberOfIterationsBetweenSample;
-
-
-                writer.println(addedEdges / bulkSize + " " + bulkSize + " " + ratioThatSometimesReaches + " " + graphStored.getNumberOfNodes() + " " + nrArcs + " " +
-                        averageTimeAlwaysUnionSinceSample + " " + alwaysUnionGraphSizeGigaBytes + " " + averageTimeSometimesUnionSinceSample + " " + sometimesUnionGraphSizeGigaBytes + " " +
-                        averageTimeStoredSinceSample + " " + storedGraphSizeGigaBytes);
-                writer.flush();
-                System.out.println("Added edges: " + addedEdges);
-
-                storedTimeSinceSample = 0;
-                alwaysUnionTimeSinceSample = 0;
+                storedTimeSinceSample         = 0;
+                alwaysUnionTimeSinceSample    = 0;
                 sometimesUnionTimeSinceSample = 0;
-
                 iterationOfLastSample = iteration;
             }
-
             iteration++;
         }
 
+        shutdownStoreVsUnionBenchmark(writer, graphAlwaysUnion, graphSometimesUnion, graphStored);
+    }
+
+
+    private static void printStoreVsUnionStatistics(int addedEdges, int bulkSize, float ratioThatSometimesReaches, PrintWriter writer, ImmutableGraphWrapper graphAlwaysUnion, ImmutableGraphWrapper graphSometimesUnion, ImmutableGraphWrapper graphStored, long storedTimeSinceSample, long alwaysUnionTimeSinceSample, long sometimesUnionTimeSinceSample, int iteration, int iterationOfLastSample) {
+        float storedGraphSizeGigaBytes = graphStored.getMemoryUsageBytes() / (float) bytesPerGigaByte;
+        float alwaysUnionGraphSizeGigaBytes = graphAlwaysUnion.getMemoryUsageBytes() / (float) bytesPerGigaByte;
+        float sometimesUnionGraphSizeGigaBytes = graphSometimesUnion.getMemoryUsageBytes() / (float) bytesPerGigaByte;
+
+        int numberOfIterationsBetweenSample = iteration - iterationOfLastSample;
+
+        long averageTimeStoredSinceSample         = storedTimeSinceSample          / numberOfIterationsBetweenSample;
+        long averageTimeAlwaysUnionSinceSample    = alwaysUnionTimeSinceSample     / numberOfIterationsBetweenSample;
+        long averageTimeSometimesUnionSinceSample = sometimesUnionTimeSinceSample  / numberOfIterationsBetweenSample;
+
+        writer.println(addedEdges / bulkSize + " " + bulkSize + " " + ratioThatSometimesReaches + " " + graphStored.getNumberOfNodes() + " " +
+                averageTimeAlwaysUnionSinceSample + " " + alwaysUnionGraphSizeGigaBytes + " " + averageTimeSometimesUnionSinceSample + " " + sometimesUnionGraphSizeGigaBytes + " " +
+                averageTimeStoredSinceSample + " " + storedGraphSizeGigaBytes);
+        writer.flush();
+        System.out.println("Added edges: " + addedEdges);
+    }
+
+    /**
+     * Closes all relevant classes from the StoreVsUnion benchmark
+     */
+    private static void shutdownStoreVsUnionBenchmark(PrintWriter writer, ImmutableGraphWrapper graphAlwaysUnion, ImmutableGraphWrapper graphSometimesUnion, ImmutableGraphWrapper graphStored) {
         graphSometimesUnion.close();
         graphAlwaysUnion.close();
         graphStored.close();
         writer.close();
     }
-
-
-
-
 
     /**
      * Inserts {@code edges} into {@code graph} and measures the time it takes.
@@ -365,10 +384,8 @@ public class Benchmarks {
         return System.currentTimeMillis() - startTime;
     }
 
-
-
     /**
-     * Inserts random edges into a vertex cover and benchmarks the heap size and time it takes to insert.
+     * Inserts random edges into a vertex cover and benchmarks the heap size and the time it takes to insert the edges.
      * @throws IOException
      */
     public static void benchmarkDVCInsertionsSimluated() throws IOException {
@@ -382,14 +399,11 @@ public class Benchmarks {
         SimulatedGraph graph = new SimulatedGraph();
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        long lastTime = System.currentTimeMillis();
-        long startTime = lastTime;
-
         PrintWriter writer = new PrintWriter(dataFile);
         writer.println("#" + dateString + " Simulated Graph;" + edgesToAdd + " edges are added in bulks of " + bulkSize + ";");
         writer.println("#Modifications DPS HeapSize ElapsedTime nrArcs nrNodes");
 
-        insertRandomEdgesIntoDvc(graph, dvc, maxNode, edgesToAdd, bulkSize, lastTime, startTime, false, writer);
+        insertRandomEdgesIntoDvc(graph, dvc, maxNode, edgesToAdd, bulkSize, false, writer);
 
         writer.close();
     }
@@ -532,7 +546,7 @@ public class Benchmarks {
         SimulatedGraph graph   = new SimulatedGraph();
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
-        insertRandomEdgesIntoDvc(graph, dvc, maxNode, edgesToAdd, bulkSize, 0, 0, true, null);
+        insertRandomEdgesIntoDvc(graph, dvc, maxNode, edgesToAdd, bulkSize, true, null);
 
         final int edgesToRemove = (int)graph.getNumberOfArcs();
 
@@ -541,13 +555,28 @@ public class Benchmarks {
                 bulkSize + ". The time measured is the time to delete " + bulkSize + " edges.");
         writer.println("#Modifications DPS HeapSize ElapsedTime nrArcs nrNodes");
 
-        deleteEdges(graph, dvc, edgesToRemove, bulkSize, writer, true);
+        deleteEdgesFromDvc(graph, dvc, edgesToRemove, bulkSize, writer, true);
 
         writer.close();
     }
 
-    private static void insertRandomEdgesIntoDvc(SimulatedGraph graph, DynamicVertexCover dvc, long maxNode, int edgesToAdd, int bulkSize, long lastTime, long startTime, boolean shouldAddToGraph, PrintWriter writer) {
+    /**
+     * Generates edges and inserts them into the dynamic vertex cover.
+     * Optionally inserts the edges into {@code graph} as well.
+     * @param graph The graph used
+     * @param dvc The dynamic vertex cover to update
+     * @param maxNode The maximum node id that can be generated
+     * @param edgesToAdd The number of edges to add
+     * @param bulkSize The edges will be added in bulks of {@code bulkSize}
+     * @param shouldAddToGraph True if the edges should be inserted into {@code graph}
+     * @param writer The file writer to print the statistics to
+     */
+    private static void insertRandomEdgesIntoDvc(SimulatedGraph graph, DynamicVertexCover dvc, long maxNode, int edgesToAdd, int bulkSize, boolean shouldAddToGraph, PrintWriter writer) {
+
         int added = 0;
+        long startTime = System.currentTimeMillis();
+        long lastTime = startTime;
+
         Edge[] edges = new Edge[bulkSize];
         while(added < edgesToAdd) {
             generateEdges(maxNode, bulkSize, edges);
@@ -574,22 +603,13 @@ public class Benchmarks {
      * @param dvc The vertex cover to remove edges from
      * @param edgesToRemove The number of edges to remove
      * @param bulkSize How many edges that should be removed before a time/heap measure
-     * @param writer
+     * @param writer The file writer to print statistics to
      * @param shouldShuffle True if the edges should be deleted in a permutated order
      */
-    private static void deleteEdges(SimulatedGraph graph, DynamicVertexCover dvc, int edgesToRemove, int bulkSize, PrintWriter writer, boolean shouldShuffle) {
+    private static void deleteEdgesFromDvc(SimulatedGraph graph, DynamicVertexCover dvc, int edgesToRemove, int bulkSize, PrintWriter writer, boolean shouldShuffle) {
         SimulatedGraph graphTranspose = (SimulatedGraph) graph.transpose();
 
-        ArrayList<Edge> edgeList = new ArrayList<>(edgesToRemove);
-        graph.iterateAllEdges(edge -> {
-            edgeList.add(edge);
-            return null;
-        });
-
-        if(shouldShuffle) {
-            Collections.shuffle(edgeList);
-        }
-        Edge[] edges = edgeList.toArray(new Edge[edgeList.size()]);
+        Edge[] edges = getEdges(graph, shouldShuffle);
 
         int removed = 0;
         long lastTime = System.currentTimeMillis();
@@ -613,7 +633,28 @@ public class Benchmarks {
         }
     }
 
-    public static void compareDANFToTrivial() throws IOException, InterruptedException {
+    /**
+     * Returns the edges contained in {@code graph}.
+     * @param graph The graph containing the edges
+     * @param shouldShuffle True if the edges should be returned in shuffled order
+     * @return
+     */
+    private static Edge[] getEdges(SimulatedGraph graph, boolean shouldShuffle) {
+        ArrayList<Edge> edgeList = new ArrayList<>(Arrays.asList(graph.getAllEdges()));
+        if(shouldShuffle) {
+            Collections.shuffle(edgeList);
+        }
+        return edgeList.toArray(new Edge[edgeList.size()]);
+    }
+
+    /**
+     * Benchmarks the difference between the DANF implementation
+     * and the Trivial 2-bfs algorithm described in the publication
+     * DANF: Approximate Neighborhood Function on Large Dynamic Graphs.
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    public static void benchmarkDANFToTrivial() throws IOException, InterruptedException {
         final String dateString = getDateString();
         final String dataFile = dataFolder + "DANFComparedToTrivial" + dateString + ".data";
         final String graphName = "in-2004";
@@ -623,8 +664,8 @@ public class Benchmarks {
         final int h = 3;
         final int maxBulkSize = 6400;
         int bulkSize =      640;
+        final int bulkSizeIncrease = 640;
 
-        System.out.println("Loading graph");
         IGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
         IGraph graph2 = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
 
@@ -637,7 +678,9 @@ public class Benchmarks {
         writer.println("%BulkSize DanfEPS DanfGraphMemory DanfCounterMemory DanfVcMemory DanfMsbfsMemory TrivialEPS TrivialMemory ElapsedTime nrArcs nrNodes");
 
         int  added = 0;
-        long totalDanfTime = 0, totalTrivialTime = 0, start = System.currentTimeMillis();
+        long totalDanfTime = 0;
+        long totalTrivialTime = 0;
+        long start = System.currentTimeMillis();
 
         Edge[] edges;
 
@@ -663,28 +706,20 @@ public class Benchmarks {
             float danfMSBFSGB = danf.getMemoryUsageMsBfsBytes() / (float) bytesPerGigaByte;
             float danfTotalMemory = danfGraphGB + danfCounterGB + danfVCGB + danfMSBFSGB;
 
-            /*float danfGraphGB = 0;
-            float danfCounterGB = 0;
-            float danfVCGB = 0;
-            float danfMSBFSGB = 0;
-            float danfTotalMemory = 0;*/
-
             float danfEps = (float) added / totalDanfTime * 1000;
             float trivialEps = (float) added / totalTrivialTime * 1000;
+            float trivialTotalMemory = tanf.getMemoryUsageBytes()/(float)bytesPerGigaByte;
 
             long totalTimeSeconds = (afterTrivial - start) / 1000;
 
             writer.println(bulkSize + " " + danfEps + " " + danfGraphGB+ " " + danfCounterGB + " " + danfVCGB + " " + danfMSBFSGB
-                    + " " + trivialEps + " " + tanf.getMemoryUsageBytes()/(float)bytesPerGigaByte
-                    + " " + (afterTrivial-start) + " " + added + " " + graph.getNumberOfNodes());
+                    + " " + trivialEps + " " + trivialTotalMemory + " " + (afterTrivial-start) + " " + added + " " + graph.getNumberOfNodes());
             writer.flush();
 
+            System.out.println(bulkSize + " edges, " + danfEps + " Danf DPS, " + danfTotalMemory + "GB DANF memory, " + trivialEps + " Trivial DPS, " +
+                     trivialTotalMemory + "GB trivial memory, " + totalTimeSeconds + "s total, " + added + " " + graph.getNumberOfNodes());
 
-            System.out.println(bulkSize + " edges, " + danfEps + " Danf DPS, " +
-                    danfTotalMemory + "GB DANF memory, " + trivialEps + " Trivial DPS, " +
-                    tanf.getMemoryUsageBytes()/(float)bytesPerGigaByte + "GB trivial memory, " + totalTimeSeconds + "s total, " + added + " " + graph.getNumberOfNodes());
-
-            bulkSize += 640;
+            bulkSize += bulkSizeIncrease;
         }
 
         danf.close();
@@ -755,13 +790,17 @@ public class Benchmarks {
         danf.close();
     }
 
-    @Deprecated // TODO remove this function and replace with util funcion
-    private static float getUseHeapSizeInGB() {
-        return (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (float)bytesPerGigaByte;
-    }
-
-
-
+    /**
+     * Prints general statistics in benchmarks.
+     * @param writer
+     * @param nrModified
+     * @param lastTime
+     * @param startTime
+     * @param bulkSize
+     * @param currentTime
+     * @param graph
+     * @param objectToMeasureMemory
+     */
     private static void printAndLogStatistics(PrintWriter writer, int nrModified, long lastTime, long startTime, int bulkSize, long currentTime, IGraph graph, Object objectToMeasureMemory) {
         long elapsedTime = currentTime - lastTime;
         float timePerBulkSeconds = elapsedTime / 1000.0f;
@@ -813,7 +852,7 @@ public class Benchmarks {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         //Benchmarks.benchmarkEdgeInsertionsDanfReal();
-        //compareDANFToTrivial();
+        //benchmarkDANFToTrivial();
         Benchmarks.benchmarkDanfVsHanf();
         //Benchmarks.benchmarkDVCInsertionsSimluated();
         //Benchmarks.benchmarkDVCInsertionsReal();
