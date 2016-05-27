@@ -4,7 +4,7 @@ import com.martiansoftware.jsap.*;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.UnionImmutableGraph;
 import se.meltwater.bfs.MSBreadthFirst;
-import se.meltwater.examples.VertexCover;
+import se.meltwater.examples.VertexCoverExample;
 import se.meltwater.graph.ImmutableGraphWrapper;
 import se.meltwater.graphEditing.GraphMerger;
 
@@ -142,8 +142,8 @@ public class Main {
 
         String path = result.getString("path");
 
-        VertexCover vertexCover = new VertexCover(path);
-        vertexCover.run();
+        VertexCoverExample vertexCoverExample = new VertexCoverExample(path);
+        vertexCoverExample.run();
     }
 
     private static  void doGenerateBvGraph(String[] args) throws Exception {
