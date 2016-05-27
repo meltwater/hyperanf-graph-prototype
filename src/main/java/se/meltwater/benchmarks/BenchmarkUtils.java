@@ -15,6 +15,8 @@ public class BenchmarkUtils {
     final public static String graphFolder = "testGraphs/";
     final public static String dataFolder = "files/";
 
+    final public static long bytesPerGigaByte = 1024 * 1024 * 1024;
+
     /**
      * Generates a bulk of random edges.
      * @param maxNewNode The max node id of the generated edges

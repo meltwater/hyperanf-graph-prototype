@@ -96,7 +96,6 @@ public class StandardBFSVsMSBFS {
      * @throws InterruptedException
      */
     private static long performMSBfsAndMeasureTime(long[] sources, IGraph graph, final int h) throws InterruptedException {
-
         MSBreadthFirst.Visitor visitor = (long node, BitSet bfsVisits, BitSet seen, int depth, MSBreadthFirst.Traveler t) -> {
             if(depth == h) {
                 bfsVisits.clear();
