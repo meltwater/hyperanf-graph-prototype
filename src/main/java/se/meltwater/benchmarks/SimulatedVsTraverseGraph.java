@@ -45,7 +45,7 @@ public class SimulatedVsTraverseGraph {
      * after a certain threshold.
      * @throws FileNotFoundException
      */
-    public void compareSimulatedAndTraverseGraph() throws FileNotFoundException {
+    public void benchmark() throws FileNotFoundException {
         PrintWriter writer = new PrintWriter(dataFile);
         writer.println("%" + getDateString() + "; Comparison between SimulatedGraph and TraverseGraph; " +
                 edgesBulkSize + " are randomly generated and inserted into both. The time measured is the " +

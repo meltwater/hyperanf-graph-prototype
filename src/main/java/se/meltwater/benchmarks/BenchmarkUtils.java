@@ -1,7 +1,10 @@
 package se.meltwater.benchmarks;
 
 import se.meltwater.graph.Edge;
+import se.meltwater.graph.IGraph;
+import se.meltwater.utils.Utils;
 
+import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -42,5 +45,39 @@ public class BenchmarkUtils {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");
         Date date = new Date();
         return dateFormat.format(date);
+    }
+
+    /**
+     * Prints general statistics in benchmarks.
+     * @param writer
+     * @param nrModified
+     * @param lastTime
+     * @param startTime
+     * @param bulkSize
+     * @param currentTime
+     * @param graph
+     * @param objectToMeasureMemory
+     */
+    public static void printAndLogStatistics(PrintWriter writer, int nrModified, long lastTime, long startTime, int bulkSize, long currentTime, IGraph graph, Object objectToMeasureMemory) {
+        long elapsedTime = currentTime - lastTime;
+        float timePerBulkSeconds = elapsedTime / 1000.0f;
+        float dps = bulkSize / timePerBulkSeconds;
+
+        float heapSize = Utils.getMemoryUsage(objectToMeasureMemory) / (float)bytesPerGigaByte;
+
+        float elapsedTimeSinceStart = (currentTime - startTime) / 1000.0f;
+        float modifiedInMillions = (float)nrModified / 1000000;
+
+        System.out.print("Total nr edges: " + nrModified + ". ");
+        System.out.print("Modified " + bulkSize + " edges. ");
+        System.out.print("Time per bulk: " + timePerBulkSeconds + "s. ");
+        System.out.print("DPS: " + dps + ". ");
+        System.out.print("Heap size: " + heapSize + " Gb. ");
+        System.out.print("NrArcs: " + 0/*graph.getNumberOfArcs()*/ + " ");
+        System.out.print("NrNodes: " + graph.getNumberOfNodes() + " ");
+        System.out.println("Total time: " + elapsedTimeSinceStart + "s.");
+
+        writer.println(modifiedInMillions + " " + dps + " " + heapSize + " " + elapsedTimeSinceStart  + " " + /*graph.getNumberOfArcs()*/0 + " " + graph.getNumberOfNodes());
+        writer.flush();
     }
 }
