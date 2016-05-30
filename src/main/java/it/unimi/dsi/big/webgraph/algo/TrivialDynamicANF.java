@@ -9,7 +9,7 @@ import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.util.HyperLogLogCounterArray;
 import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.MutableGraph;
-import se.meltwater.utils.Utils;
+import it.unimi.dsi.big.webgraph.Utils;
 
 import java.io.IOException;
 import java.util.function.BiConsumer;

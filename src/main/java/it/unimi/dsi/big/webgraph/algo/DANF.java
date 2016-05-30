@@ -7,7 +7,7 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.MutableGraph;
 import it.unimi.dsi.util.HyperLogLogCounterArray;
-import se.meltwater.utils.Utils;
+import it.unimi.dsi.big.webgraph.Utils;
 import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 

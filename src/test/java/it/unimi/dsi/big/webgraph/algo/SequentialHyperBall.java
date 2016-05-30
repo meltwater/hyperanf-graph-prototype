@@ -176,7 +176,24 @@ public class SequentialHyperBall extends HyperLogLogCounterArray implements Safe
 			x[ i ] -= y[ i ];
 		}	
 	}
-	
+
+	/** Performs a multiple precision subtraction, leaving the result in the first operand.
+	 * When accessing the i:th element of <i>y</i>, then {@code y[i % mod]} will be used where
+	 * {@code mod} is the specified parameter.
+	 *
+	 * @param x an array of longs.
+	 * @param y an array of longs that will be subtracted from <code>x</code>.
+	 * @param l the length of <code>x</code> and <code>y</code>.
+	 */
+	private static final void subtractWithModulus( final long[] x, final long[] y, final int l , final int mod) {
+		boolean borrow = false;
+
+		for( int i = 0; i < l; i++ ) {
+			if ( ! borrow || x[ i ]-- != 0 ) borrow = x[ i ] < y[ i % mod ] ^ x[ i ] < 0 ^ y[ i % mod ] < 0; // This expression returns the result of an unsigned strict comparison.
+			x[ i ] -= y[ i % mod ];
+		}
+	}
+
 	/** Computes the register-by-register maximum of two bit vectors.
 	 * 
 	 * @param x first vector of longs, representing a bit vector in {@link LongArrayBitVector} format, where the result will be stored.
@@ -212,13 +229,13 @@ public class SequentialHyperBall extends HyperLogLogCounterArray implements Safe
 		 */
 		
 		// We load x | H_r into the accumulator
-		for( int i = l; i-- != 0; ) accumulator[ i ] = x[ i ] | msbMask[ i ]; 
+		for( int i = l; i-- != 0; ) accumulator[ i ] = x[ i ] | msbMask[ i % r];
 		// We subtract y & ~H_r, using mask as temporary storage
-		for( int i = l; i-- != 0; ) mask[ i ] = y[ i ] & ~msbMask[ i ]; 
+		for( int i = l; i-- != 0; ) mask[ i ] = y[ i ] & ~msbMask[ i % r];
 		subtract( accumulator, mask, l );
 		
 		// We OR with x ^ y, XOR with ( x | ~y), and finally AND with H_r. 
-		for( int i = l; i-- != 0; ) accumulator[ i ] = ( ( accumulator[ i ] | ( x[ i ] ^ y[ i ] ) ) ^ ( x[ i ] | ~y[ i ] ) ) & msbMask[ i ]; 
+		for( int i = l; i-- != 0; ) accumulator[ i ] = ( ( accumulator[ i ] | ( x[ i ] ^ y[ i ] ) ) ^ ( x[ i ] | ~y[ i ] ) ) & msbMask[ i % r ];
 	
 		if ( ASSERTS ) {
 			final LongBigList a = LongArrayBitVector.wrap( x ).asLongBigList( r );
@@ -231,15 +248,15 @@ public class SequentialHyperBall extends HyperLogLogCounterArray implements Safe
 		
 		// We shift by r - 1 places and put the result into mask
 		final int rMinus1 = r - 1;
-		for( int i = l - 1; i-- != 0; ) mask[ i ] = accumulator[ i ] >>> rMinus1 | accumulator[ i + 1 ] << ( Long.SIZE - rMinus1) | msbMask[ i ]; 
-		mask[ l - 1 ] = accumulator[ l - 1 ] >>> rMinus1 | msbMask[ l - 1 ];
+		for( int i = l - 1; i-- != 0; ) mask[ i ] = accumulator[ i ] >>> rMinus1 | accumulator[ i + 1 ] << ( Long.SIZE - rMinus1) | msbMask[ i % r];
+		mask[ l - 1 ] = accumulator[ l - 1 ] >>> rMinus1 | msbMask[ (l - 1) % r];
 
 		// We subtract L_r from mask
-		subtract( mask, lsbMask, l );
+		subtractWithModulus( mask, lsbMask, l ,r);
 
 		// We OR with H_r and XOR with the accumulator
-		for( int i = l; i-- != 0; ) mask[ i ] = ( mask[ i ] | msbMask[ i ] ) ^ accumulator[ i ];
-		
+		for( int i = l; i-- != 0; ) mask[ i ] = ( mask[ i ] | msbMask[ i % r] ) ^ accumulator[ i ];
+
 		if ( ASSERTS ) {
 			final long[] t = x.clone();
 			LongBigList a = LongArrayBitVector.wrap( t ).asLongBigList( r );

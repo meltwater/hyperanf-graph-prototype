@@ -1,7 +1,7 @@
 package se.meltwater.benchmarks;
 
 import it.unimi.dsi.big.webgraph.*;
-import se.meltwater.utils.Utils;
+import it.unimi.dsi.big.webgraph.Utils;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;

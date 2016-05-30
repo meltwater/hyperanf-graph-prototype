@@ -1,7 +1,6 @@
 package it.unimi.dsi.big.webgraph;
 
 import it.unimi.dsi.logging.ProgressLogger;
-import se.meltwater.utils.Utils;
 
 import java.io.File;
 import java.io.IOException;

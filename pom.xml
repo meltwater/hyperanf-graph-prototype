@@ -5,9 +5,9 @@
         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>se.meltwater</groupId>
-    <artifactId>hyperanf</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <groupId>it.unimi.dsi</groupId>
+    <artifactId>webgraph-big</artifactId>
+    <version>3.4.0</version>
 
     <properties>
         <slf4j.version>1.6.4</slf4j.version>

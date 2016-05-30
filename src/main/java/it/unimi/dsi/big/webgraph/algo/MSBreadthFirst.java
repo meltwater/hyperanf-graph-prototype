@@ -5,7 +5,7 @@ import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 import it.unimi.dsi.big.webgraph.MutableGraph;
-import se.meltwater.utils.Utils;
+import it.unimi.dsi.big.webgraph.Utils;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -148,7 +148,6 @@ public class MSBreadthFirst {
                 temp = ObjectBigArrays.get(this.travelers,node);
                 temp = temp == null ? travelers[bfs] : temp.merge(travelers[bfs],0);
                 ObjectBigArrays.set(this.travelers,node,temp);
-                //ObjectBigArrays.set(travelersNext,node,temp);
             }
         }
 

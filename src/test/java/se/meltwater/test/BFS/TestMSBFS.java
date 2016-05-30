@@ -12,7 +12,6 @@ import it.unimi.dsi.big.webgraph.MutableGraph;
 import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 import it.unimi.dsi.big.webgraph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
-import se.meltwater.utils.Utils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -49,7 +48,7 @@ public class TestMSBFS {
             numNodes = graph.numNodes();
             long sources[] = TestUtils.generateRandomNodes(numNodes,(int)numNodes,1);
             MSBreadthFirst.Traveler t = new DummyTraveler();
-            MSBreadthFirst.Traveler[] travelers = Utils.repeat(t,sources.length, new MSBreadthFirst.Traveler[0]);
+            MSBreadthFirst.Traveler[] travelers = repeat(t,sources.length, new MSBreadthFirst.Traveler[0]);
             AtomicBoolean noNull = new AtomicBoolean(true);
             MSBreadthFirst.Visitor v = (long x, BitSet y, BitSet z, int d, MSBreadthFirst.Traveler t2) -> {if(t2 == null) noNull.set(false);};
             MSBreadthFirst msbfs = new MSBreadthFirst(graph);
@@ -368,4 +367,21 @@ public class TestMSBFS {
             assertEquals("Node " + node + " should be clear",0,bitset.cardinality());
         }
     }
+
+    /**
+     *
+     * @param elem
+     * @param times
+     * @param dummyArr This is for {@link ArrayList#toArray(Object[])} which needs a dummy array
+     * @param <T>
+     * @return
+     */
+    public static <T> T[] repeat(T elem, int times, T[] dummyArr){
+        ArrayList<T> ret = new ArrayList<>(times);
+        for (int i = 0; i < times ; i++) {
+            ret.add(elem);
+        }
+        return ret.toArray(dummyArr);
+    }
+
 }

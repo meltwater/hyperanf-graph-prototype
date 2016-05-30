@@ -2,7 +2,7 @@ package se.meltwater.benchmarks;
 
 import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.MutableGraph;
-import se.meltwater.utils.Utils;
+import it.unimi.dsi.big.webgraph.Utils;
 
 import java.io.PrintWriter;
 import java.text.DateFormat;
