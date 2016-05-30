@@ -3,17 +3,23 @@ package it.unimi.dsi.big.webgraph;
 import it.unimi.dsi.logging.ProgressLogger;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 
 /**
+ *
+ * Creates a mutable graph of an immutable graph. This is done by keeping track of two graphs:
+ * the original immutable graph and a {@link SimulatedGraph}. When edges are added to this
+ * graph they are inserted into the simulated graph. A union is created by
+ * {@link UnionImmutableGraph}. As the simulated graph quickly takes up a lot of memory
+ * the unioned graph are eventually stored as a temporary BVGraph. This is done when
+ * {@code unionVsGraphMemoryRatioThreshold < memoryUsage(simulatedGraph)/memoryUsage(unionedGraph)}.
+ * The stored graph is then loaded as the original graph and the simulated graph is cleared.
+ *
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
  *
- * Wraps an Immutable graph to be able to use it
- * with the MutableGraph interface. The MutableGraph interface
- * is useful in testing as the type of the graph is now
- * abstracted away from the test cases.
  */
 public class ImmutableGraphWrapper extends MutableGraph{
 
@@ -26,28 +32,66 @@ public class ImmutableGraphWrapper extends MutableGraph{
     private static int graphID = 0;
     private int thisID;
     private int fileVersion = 0;
+    private LoadMethod loadMethod;
 
-    private float unionVsGraphMemoryRatioThreashold ;
+    private float unionVsGraphMemoryRatioThreshold;
     private final int dataStructureOverheadFactor = 11;
     private long graphHeapUsageBytes;
     private long additionalGraphHeapUsageBytes;
 
+    public final static float DEFAULT_UNION_VS_GRAPH_MEMORY_RATIO_THRESHOLD = 8.0f;
+    public static final LoadMethod DEFAULT_LOAD_METHOD = LoadMethod.MAPPED;
+
+    /**
+     * Creates a mutable graph of an immutable graph.
+     *
+     * @param graph The immutable graph to wrap.
+     */
     public ImmutableGraphWrapper(ImmutableGraph graph) {
-        this(graph, 8.0f);
+        this(graph, DEFAULT_UNION_VS_GRAPH_MEMORY_RATIO_THRESHOLD);
     }
 
-    public ImmutableGraphWrapper(ImmutableGraph graph, float unionVsGraphMemoryRatioThreashold) {
+    /**
+     * Creates a mutable graph of an immutable graph with the default load method
+     * {@link ImmutableGraphWrapper#DEFAULT_LOAD_METHOD}.
+     *
+     * @param graph The immutable graph to wrap
+     * @param unionVsGraphMemoryRatioThreshold The ratio at which the graph should be stored.
+     */
+    public ImmutableGraphWrapper(ImmutableGraph graph, float unionVsGraphMemoryRatioThreshold) {
+        this(graph,unionVsGraphMemoryRatioThreshold,DEFAULT_LOAD_METHOD);
+    }
+
+    /**
+     * Creates a mutable graph of an immutable graph with the default storage threshold
+     * {@link ImmutableGraphWrapper#DEFAULT_UNION_VS_GRAPH_MEMORY_RATIO_THRESHOLD}.
+     *
+     * @param graph The immutable graph to wrap
+     * @param loadMethod The method to use when re-loading the graph
+     */
+    public ImmutableGraphWrapper(ImmutableGraph graph, LoadMethod loadMethod){
+        this(graph,DEFAULT_UNION_VS_GRAPH_MEMORY_RATIO_THRESHOLD,loadMethod);
+    }
+
+    /**
+     * Creates a mutable graph of an immutable graph.
+     *
+     * @param graph The immutable graph to wrap
+     * @param unionVsGraphMemoryRatioThreshold The ratio at which the graph should be stored.
+     * @param loadMethod The method to use when re-loading the graph
+     */
+    public ImmutableGraphWrapper(ImmutableGraph graph, float unionVsGraphMemoryRatioThreshold, LoadMethod loadMethod){
         thisID = graphID++;
         additionalEdges = new SimulatedGraph();
         originalGraph = graph;
         this.graph = graph;
-        this.unionVsGraphMemoryRatioThreashold = unionVsGraphMemoryRatioThreashold;
+        this.unionVsGraphMemoryRatioThreshold = unionVsGraphMemoryRatioThreshold;
 
         graphHeapUsageBytes = Utils.getMemoryUsage(graph);
         additionalGraphHeapUsageBytes = Utils.getMemoryUsage(additionalEdges);
+        this.loadMethod = loadMethod;
+
     }
-
-
 
     public void close(){
         if(thisPath != null){
@@ -100,12 +144,22 @@ public class ImmutableGraphWrapper extends MutableGraph{
         try {
             checkFile();
             BVGraph.store(graph, thisPath, 0, 0, -1, -1, 0);
-            this.graph = BVGraph.loadMapped(thisPath);
+            this.graph = loadGraph();
             originalGraph = this.graph;
             cleanOldFile(oldPath);
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(0);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private ImmutableGraph loadGraph() throws IOException {
+        switch (loadMethod){
+            case STANDARD:   return BVGraph.load(thisPath);
+            case OFFLINE:    return BVGraph.loadOffline(thisPath);
+            case SEQUENTIAL: return BVGraph.loadSequential(thisPath);
+            case MAPPED:     return BVGraph.loadMapped(thisPath);
+            case ONCE:       return BVGraph.loadOnce(new FileInputStream(thisPath));
+            default:         throw new RuntimeException("Case missing");
         }
     }
 
@@ -129,7 +183,7 @@ public class ImmutableGraphWrapper extends MutableGraph{
 
         graph = unionEdges(additionalEdges, edges);
 
-        if(unionVsGraphMemoryRatio > unionVsGraphMemoryRatioThreashold) {
+        if(unionVsGraphMemoryRatio > unionVsGraphMemoryRatioThreshold) {
             storeGraphs(graph);
 
             additionalEdges = new SimulatedGraph();
@@ -183,7 +237,7 @@ public class ImmutableGraphWrapper extends MutableGraph{
 
     @Override
     public MutableGraph copy(){
-        return new ImmutableGraphWrapper(graph.copy(), unionVsGraphMemoryRatioThreashold);
+        return new ImmutableGraphWrapper(graph.copy(), unionVsGraphMemoryRatioThreshold);
     }
 
     @Override
@@ -223,7 +277,7 @@ public class ImmutableGraphWrapper extends MutableGraph{
         try {
             ImmutableGraph transpose = Transform.transposeOffline(graph, (int) graph.numNodes(), null, new ProgressLogger());
 
-            ImmutableGraphWrapper transposeWrapper = new ImmutableGraphWrapper(transpose, unionVsGraphMemoryRatioThreashold);
+            ImmutableGraphWrapper transposeWrapper = new ImmutableGraphWrapper(transpose, unionVsGraphMemoryRatioThreshold);
             transposeWrapper.setGraphHeapUsageBytes(this.graphHeapUsageBytes);
             transposeWrapper.storeGraphs(transpose);
 
