@@ -6,7 +6,7 @@ for all nodes in a dynamic graph.
 
 It is an extension to the [Webgraph framework](http://webgraph.di.unimi.it/).
 
-DANF was created for our Master Thesis, Approximate neighborhood function 
+DANF was created for our Master Thesis, DANF: Approximate neighborhood function
 on large dynamic graphs, in Computer Science at 
 Chalmers University of Technology.
 
