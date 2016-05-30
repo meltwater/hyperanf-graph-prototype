@@ -1,7 +1,7 @@
 package se.meltwater.benchmarks;
 
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.MutableGraph;
 import se.meltwater.utils.Utils;
 
 import java.io.PrintWriter;
@@ -58,7 +58,7 @@ public class BenchmarkUtils {
      * @param graph
      * @param objectToMeasureMemory
      */
-    public static void printAndLogStatistics(PrintWriter writer, int nrModified, long lastTime, long startTime, int bulkSize, long currentTime, IGraph graph, Object objectToMeasureMemory) {
+    public static void printAndLogStatistics(PrintWriter writer, int nrModified, long lastTime, long startTime, int bulkSize, long currentTime, MutableGraph graph, Object objectToMeasureMemory) {
         long elapsedTime = currentTime - lastTime;
         float timePerBulkSeconds = elapsedTime / 1000.0f;
         float dps = bulkSize / timePerBulkSeconds;
@@ -72,12 +72,11 @@ public class BenchmarkUtils {
         System.out.print("Modified " + bulkSize + " edges. ");
         System.out.print("Time per bulk: " + timePerBulkSeconds + "s. ");
         System.out.print("DPS: " + dps + ". ");
-        System.out.print("Heap size: " + heapSize + " Gb. ");
         System.out.print("NrArcs: " + 0/*graph.getNumberOfArcs()*/ + " ");
-        System.out.print("NrNodes: " + graph.getNumberOfNodes() + " ");
+        System.out.print("NrNodes: " + graph.numNodes() + " ");
         System.out.println("Total time: " + elapsedTimeSinceStart + "s.");
 
-        writer.println(modifiedInMillions + " " + dps + " " + heapSize + " " + elapsedTimeSinceStart  + " " + /*graph.getNumberOfArcs()*/0 + " " + graph.getNumberOfNodes());
+        writer.println(modifiedInMillions + " " + dps + " " + heapSize + " " + elapsedTimeSinceStart  + " " + /*graph.getNumberOfArcs()*/0 + " " + graph.numNodes());
         writer.flush();
     }
 }

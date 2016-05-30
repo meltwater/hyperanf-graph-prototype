@@ -1,11 +1,11 @@
 package se.meltwater.benchmarks;
 
 import it.unimi.dsi.big.webgraph.BVGraph;
-import se.meltwater.algo.DANF;
-import se.meltwater.algo.TrivialDynamicANF;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.algo.DANF;
+import it.unimi.dsi.big.webgraph.algo.TrivialDynamicANF;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -52,8 +52,8 @@ public class DanfVsTrivial {
 
     public void benchmark() throws IOException, InterruptedException {
 
-        IGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
-        IGraph graph2 = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
+        MutableGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
+        MutableGraph graph2 = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
 
         DANF danf = new DANF(h,log2m,graph);
         TrivialDynamicANF tanf = new TrivialDynamicANF(h,log2m,graph2);
@@ -64,17 +64,17 @@ public class DanfVsTrivial {
         writer.println("%BulkSize DanfEPS DanfGraphMemory DanfCounterMemory DanfVcMemory DanfMsbfsMemory TrivialEPS TrivialMemory nrArcs nrNodes");
 
         while(bulkSize <= maxBulkSize) {
-            Edge[] edges = generateEdges(graph.getNumberOfNodes(), bulkSize);
+            Edge[] edges = generateEdges(graph.numNodes(), bulkSize);
 
             AddEdgesIntoDanfAndUpdateMeasurements(danf, edges);
             addEdgesIntoTanfAndUpdateMeasurements(tanf, edges);
 
             writer.println(bulkSize + " " + danfEps + " " + danfGraphGB+ " " + danfCounterGB + " " + danfVCGB + " " + danfMSBFSGB
-                    + " " + trivialEps + " " + trivialTotalMemory  + " " + added + " " + graph.getNumberOfNodes());
+                    + " " + trivialEps + " " + trivialTotalMemory  + " " + added + " " + graph.numNodes());
             writer.flush();
 
             System.out.println(bulkSize + " edges, " + danfEps + " Danf DPS, " + danfTotalMemory + "GB DANF memory, " + trivialEps + " Trivial DPS, " +
-                    trivialTotalMemory + "GB trivial memory, " + added + " " + graph.getNumberOfNodes());
+                    trivialTotalMemory + "GB trivial memory, " + added + " " + graph.numNodes());
 
             added += bulkSize;
             bulkSize += bulkSizeIncrease;
