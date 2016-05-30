@@ -101,7 +101,7 @@ public class ImmutableGraphWrapper extends MutableGraph{
         try {
             checkFile();
             BVGraph.store(graph, thisPath, 0, 0, -1, -1, 0);
-            this.graph = BVGraph.load(thisPath);
+            this.graph = BVGraph.loadMapped(thisPath);
             originalGraph = this.graph;
             cleanOldFile(oldPath);
         } catch (Exception e) {

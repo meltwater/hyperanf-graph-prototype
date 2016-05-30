@@ -8,8 +8,6 @@ import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.MutableGraph;
 import it.unimi.dsi.util.HyperLogLogCounterArray;
 import se.meltwater.utils.Utils;
-import se.meltwater.vertexcover.DynamicVertexCover;
-import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.io.IOException;
 import java.util.*;
