@@ -29,7 +29,7 @@ public class DanfBenchmark {
     private final int log2m = 7;
     private final int h = 3;
     private final int edgesToAdd =   1000000;
-    private final int bulkSize =      10000;
+    private final int bulkSize =       10000;
 
     /**
      * Benchmarks the time to insert edges into Dvanf using a real graph.

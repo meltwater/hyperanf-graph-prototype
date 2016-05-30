@@ -4,7 +4,10 @@ import java.util.Comparator;
 import java.util.TreeSet;
 
 /**
- * // TODO Class description
+ * A BoundedTreeSet is a generic TreeSet with a
+ * maxCapacity c. After c additions the last element
+ * (according to the comparator) will be thrown away
+ * at every addition.
  *
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen

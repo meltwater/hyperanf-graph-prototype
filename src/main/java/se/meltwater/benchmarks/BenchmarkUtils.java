@@ -11,7 +11,9 @@ import java.util.Date;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Created by johan on 2016-05-27.
+ *
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
  */
 public class BenchmarkUtils {
 

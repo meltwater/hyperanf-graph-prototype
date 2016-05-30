@@ -20,9 +20,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
- *
- *
- *
  */
 public class DANF implements DynamicNeighborhoodFunction{
 
@@ -47,42 +44,6 @@ public class DANF implements DynamicNeighborhoodFunction{
 
     private int found = 0;
     private int visited = 0;
-
-    public long getMemoryUsageGraphBytes() {
-        return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes();
-    }
-
-    public long getMemoryUsageCounterBytes() {
-         return Utils.getMemoryUsage(counterIndex) + Utils.getMemoryUsage(history);
-    }
-
-    public long getMemoryUsageVCBytes() {
-        return vc.getMemoryUsageBytes();
-    }
-
-    public long getMemoryUsageMsBfsBytes() {
-        return transposeMSBFS.getMemoryUsageBytes(trav -> (long)((PropagationTraveler)trav).bits.length*counterLongWords*Long.BYTES);
-    }
-
-    public long getMemoryUsageBytes() {
-
-        long msbfsBytes = transposeMSBFS.getMemoryUsageBytes(trav -> (long)((PropagationTraveler)trav).bits.length*counterLongWords*Long.BYTES);
-        long otherBytes = Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes;
-
-        System.out.println("Ratio: " + msbfsBytes / (float)otherBytes);
-
-        System.out.println("Graph: " + graph.getMemoryUsageBytes() + ". transpose: " + graphTranspose.getMemoryUsageBytes() +
-                           ". vc: " + Utils.getMemoryUsage(vc) + ". counterIndex: " + Utils.getMemoryUsage(counterIndex) + ". history: " + Utils.getMemoryUsage(history) + ". " +
-                           "MSBFS: " + msbfsBytes +
-                           ". Ratio: " + (float)msbfsBytes/(Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes) +
-                           ". Ratio history:" + (float)Utils.getMemoryUsage(history)/((Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes)));
-
-        System.out.println("VC Size: " + vc.getVertexCoverSize() + ", Total nodes: " + graph.getNumberOfNodes() + ", ratio: " + vc.getVertexCoverSize() / (float)graph.getNumberOfNodes() );
-
-        return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes() +
-                Utils.getMemoryUsage(vc, counterIndex, history) +
-                transposeMSBFS.getMemoryUsageBytes(trav -> (long)((PropagationTraveler)trav).bits.length*counterLongWords*Long.BYTES);
-    }
 
 
     public DANF(int h, int log2m, IGraph graph){
@@ -233,7 +194,6 @@ public class DANF implements DynamicNeighborhoodFunction{
                 throw new RuntimeException("Removed nodes not supported in DANF.updateAffectedNodes");
             }
         }
-
     }
 
     /**
@@ -477,6 +437,43 @@ public class DANF implements DynamicNeighborhoodFunction{
         }catch (InterruptedException e){
             throw new RuntimeException("An error occurred when performing the breadth first search",e);
         }
+    }
+
+
+    public long getMemoryUsageGraphBytes() {
+        return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes();
+    }
+
+    public long getMemoryUsageCounterBytes() {
+        return Utils.getMemoryUsage(counterIndex) + Utils.getMemoryUsage(history);
+    }
+
+    public long getMemoryUsageVCBytes() {
+        return vc.getMemoryUsageBytes();
+    }
+
+    public long getMemoryUsageMsBfsBytes() {
+        return transposeMSBFS.getMemoryUsageBytes(trav -> (long)((PropagationTraveler)trav).bits.length*counterLongWords*Long.BYTES);
+    }
+
+    public long getMemoryUsageBytes() {
+
+        long msbfsBytes = transposeMSBFS.getMemoryUsageBytes(trav -> (long)((PropagationTraveler)trav).bits.length*counterLongWords*Long.BYTES);
+        long otherBytes = Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes;
+
+        System.out.println("Ratio: " + msbfsBytes / (float)otherBytes);
+
+        System.out.println("Graph: " + graph.getMemoryUsageBytes() + ". transpose: " + graphTranspose.getMemoryUsageBytes() +
+                ". vc: " + Utils.getMemoryUsage(vc) + ". counterIndex: " + Utils.getMemoryUsage(counterIndex) + ". history: " + Utils.getMemoryUsage(history) + ". " +
+                "MSBFS: " + msbfsBytes +
+                ". Ratio: " + (float)msbfsBytes/(Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes) +
+                ". Ratio history:" + (float)Utils.getMemoryUsage(history)/((Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes)));
+
+        System.out.println("VC Size: " + vc.getVertexCoverSize() + ", Total nodes: " + graph.getNumberOfNodes() + ", ratio: " + vc.getVertexCoverSize() / (float)graph.getNumberOfNodes() );
+
+        return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes() +
+                Utils.getMemoryUsage(vc, counterIndex, history) +
+                transposeMSBFS.getMemoryUsageBytes(trav -> (long)((PropagationTraveler)trav).bits.length*counterLongWords*Long.BYTES);
     }
 
     private MSBreadthFirst.Visitor propagateVisitor(LongOpenHashSet otherSourceNodes){
