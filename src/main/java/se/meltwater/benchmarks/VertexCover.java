@@ -1,11 +1,6 @@
 package se.meltwater.benchmarks;
 
-import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.ImmutableGraphWrapper;
-import se.meltwater.graph.SimulatedGraph;
+import it.unimi.dsi.big.webgraph.*;
 import se.meltwater.vertexcover.DynamicVertexCover;
 
 import java.io.IOException;
@@ -67,7 +62,7 @@ public class VertexCover {
         final int bulkSize =    10000000;
 
 
-        IGraph graphToInsert = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile));
+        MutableGraph graphToInsert = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile));
         DynamicVertexCover dvc = new DynamicVertexCover(new SimulatedGraph());
 
         PrintWriter writer = new PrintWriter(dataFile);
@@ -87,8 +82,8 @@ public class VertexCover {
      * @param dvc
      * @param writer
      */
-    private static void insertAllEdgesFromGraphIntoDvc(int bulkSize, IGraph graphToInsert, DynamicVertexCover dvc, PrintWriter writer) {
-        IGraph graph = new SimulatedGraph(); //Mock graph, DVC wont use it
+    private static void insertAllEdgesFromGraphIntoDvc(int bulkSize, MutableGraph graphToInsert, DynamicVertexCover dvc, PrintWriter writer) {
+        MutableGraph graph = new SimulatedGraph(); //Mock graph, DVC wont use it
         // These needs to be global for lambda to work
         added = 0;
         lastTime = System.currentTimeMillis();
@@ -119,13 +114,13 @@ public class VertexCover {
         final String graphName = "it-2004";
         final String graphFile = graphFolder + graphName;
 
-        IGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
+        MutableGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
 
-        final long edgesToDelete = graph.getNumberOfArcs();
+        final long edgesToDelete = graph.numArcs();
         final int bulkSize =       10000000;
 
         System.out.println("Loading transpose");
-        IGraph graphTranspose = graph.transpose();
+        MutableGraph graphTranspose = graph.transpose();
 
         System.out.println("Inserting into DVC");
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
@@ -149,7 +144,7 @@ public class VertexCover {
      * @param dvc
      * @param writer
      */
-    private static void deleteAllEdgesFromDvcWithoutRemovingFromGraph(IGraph graph, long edgesToDelete, int bulkSize, IGraph graphTranspose, DynamicVertexCover dvc, PrintWriter writer) {
+    private static void deleteAllEdgesFromDvcWithoutRemovingFromGraph(MutableGraph graph, long edgesToDelete, int bulkSize, MutableGraph graphTranspose, DynamicVertexCover dvc, PrintWriter writer) {
         // Global for lambda to work
         added = 0;
         System.out.println("Starting deletion");
@@ -242,7 +237,7 @@ public class VertexCover {
 
         insertRandomEdgesIntoDvc(graph, dvc, maxNode, edgesToAdd, bulkSize, true, null);
 
-        final int edgesToRemove = (int)graph.getNumberOfArcs();
+        final int edgesToRemove = (int)graph.numArcs();
 
         PrintWriter writer = new PrintWriter(dataFile);
         writer.println("#" + dateString + " Simulated Graph; " + edgesToRemove + " edges will be deleted from the dvc in bulks of " +

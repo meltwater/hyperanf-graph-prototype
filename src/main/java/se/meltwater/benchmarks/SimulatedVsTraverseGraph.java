@@ -1,10 +1,6 @@
 package se.meltwater.benchmarks;
 
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.SimulatedGraph;
-import se.meltwater.graph.TraverseGraph;
+import it.unimi.dsi.big.webgraph.*;
 import se.meltwater.utils.Utils;
 
 import java.io.FileNotFoundException;

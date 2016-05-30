@@ -1,10 +1,10 @@
 package se.meltwater.benchmarks;
 
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import se.meltwater.bfs.MSBreadthFirst;
-import se.meltwater.bfs.StandardBreadthFirst;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.big.webgraph.algo.MSBreadthFirst;
+import it.unimi.dsi.big.webgraph.algo.StandardBreadthFirst;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -79,7 +79,7 @@ public class StandardBFSVsMSBFS {
      * @param h
      * @return The elapsed time in millis
      */
-    private static long performStandardBfsAndMeasureTime(long[] sources, IGraph graph, int h) {
+    private static long performStandardBfsAndMeasureTime(long[] sources, MutableGraph graph, int h) {
         StandardBreadthFirst bfs = new StandardBreadthFirst();
         long startTime = System.currentTimeMillis();
         bfs.breadthFirstSearch(sources, graph, h);
@@ -95,7 +95,7 @@ public class StandardBFSVsMSBFS {
      * @return
      * @throws InterruptedException
      */
-    private static long performMSBfsAndMeasureTime(long[] sources, IGraph graph, final int h) throws InterruptedException {
+    private static long performMSBfsAndMeasureTime(long[] sources, MutableGraph graph, final int h) throws InterruptedException {
         MSBreadthFirst.Visitor visitor = (long node, BitSet bfsVisits, BitSet seen, int depth, MSBreadthFirst.Traveler t) -> {
             if(depth == h) {
                 bfsVisits.clear();

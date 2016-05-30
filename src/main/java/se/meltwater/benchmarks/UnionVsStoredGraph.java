@@ -1,8 +1,8 @@
 package se.meltwater.benchmarks;
 
+import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -108,7 +108,7 @@ public class UnionVsStoredGraph {
         long averageTimeAlwaysUnionSinceSample    = alwaysUnionTimeSinceSample     / numberOfIterationsBetweenSample;
         long averageTimeSometimesUnionSinceSample = sometimesUnionTimeSinceSample  / numberOfIterationsBetweenSample;
 
-        writer.println(addedEdges / bulkSize + " " + bulkSize + " " + ratioThatSometimesReaches + " " + graphStored.getNumberOfNodes() + " " +
+        writer.println(addedEdges / bulkSize + " " + bulkSize + " " + ratioThatSometimesReaches + " " + graphStored.numNodes() + " " +
                 averageTimeAlwaysUnionSinceSample + " " + alwaysUnionGraphSizeGigaBytes + " " + averageTimeSometimesUnionSinceSample + " " + sometimesUnionGraphSizeGigaBytes + " " +
                 averageTimeStoredSinceSample + " " + storedGraphSizeGigaBytes);
         writer.flush();
