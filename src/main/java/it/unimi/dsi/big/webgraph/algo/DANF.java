@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.util.HyperLogLogCounterArray;
 import it.unimi.dsi.big.webgraph.Utils;
 
@@ -13,51 +14,123 @@ import java.io.IOException;
 import java.util.*;
 
 /**
+ *
+ * A dynamic approximate neighborhood function calculator. The algorithm
+ * is based on HyperANF from the article "HyperANF: Approximating the Neighbourhood
+ * Function of Very Large Graphs on a Budget". See {@link HyperBall} which is an extension to
+ * HyperANF. DANF is developed in the paper "DANF: Approximate Neighborhood Function on Large
+ * Dynamic Graphs".
+ *
+ * To use this class, start by initiating the class using one of the constructors. A
+ * ProgressLogger and the size of partitions can be set by {@link DANF#withPartitionSize(int)} and
+ * {@link DANF#withProgressLogger(ProgressLogger)}. When new edges are produced, call
+ * {@link DANF#addEdges(Edge...)}. DANF will insert the edges in the graph and the transpose.
+ * DANF will also insert the edges into the vertex cover. The graphs and vertex cover
+ * specified to DANF should never be modified outside of the instance as that will
+ * introduce bugs. The history will be updated and the neighborhood function can be
+ * calculated by {@link DANF#count(long, int)}.
+ *
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
  */
 public class DANF implements DynamicNeighborhoodFunction{
 
-    private MutableGraph graph;
-    private MutableGraph graphTranspose;
-    private IDynamicVertexCover vc;
+    protected MutableGraph graph;
+    protected MutableGraph graphTranspose;
+    protected IDynamicVertexCover vc;
 
-    private long[][] counterIndex;
-    private long nextFreeCounterIndex = 0;
+    protected long[][] counterIndex;
+    protected long nextFreeCounterIndex = 0;
 
-    private HyperLogLogCounterArray[] history;
+    protected HyperLogLogCounterArray[] history;
     private int counterLongWords;
 
-    private MSBreadthFirst transposeMSBFS;
+    protected MSBreadthFirst transposeMSBFS;
 
-    private int h;
+    protected int h;
 
-    private long cachedNode = -1, cachedNodeIndex;
     private boolean closed = false;
 
     private final int STATIC_LOLOL = 0;
 
-    private int found = 0;
-    private int visited = 0;
+    protected ProgressLogger pl = null;
+    protected int partitionSize = DEFAULT_PARTITION_SIZE;
 
+    public static final int DEFAULT_PARTITION_SIZE = 5000;
 
-
-
+    /**
+     * Creates the graph transpose. Initiates the vertex cover. Runs
+     * HyperBall and saves the history.
+     *
+     * @param h     The number of hops of the neighborhood function that should be calculated.
+     * @param log2m The number of register bits that should be used (the logarithm of the number of registers).
+     * @param graph The graph which the neighborhood function should be calculated on.
+     */
     public DANF(int h, int log2m, MutableGraph graph){
-        this(new DynamicVertexCover(graph),h,log2m,graph,Util.randomSeed());
+        this(h,log2m,graph,Util.randomSeed(),new DynamicVertexCover(graph));
     }
 
+    /**
+     *
+     * Creates the graph transpose. Initiates the vertex cover. Runs
+     * HyperBall using the specified seed and saves the history.
+     *
+     * @param h     The number of hops of the neighborhood function that should be calculated.
+     * @param log2m The number of register bits that should be used (the logarithm of the number of registers).
+     * @param graph The graph which the neighborhood function should be calculated on.
+     * @param seed  The seed to use for HyperBall
+     */
     public DANF(int h, int log2m, MutableGraph graph, long seed){
-        this(new DynamicVertexCover(graph),h,log2m,graph,seed);
+        this(h,log2m,graph,seed,new DynamicVertexCover(graph));
     }
 
-    public DANF(IDynamicVertexCover vertexCover, int h, int log2m, MutableGraph graph, long seed){
+    /**
+     *
+     * Creates the graph transpose. Runs HyperBall using the specified seed and saves the history.
+     *
+     * @param h     The number of hops of the neighborhood function that should be calculated.
+     * @param log2m The number of register bits that should be used (the logarithm of the number of registers).
+     * @param graph The graph which the neighborhood function should be calculated on.
+     * @param seed  The seed to use for HyperBall
+     * @param vc    The vertex cover to use
+     */
+    public DANF(int h, int log2m, MutableGraph graph, long seed, IDynamicVertexCover vc){
+        this(h,log2m,graph,graph.transpose(),seed,vc);
+    }
+
+    /**
+     *
+     * Initiates the vertex cover. Runs HyperBall and saves the history.
+     *
+     * @param h     The number of hops of the neighborhood function that should be calculated.
+     * @param log2m The number of register bits that should be used (the logarithm of the number of registers).
+     * @param graph The graph which the neighborhood function should be calculated on.
+     * @param graphTranspose The graph transpose
+     */
+    public DANF(int h, int log2m, MutableGraph graph, MutableGraph graphTranspose){
+        this(h,log2m,graph,graphTranspose,Util.randomSeed(),new DynamicVertexCover(graph));
+    }
+
+
+    /**
+     *
+     * Runs HyperBall using the specified seed and saves the history.
+     *
+     * @param h     The number of hops of the neighborhood function that should be calculated.
+     * @param log2m The number of register bits that should be used (the logarithm of the number of registers).
+     * @param graph The graph which the neighborhood function should be calculated on.
+     * @param graphTranspose The graph transpose
+     * @param seed The seed to use for HyperBall
+     * @param vertexCover The vertex cover to use
+     */
+    public DANF(int h, int log2m, MutableGraph graph, MutableGraph graphTranspose, long seed,
+                IDynamicVertexCover vertexCover){
 
         vc = vertexCover;
         this.h = h;
         history = new HyperLogLogCounterArray[h];
         this.graph = graph;
-        this.graphTranspose = graph.transpose();
+        this.graphTranspose = graphTranspose;
 
         transposeMSBFS = new MSBreadthFirst(graphTranspose);
 
@@ -70,7 +143,9 @@ public class DANF implements DynamicNeighborhoodFunction{
             insertNodeToCounterIndex(node);
         }
 
-        HyperBall hyperBall = new HyperBall(graph,graphTranspose,log2m,seed);
+        if(pl != null)
+            pl.logger().info("Starting HyperBall calculation.");
+        HyperBall hyperBall = new HyperBall(graph,graphTranspose,log2m,seed,pl);
         hyperBall.init();
         try {
             for (int i = 1; i <= h; i++) {
@@ -86,6 +161,29 @@ public class DANF implements DynamicNeighborhoodFunction{
                 e.printStackTrace();
             }
         }
+    }
+
+    /**
+     * Set the partition size that will be used on inserted edges. The bigger the partition,
+     * the faster the algorithm runs, but the more memory is required.
+     *
+     * @param partitionSize
+     * @return
+     */
+    public DANF withPartitionSize(int partitionSize){
+        this.partitionSize = partitionSize;
+        return this;
+    }
+
+    /**
+     * Use a progress logger to monitor the progress of inserted edges.
+     *
+     * @param pl
+     * @return
+     */
+    public DANF withProgressLogger(ProgressLogger pl){
+        this.pl = pl;
+        return this;
     }
 
     /**
@@ -128,7 +226,8 @@ public class DANF implements DynamicNeighborhoodFunction{
 
         Edge[] flippedEdges = new Edge[edges.length];
         long maxNode = 0;
-        for (int i = 0; i < edges.length; i++) {
+        int i;
+        for (i = 0; i < edges.length; i++) {
             Edge edge = edges[i];
             maxNode = Math.max(maxNode,Math.max(edge.to,edge.from));
             affectedNodes.putAll(vc.insertEdge(edge));
@@ -299,9 +398,12 @@ public class DANF implements DynamicNeighborhoodFunction{
      * Returns the approximate neighborhood function for the given
      * node with reach {@code h}.
      *
+     * The neighborhood function with reach less than the specified h
+     * in the constructor is only available for nodes in the vertex cover.
+     *
      * @param node
      * @param h
-     * @return
+     * @return The approximate neighborhood function for the specified node using the specified number of hops.
      */
     public double count(long node, int h) {
         checkH(h);
@@ -373,7 +475,6 @@ public class DANF implements DynamicNeighborhoodFunction{
      * @throws InterruptedException
      */
     private void propagate(Edge ... edges) {
-        int partitionSize = 5000;
 
         LongOpenHashSet otherSourceNodes = new LongOpenHashSet();
         if(edges.length > partitionSize * 1.1) {
@@ -381,7 +482,6 @@ public class DANF implements DynamicNeighborhoodFunction{
             double[] values = new double[(int)graph.numNodes()];
             for (int i = 0; i < edges.length; i++) {
                 Edge e = edges[i];
-                //values[(int) e.from] = graph.outdegree(e.from);
                 values[(int) e.from] = count(e.from, h);
             }
 
@@ -394,7 +494,12 @@ public class DANF implements DynamicNeighborhoodFunction{
 
 
         try {
-
+            if(pl != null) {
+                pl.itemsName = "Partitions";
+                pl.expectedUpdates = (int) Math.ceil((float) edges.length / partitionSize);
+                pl.start("Starting insertion of " + edges.length + " edges in " +
+                        (int)Math.ceil((float) edges.length / partitionSize) + " partitions of size " + partitionSize);
+            }
             PropagationTraveler[] travelers = new PropagationTraveler[Math.min(partitionSize, edges.length)];
             long[] fromNodes = new long[Math.min(partitionSize, edges.length)];
             for (int i = 0, j = 0; i < edges.length; i++, j++) {
@@ -415,21 +520,24 @@ public class DANF implements DynamicNeighborhoodFunction{
                 otherSourceNodes.remove(edges[i].from);
                 if (j == partitionSize - 1) {
                     transposeMSBFS.breadthFirstSearch(fromNodes, propagateVisitor(otherSourceNodes), travelers);
-                    System.out.println("Pruned paths: " + found + " ;Visited : " + visited);
+                    if(pl != null)
+                        pl.update();
 
                     if (edges.length - i - 1 < partitionSize) {
                         travelers = new PropagationTraveler[edges.length - i - 1];
                         fromNodes = new long[edges.length - i - 1];
                     }
                     j = -1;
-                    System.out.println("Completed: " + i + " nodes.");
                 }
             }
 
             if (fromNodes.length > 0) {
                 transposeMSBFS.breadthFirstSearch(fromNodes, propagateVisitor(otherSourceNodes), travelers);
-                System.out.println("Pruned paths: " + found + " ;Visited : " + visited);
+                if(pl != null)
+                    pl.update();
             }
+            if(pl != null)
+                pl.stop();
 
         }catch (InterruptedException e){
             throw new RuntimeException("An error occurred when performing the breadth first search",e);
@@ -454,20 +562,6 @@ public class DANF implements DynamicNeighborhoodFunction{
     }
 
     public long getMemoryUsageBytes() {
-
-        long msbfsBytes = transposeMSBFS.getMemoryUsageBytes(trav -> (long)((PropagationTraveler)trav).bits.length*counterLongWords*Long.BYTES);
-        long otherBytes = Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes;
-
-        System.out.println("Ratio: " + msbfsBytes / (float)otherBytes);
-
-        System.out.println("Graph: " + graph.getMemoryUsageBytes() + ". transpose: " + graphTranspose.getMemoryUsageBytes() +
-                ". vc: " + Utils.getMemoryUsage(vc) + ". counterIndex: " + Utils.getMemoryUsage(counterIndex) + ". history: " + Utils.getMemoryUsage(history) + ". " +
-                "MSBFS: " + msbfsBytes +
-                ". Ratio: " + (float)msbfsBytes/(Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes) +
-                ". Ratio history:" + (float)Utils.getMemoryUsage(history)/((Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes)));
-
-        System.out.println("VC Size: " + vc.getVertexCoverSize() + ", Total nodes: " + graph.numNodes() + ", ratio: " + vc.getVertexCoverSize() / (float)graph.numNodes() );
-
         return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes() +
                 Utils.getMemoryUsage(vc, counterIndex, history) +
                 transposeMSBFS.getMemoryUsageBytes(trav -> (long)((PropagationTraveler)trav).bits.length*counterLongWords*Long.BYTES);
@@ -476,7 +570,6 @@ public class DANF implements DynamicNeighborhoodFunction{
     private MSBreadthFirst.Visitor propagateVisitor(LongOpenHashSet otherSourceNodes){
         boolean needsSync = true;//!history[STATIC_LOLOL].longwordAligned;
         return (long visitNode, BitSet bfsVisits, BitSet seen, int d, MSBreadthFirst.Traveler t) -> {
-            visited++;
             int depth = d + 1;
 
             PropagationTraveler propTraver = (PropagationTraveler) t;
@@ -516,7 +609,6 @@ public class DANF implements DynamicNeighborhoodFunction{
 
             if (depth == h || otherSourceNodes.contains(visitNode)) {
                 if(otherSourceNodes.contains(visitNode)) {
-                    found++;
                 }
                 bfsVisits.clear();
             }
