@@ -1,7 +1,42 @@
 package it.unimi.dsi.big.webgraph.algo;
 
-/*		 
- * Copyright (C) 2010-2015 Sebastiano Vigna 
+import com.martiansoftware.jsap.*;
+import it.unimi.dsi.Util;
+import it.unimi.dsi.big.webgraph.*;
+import it.unimi.dsi.bits.LongArrayBitVector;
+import it.unimi.dsi.fastutil.Hash;
+import it.unimi.dsi.fastutil.booleans.BooleanBigArrays;
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
+import it.unimi.dsi.fastutil.doubles.DoubleIterator;
+import it.unimi.dsi.fastutil.floats.FloatBigArrays;
+import it.unimi.dsi.fastutil.ints.Int2DoubleFunction;
+import it.unimi.dsi.fastutil.io.BinIO;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
+import it.unimi.dsi.fastutil.longs.LongBigArrays;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.LongSets;
+import it.unimi.dsi.io.SafelyCloseable;
+import it.unimi.dsi.lang.ObjectParser;
+import it.unimi.dsi.logging.ProgressLogger;
+import it.unimi.dsi.util.HyperLogLogCounterArray;
+import it.unimi.dsi.util.KahanSummation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+
+/*
+ * Copyright (C) 2010-2015 Sebastiano Vigna
  *
  *  This program is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the Free
@@ -18,121 +53,63 @@ package it.unimi.dsi.big.webgraph.algo;
  *
  */
 
-import it.unimi.dsi.Util;
-import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.GraphClassParser;
-import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
-import it.unimi.dsi.big.webgraph.Transform;
-import it.unimi.dsi.bits.LongArrayBitVector;
-import it.unimi.dsi.fastutil.Hash;
-import it.unimi.dsi.fastutil.booleans.BooleanBigArrays;
-import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
-import it.unimi.dsi.fastutil.doubles.DoubleIterator;
-import it.unimi.dsi.fastutil.floats.FloatBigArrays;
-import it.unimi.dsi.fastutil.ints.Int2DoubleFunction;
-import it.unimi.dsi.fastutil.io.BinIO;
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
-import it.unimi.dsi.fastutil.longs.LongBigArrays;
-import it.unimi.dsi.fastutil.longs.LongBigList;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.longs.LongSets;
-import it.unimi.dsi.io.SafelyCloseable;
-import it.unimi.dsi.lang.ObjectParser;
-import it.unimi.dsi.logging.ProgressLogger;
-import it.unimi.dsi.util.HyperLogLogCounterArray;
-import it.unimi.dsi.util.KahanSummation;
-
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.ObjectOutputStream;
-import java.io.PrintStream;
-import java.io.RandomAccessFile;
-import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.martiansoftware.jsap.FlaggedOption;
-import com.martiansoftware.jsap.JSAP;
-import com.martiansoftware.jsap.JSAPException;
-import com.martiansoftware.jsap.JSAPResult;
-import com.martiansoftware.jsap.Parameter;
-import com.martiansoftware.jsap.SimpleJSAP;
-import com.martiansoftware.jsap.Switch;
-import com.martiansoftware.jsap.UnflaggedOption;
-
 /** <p>Computes an approximation of the neighbourhood function, of the size of the reachable sets,
  * and of (discounted) positive geometric centralities of a graph using HyperBall.
- * 
- * <p>HyperBall is an algorithm computing by dynamic programming an approximation 
+ *
+ * <p>HyperBall is an algorithm computing by dynamic programming an approximation
  * of the sizes of the balls of growing radius around the nodes of a graph. Starting from
  * these data, it can approximate the <em>neighbourhood function</em> of a graph, that is, the function returning
  * for each <var>t</var> the number of pairs of nodes at distance at most <var>t</var>,
- * the number of nodes reachable from each node, Bavelas's closeness centrality, Lin's index, and 
+ * the number of nodes reachable from each node, Bavelas's closeness centrality, Lin's index, and
  * <em>harmonic centrality</em> (studied by Paolo Boldi and Sebastiano Vigna in &ldquo;<a href ="http://vigna.di.unimi.it/papers.php#BoVAC">Axioms for Centrality</a>&rdquo;, <i>Internet Math.</i>, 2014).
  * HyperBall can also compute <em>discounted centralities</em>, in which the weight assigned to a node is some
  * specified function of its distance. All centralities are computed in their <em>positive</em> version (i.e.,
  * using distance <em>from</em> the source: see below how to compute the more usual, and useful, <em>negative</em> version).
- *  
- * <p>HyperBall has been described by Paolo Boldi and Sebastiano Vigna in 
- * &ldquo;In-Core Computation of Geometric Centralities with HyperBall: A Hundred Billion Nodes and Beyond&rdquo;, 
+ *
+ * <p>HyperBall has been described by Paolo Boldi and Sebastiano Vigna in
+ * &ldquo;In-Core Computation of Geometric Centralities with HyperBall: A Hundred Billion Nodes and Beyond&rdquo;,
  * <i>Proc. of 2013 IEEE 13th International Conference on Data Mining Workshops (ICDMW 2013)</i>, IEEE, 2013,
  * and it is a generalization of the method described in &ldquo;HyperANF: Approximating the Neighbourhood Function of Very Large Graphs
  * on a Budget&rdquo;, by Paolo Boldi, Marco Rosa and Sebastiano Vigna,
- * <i>Proceedings of the 20th international conference on World Wide Web</i>, pages 625&minus;634, ACM, (2011).  
- * 
+ * <i>Proceedings of the 20th international conference on World Wide Web</i>, pages 625&minus;634, ACM, (2011).
+ *
  * <p>Incidentally, HyperBall (actually, HyperANF) has been used to show that Facebook has just <a href="http://vigna.dsi.unimi.it/papers.php#BBRFDS">four degrees of separation</a>.
- *   
+ *
  * <p>At step <var>t</var>, for each node we (approximately) keep track (using {@linkplain HyperLogLogCounterArray HyperLogLog counters})
  * of the set of nodes at distance at most <var>t</var>. At each iteration, the sets associated with the successors of each node are merged,
  * thus obtaining the new sets. A crucial component in making this process efficient and scalable is the usage of
- * <em>broadword programming</em> to implement the join (merge) phase, which requires maximising in parallel the list of registers associated with 
- * each successor (the implementation is geared towards 64-bits processors). 
- * 
+ * <em>broadword programming</em> to implement the join (merge) phase, which requires maximising in parallel the list of registers associated with
+ * each successor (the implementation is geared towards 64-bits processors).
+ *
  * <p>Using the approximate sets, for each <var>t</var> we estimate the number of pairs of nodes (<var>x</var>,<var>y</var>) such
  * that the distance from <var>x</var> to <var>y</var> is at most <var>t</var>. Since during the computation we are also
  * in possession of the number of nodes at distance <var>t</var> &minus; 1, we can also perform computations
  * using the number of nodes at distance <em>exactly</em> <var>t</var> (e.g., centralities).
- * 
+ *
  * <p>To use this class, you must first create an instance.
- * Then, you call {@link #init()} (once) and then {@link #iterate()} as much as needed (you can init/iterate several times, if you want so). 
+ * Then, you call {@link #init()} (once) and then {@link #iterate()} as much as needed (you can init/iterate several times, if you want so).
  * Finally, you {@link #close()} the instance. The method {@link #modified()} will tell you whether the internal state of
  * the algorithm has changed. A {@linkplain #run(long, double) commodity method} will do everything for you.
- * 
+ *
  * <p>If you additionally pass to the constructor (or on the command line) the <em>transpose</em> of your graph (you can compute it using {@link Transform#transposeOffline(ImmutableGraph,int)}
  * or {@link Transform#transposeOffline(ImmutableGraph, int)}), when three quarters of the nodes stop changing their value
  * HyperBall will switch to a <em>systolic</em> computation: using the transpose, when a node changes it will signal back
- * to its predecessors that at the next iteration they could change. At the next scan, only the successors of 
- * signalled nodes will be scanned. In particular, 
+ * to its predecessors that at the next iteration they could change. At the next scan, only the successors of
+ * signalled nodes will be scanned. In particular,
  * when a very small number of nodes is modified by an iteration, HyperBall will switch to a systolic <em>local</em> mode,
  * in which all information about modified nodes is kept in (traditional) dictionaries, rather than being represented as arrays of booleans.
  * This strategy makes the last phases of the computation significantly faster, and makes
  * in practice the running time of HyperBall proportional to the theoretical bound
  * <i>O</i>(<var>m</var> log <var>n</var>), where <var>n</var>
- * is the number of nodes and <var>m</var> is the number of the arcs of the graph. 
- * 
+ * is the number of nodes and <var>m</var> is the number of the arcs of the graph.
+ *
  * <p>Deciding when to stop iterating is a rather delicate issue. The only safe way is to iterate until {@link #modified()} is zero,
  * and systolic (local) computation makes this goal easily attainable.
  * However, in some cases one can assume that the graph is not pathological, and stop when the relative increment of the number of pairs goes below
  * some threshold.
  *
  * <h2>Computing Centralities</h2>
- * 
+ *
  * <p>Note that usually one is interested in the <em>negative</em> version of a centrality measure, that is, the version
  * that depends on the <em>incoming</em> arcs. HyperBall can compute only <em>positive</em> centralities: if you are
  * interested (as it usually happens) in the negative version, you must pass to HyperBall the <em>transpose</em> of the graph
@@ -141,7 +118,7 @@ import com.martiansoftware.jsap.UnflaggedOption;
  * does not alter its computation.
  *
  * <h2>Configuring the JVM</h2>
- * 
+ *
  * <p>HyperBall computations go against all basic assumptions of Java garbage collection. It is thus
  * essential that you reconfigure your JVM properly. A good starting point is the following command line:
  * <pre>
@@ -150,7 +127,7 @@ import com.martiansoftware.jsap.UnflaggedOption;
  *      -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=99 -XX:+UseCMSInitiatingOccupancyOnly \
  *      -verbose:gc -Xloggc:gc.log ...
  * </pre>
- * 
+ *
  * <ul>
  * <li><code>-Xss256K</code> reduces the stack memory used by each thread.
  * <li><code>-Xmx100G -Xms100G</code> size the heap: the more memory, the more counter per registers
@@ -166,37 +143,39 @@ import com.martiansoftware.jsap.UnflaggedOption;
  * minor and major collections are very infrequent (as they should be).
  *
  * <h2>Performance issues</h2>
- * 
- * <p>This class can perform <em>external</em> computations: instead of keeping in core memory 
+ *
+ * <p>This class can perform <em>external</em> computations: instead of keeping in core memory
  * an old and a new copy of the counters, it can dump on disk an <em>update list</em> containing pairs &lt;<var>node</var>,&nbsp;<var>counter</var>&gt;.
  * At the end of an iteration, the update list is loaded and applied to the counters in memory.
  * The process is of course slower, but the core memory used is halved.
- * 
+ *
  * <p>If there are several available cores, the runs of {@link #iterate()} will be <em>decomposed</em> into relatively
  * small tasks (small blocks of nodes) and each task will be assigned to the first available core. Since all tasks are completely
  * independent, this behaviour ensures a very high degree of parallelism. Be careful, however, because this feature requires a graph with
  * a reasonably fast random access (e.g., in the case of a {@link BVGraph}, short reference chains), as many
  * calls to {@link ImmutableGraph#nodeIterator(long)} will be made. The <em>granularity</em> of the decomposition
  * is the number of nodes assigned to each task.
- * 
+ *
  * <p>In any case, when attacking very large graphs (in particular, in external mode) some system tuning (e.g.,
  * increasing the filesystem commit time) is a good idea. Also experimenting with granularity and buffer sizes
  * can be useful. Smaller buffers reduce the waits on I/O calls, but increase the time spent in disk seeks.
- * Large buffers improve I/O, but they use a lot of memory. The best possible setup is the one in which 
+ * Large buffers improve I/O, but they use a lot of memory. The best possible setup is the one in which
  * the cores are 100% busy during the graph scan, and the I/O time
  * logged at the end of a scan is roughly equal to the time that is necessary to reload the counters from disk:
  * in such a case, essentially, you are computing as fast as possible.
- * 
+ *
  * @author Sebastiano Vigna
  * @author Paolo Boldi
  * @author Marco Rosa
+ * @author Simon Lindhén
+ * @author Johan Nilsson Hansen
  */
 
-public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseable {
+public class HyperBall implements SafelyCloseable {
 	private static final Logger LOGGER = LoggerFactory.getLogger( HyperBall.class );
 	public static final boolean ASSERTS = false;
 	private static final long serialVersionUID = 1L;
-		
+
 	/** The default granularity of a task. */
 	public static final int DEFAULT_GRANULARITY = 16 * 1024;
 	/** The default size of a buffer in bytes. */
@@ -261,7 +240,7 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 	protected final Condition start;
 	/** The current computation phase. */
 	public int phase;
-	/** Whether this approximator has been already closed. */ 
+	/** Whether this approximator has been already closed. */
 	protected boolean closed;
 	/** The threads performing the computation. */
 	protected final IterationThread thread[];
@@ -290,10 +269,6 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 	protected double relativeIncrement;
 	/** Whether we should used an update list on disk, instead of computing results in core memory. */
 	protected boolean external;
-	/** If {@link #external} is false, the arrays where results are stored. */
-	protected final long[][] resultBits;
-	/** If {@link #external} is false, a {@link #registerSize}-bit views of {@link #resultBits}. */
-	protected final LongBigList resultRegisters[];
 	/** For each counter, whether it has changed its value. We use an array of boolean (instead of a {@link LongArrayBitVector}) just for access speed. */
 	protected boolean[][] modifiedCounter;
 	/** For each newly computed counter, whether it has changed its value. {@link #modifiedCounter}
@@ -310,17 +285,29 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 	protected final LongSet localNextMustBeChecked;
 	/** One of the throwables thrown by some of the threads, if at least one thread has thrown a throwable. */
 	protected volatile Throwable threadThrowable;
-	
+
+	protected HyperLogLogCounterArray workingCounter;
+	protected HyperLogLogCounterArray resultCounter;
+
+	/**
+	 *
+	 * @return The counter with the results after previous iteration.
+	 */
+	public HyperLogLogCounterArray getCounter(){
+		// After an iteration the result will be in the workingCounter
+		return workingCounter;
+	}
+
 	protected final static int ensureRegisters( final int log2m ) {
 		if ( log2m < 4 ) throw new IllegalArgumentException( "There must be at least 16 registers per counter" );
 		if ( log2m > 60 ) throw new IllegalArgumentException( "There can be at most 2^60 registers per counter" );
 		return log2m;
 	}
-	
+
 	/** Computes the number of threads.
-	 * 
+	 *
 	 * <p>If the specified number of threads is zero, {@link Runtime#availableProcessors()} will be returned.
-	 * 
+	 *
 	 * @param suggestedNumberOfThreads
 	 * @return the actual number of threads.
 	 */
@@ -328,9 +315,9 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 		if ( suggestedNumberOfThreads != 0 ) return suggestedNumberOfThreads;
 		return Runtime.getRuntime().availableProcessors();
 	}
-	
+
 	/** Creates a new HyperBall instance.
-	 * 
+	 *
 	 * @param g the graph whose neighbourhood function you want to compute.
 	 * @param gt the transpose of <code>g</code> in case you want to perform systolic computations, or <code>null</code>.
 	 * @param log2m the logarithm of the number of registers per counter.
@@ -340,63 +327,78 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 	 * @param granularity the number of node per task in a multicore environment (it will be rounded to the next multiple of 64), or 0 for {@link #DEFAULT_GRANULARITY}.
 	 * @param external if true, results of an iteration will be stored on disk.
 	 */
-	public HyperBall( final ImmutableGraph g, final ImmutableGraph gt, final int log2m, final ProgressLogger pl, final int numberOfThreads, final int bufferSize, final int granularity, final boolean external ) throws IOException {
+	public HyperBall(final ImmutableGraph g, final ImmutableGraph gt, final int log2m, final ProgressLogger pl, final int numberOfThreads, final int bufferSize, final int granularity, final boolean external )  {
 		this( g, gt, log2m, pl, numberOfThreads, bufferSize, granularity, external, false, false, null, Util.randomSeed() );
 	}
 
 	/** Creates a new HyperBall instance using default values.
-	 * 
+	 *
 	 * @param g the graph whose neighbourhood function you want to compute.
 	 * @param gt the transpose of <code>g</code> in case you want to perform systolic computations, or <code>null</code>.
 	 * @param log2m the logarithm of the number of registers per counter.
 	 */
-	public HyperBall( final ImmutableGraph g, final ImmutableGraph gt, final int log2m ) throws IOException {
+	public HyperBall(final ImmutableGraph g, final ImmutableGraph gt, final int log2m )  {
 		this( g, gt, log2m, null, 0, 0, 0, false );
 	}
 
 	/** Creates a new HyperBall instance using default values.
-	 * 
+	 *
+	 * @param g the graph whose neighbourhood function you want to compute.
+	 * @param gt the transpose of <code>g</code> in case you want to perform systolic computations, or <code>null</code>.
+	 * @param log2m the logarithm of the number of registers per counter.
+	 * @param seed The HyperLogLogCounterArray seed
+	 */
+	public HyperBall(final ImmutableGraph g, final ImmutableGraph gt, final int log2m, final long seed ) {
+		this( g, gt, log2m, null, 0, 0,0,false, false, false, null, seed );
+	}
+
+	public HyperBall(final ImmutableGraph g, final ImmutableGraph gt, final int log2m, final long seed , ProgressLogger pl) {
+		this( g, gt, log2m, pl, 0, 0,0,false, false, false, null, seed );
+	}
+
+	/** Creates a new HyperBall instance using default values.
+	 *
 	 * @param g the graph whose neighbourhood function you want to compute.
 	 * @param gt the transpose of <code>g</code> in case you want to perform systolic computations, or <code>null</code>.
 	 * @param log2m the logarithm of the number of registers per counter.
 	 * @param pl a progress logger, or <code>null</code>.
 	 */
-	public HyperBall( final ImmutableGraph g, final ImmutableGraph gt, final int log2m, final ProgressLogger pl ) throws IOException {
+	public HyperBall(final ImmutableGraph g, final ImmutableGraph gt, final int log2m, final ProgressLogger pl )  {
 		this( g, null, log2m, pl, 0, 0, 0, false );
 	}
 
 	/** Creates a new HyperBall instance using default values and disabling systolic computation.
-	 * 
+	 *
 	 * @param g the graph whose neighbourhood function you want to compute.
 	 * @param log2m the logarithm of the number of registers per counter.
 	 */
-	public HyperBall( final ImmutableGraph g, final int log2m ) throws IOException {
+	public HyperBall(final ImmutableGraph g, final int log2m )  {
 		this( g, null, log2m );
 	}
 
 	/** Creates a new HyperBall instance using default values and disabling systolic computation.
-	 * 
+	 *
 	 * @param g the graph whose neighbourhood function you want to compute.
 	 * @param log2m the logarithm of the number of registers per counter.
 	 * @param seed the random seed passed to {@link HyperLogLogCounterArray#HyperLogLogCounterArray(long, long, int, long)}.
 	 */
-	public HyperBall( final ImmutableGraph g, final int log2m, final long seed ) throws IOException {
+	public HyperBall(final ImmutableGraph g, final int log2m, final long seed ) {
 		this( g, null, log2m, null, 0, 0, 0, false, false, false, null, seed );
 	}
 
 	/** Creates a new HyperBall instance using default values and disabling systolic computation.
-	 * 
+	 *
 	 * @param g the graph whose neighbourhood function you want to compute.
 	 * @param log2m the logarithm of the number of registers per counter.
 	 * @param pl a progress logger, or <code>null</code>.
 	 */
-	public HyperBall( final ImmutableGraph g, final int log2m, final ProgressLogger pl ) throws IOException {
+	public HyperBall(final ImmutableGraph g, final int log2m, final ProgressLogger pl ) {
 		this( g, null, log2m, pl );
 	}
 
 
 	/** Creates a new HyperBall instance.
-	 * 
+	 *
 	 * @param g the graph whose neighbourhood function you want to compute.
 	 * @param gt the transpose of <code>g</code>, or <code>null</code>.
 	 * @param log2m the logarithm of the number of registers per counter.
@@ -407,17 +409,18 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 	 * @param external if true, results of an iteration will be stored on disk.
 	 * @param doSumOfDistances whether the sum of distances from each node should be computed.
 	 * @param doSumOfInverseDistances whether the sum of inverse distances from each node should be computed.
-	 * @param discountFunction an array (possibly <code>null</code>) of discount functions. 
+	 * @param discountFunction an array (possibly <code>null</code>) of discount functions.
 	 * @param seed the random seed passed to {@link HyperLogLogCounterArray#HyperLogLogCounterArray(long, long, int, long)}.
 	 */
-	public HyperBall( final ImmutableGraph g, final ImmutableGraph gt, final int log2m, final ProgressLogger pl, final int numberOfThreads, final int bufferSize, final int granularity, final boolean external, boolean doSumOfDistances, boolean doSumOfInverseDistances, final Int2DoubleFunction[] discountFunction, final long seed ) throws IOException {
-		super( g.numNodes(), g.numNodes(), ensureRegisters( log2m ), seed );
+	public HyperBall(final ImmutableGraph g, final ImmutableGraph gt, final int log2m, final ProgressLogger pl, final int numberOfThreads, final int bufferSize, final int granularity, final boolean external, boolean doSumOfDistances, boolean doSumOfInverseDistances, final Int2DoubleFunction[] discountFunction, final long seed ) {
+
+		workingCounter = new HyperLogLogCounterArray(g.numNodes(), g.numNodes(), ensureRegisters( log2m ), seed);
 
 		info( "Seed : " + Long.toHexString( seed ) );
 
 		gotTranspose = gt != null;
 		localNextMustBeChecked = gotTranspose ? LongSets.synchronize( new LongOpenHashSet( Hash.DEFAULT_INITIAL_SIZE, Hash.VERY_FAST_LOAD_FACTOR ) ) : null;
-		
+
 		numNodes = g.numNodes();
 		try {
 			numArcs = g.numArcs();
@@ -426,15 +429,15 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 			// No number of arcs. We have to enumerate.
 			long a = 0;
 			final NodeIterator nodeIterator = g.nodeIterator();
-			for( long i = g.numNodes(); i-- != 0; ) {
+			for(long i = g.numNodes(); i-- != 0; ) {
 				nodeIterator.nextLong();
 				a += nodeIterator.outdegree();
 			}
 			numArcs = a;
 		}
 		squareNumNodes = (double)numNodes * numNodes;
-		
-		cumulativeOutdegrees = new EliasFanoCumulativeOutdegreeList( g, numArcs, Math.max( 0, 64 / m - 1 ) );
+
+		cumulativeOutdegrees = new EliasFanoCumulativeOutdegreeList( g, numArcs, Math.max( 0, 64 / workingCounter.m - 1 ) );
 
 		modifiedCounter = BooleanBigArrays.newBigArray( numNodes );
 		modifiedResultCounter = external ? null : BooleanBigArrays.newBigArray( numNodes );
@@ -452,19 +455,23 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 		this.discountFunction = discountFunction == null ? new Int2DoubleFunction[ 0 ] : discountFunction;
 		this.numberOfThreads = numberOfThreads( numberOfThreads );
 		this.granularity = numberOfThreads == 1 ? numNodes : granularity == 0 ? DEFAULT_GRANULARITY : ( ( granularity + Long.SIZE - 1 ) & ~( Long.SIZE - 1 ) );
-		this.bufferSize = Math.max( 1, ( bufferSize == 0 ? DEFAULT_BUFFER_SIZE : bufferSize ) / ( ( Long.SIZE / Byte.SIZE ) * ( counterLongwords + 1 ) ) ); 
-		
-		info( "Relative standard deviation: " + Util.format( 100 * HyperLogLogCounterArray.relativeStandardDeviation( log2m ) ) + "% (" + m  + " registers/counter, " + registerSize + " bits/register, " + Util.format( m * registerSize / 8. ) + " bytes/counter)" );
+		this.bufferSize = Math.max( 1, ( bufferSize == 0 ? DEFAULT_BUFFER_SIZE : bufferSize ) / ( ( Long.SIZE / Byte.SIZE ) * ( workingCounter.counterLongwords + 1 ) ) );
+
+		info( "Relative standard deviation: " + Util.format( 100 * HyperLogLogCounterArray.relativeStandardDeviation( log2m ) ) + "% (" + workingCounter.m  + " registers/counter, " + workingCounter.registerSize + " bits/register, " + Util.format( workingCounter.m * workingCounter.registerSize / 8. ) + " bytes/counter)" );
 		if ( external ) info( "Running " + this.numberOfThreads + " threads with a buffer of " + Util.formatSize( this.bufferSize ) + " counters" );
 		else info( "Running " + this.numberOfThreads + " threads" );
 
 		thread = new IterationThread[ this.numberOfThreads ];
-		
+
 		if ( external ) {
 			info( "Creating update list..." );
-			updateFile = File.createTempFile( HyperBall.class.getName(), "-temp" );
-			updateFile.deleteOnExit();	
-			fileChannel = ( randomAccessFile = new RandomAccessFile( updateFile, "rw" ) ).getChannel();
+			try {
+				updateFile = File.createTempFile(HyperBall.class.getName(), "-temp");
+				updateFile.deleteOnExit();
+				fileChannel = (randomAccessFile = new RandomAccessFile(updateFile, "rw")).getChannel();
+			}catch (IOException e){
+				throw new RuntimeException("Couldn't create temporary files for external use",e);
+			}
 		}
 		else {
 			updateFile = null;
@@ -481,29 +488,26 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 		sumOfInverseDistances = doSumOfInverseDistances ? FloatBigArrays.newBigArray( numNodes ) : null;
 		discountedCentrality = new float[ this.discountFunction.length ][][];
 		for ( int i = 0; i < this.discountFunction.length; i++ ) discountedCentrality[ i ] = FloatBigArrays.newBigArray( numNodes );
-		
+
 		info( "HyperBall memory usage: " + Util.formatSize2( usedMemory() ) + " [not counting graph(s)]" );
-		
+
 		if ( ! external ) {
 			info( "Allocating result bit vectors..." );
 			// Allocate vectors that will store the result.
-			resultBits = new long[ bits.length ][];
-			resultRegisters = new LongBigList[ bits.length ];
-			for( int i = bits.length; i-- != 0; ) resultRegisters[ i ] = ( LongArrayBitVector.wrap( resultBits[ i ] = new long[ bits[ i ].length ] ) ).asLongBigList( registerSize );
+			resultCounter = new HyperLogLogCounterArray(g.numNodes(), g.numNodes(), ensureRegisters( log2m ), seed);
 		}
 		else {
-			resultBits = null;
-			resultRegisters = null;
+			resultCounter = null;
 		}
-		
+
 		lock = new ReentrantLock();
 		allWaiting = lock.newCondition();
 		start = lock.newCondition();
 		aliveThreads = this.numberOfThreads;
-		
+
 		if ( this.numberOfThreads == 1 ) ( thread[ 0 ] = new IterationThread( g, gt, 0 ) ).start();
 		else for( int i = 0; i < this.numberOfThreads; i++ ) ( thread[ i ] = new IterationThread( g.copy(), gt != null ? gt.copy() : null, i ) ).start();
-		
+
 		// We wait for all threads being ready to start.
 		lock.lock();
 		try {
@@ -520,10 +524,10 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 	private void info( String s ) {
 		if ( pl != null ) pl.logger().info( s );
 	}
-	
+
 	private long usedMemory() {
 		long bytes = 0;
-		for( long[] a: bits ) bytes += a.length * ( (long)Long.SIZE / Byte.SIZE );
+		bytes += workingCounter.getUsedBytes();
 		if ( ! external ) bytes *= 2;
 		if ( sumOfDistances != null ) bytes += sumOfDistances.length * ( (long)Float.SIZE / Byte.SIZE );
 		if ( sumOfInverseDistances != null ) bytes += sumOfInverseDistances.length * ( (long)Float.SIZE / Byte.SIZE );
@@ -540,44 +544,44 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 	}
 
 	/** Initialises the approximator.
-	 * 
+	 *
 	 * <p>This method must be call before a series of {@linkplain #iterate() iterations}.
 	 * Note that it will <em>not</em> change the seed used by the underlying {@link HyperLogLogCounterArray}.
-	 * 
+	 *
 	 * @see #init(long)
 	 */
 	public void init() {
-		init( seed );
+		init( workingCounter.getJenkinsSeed() );
 	}
-		
+
 	/** Initialises the approximator, providing a new seed to the underlying {@link HyperLogLogCounterArray}.
-	 * 
+	 *
 	 * <p>This method must be call before a series of {@linkplain #iterate() iterations}.
-	 * @param seed passed to {@link #clear(long)}.
+	 * @param seed passed to {@link HyperLogLogCounterArray#clear(long)}.
 	 */
 	public void init( final long seed ) {
 		ensureOpen();
 		info( "Clearing all registers..." );
-		clear( seed );
+		workingCounter.clear( seed );
 
 		// We load the counter i with node i.
-		for( long i = numNodes; i-- != 0; ) add( i, i );
+		for( long i = numNodes; i-- != 0; ) workingCounter.add( i, i );
 
 		iteration = -1;
 		completed = systolic = local = preLocal = false;
-		
-		if ( ! external ) for( long[] a: resultBits ) Arrays.fill( a, 0 );
-		
+
+		if ( ! external ) resultCounter.clear(seed);
+
 		if ( sumOfDistances != null ) FloatBigArrays.fill( sumOfDistances, 0 );
 		if ( sumOfInverseDistances != null ) FloatBigArrays.fill( sumOfInverseDistances, 0 );
 		for ( int i = 0; i < discountFunction.length; i++ ) FloatBigArrays.fill( discountedCentrality[ i ], 0 );
-		
+
 		// The initial value (the iteration for this value does not actually happen).
 		neighbourhoodFunction.add( last = numNodes );
 
 		BooleanBigArrays.fill( modifiedCounter, true ); // Initially, all counters are modified.
-		
-		if ( pl != null ) { 
+
+		if ( pl != null ) {
 			pl.displayFreeMemory = true;
 			pl.itemsName = "iterates";
 			pl.start( "Iterating..." );
@@ -587,7 +591,7 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 	public void close() throws IOException {
 		if ( closed ) return;
 		closed = true;
-		
+
 		lock.lock();
 		try {
 			completed = true;
@@ -605,12 +609,12 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 			catch ( InterruptedException e ) {
 				throw new RuntimeException( e );
 			}
-		
-			if ( external ) {
-				randomAccessFile.close();
-				fileChannel.close();
-				updateFile.delete();
-			}
+
+		if ( external ) {
+			randomAccessFile.close();
+			fileChannel.close();
+			updateFile.delete();
+		}
 	}
 
 	protected void finalize() throws Throwable {
@@ -635,11 +639,11 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 		private final int index;
 		/** True if we should wait for the end of the current phase. */
 		private boolean threadShouldWait;
-		
+
 		/** Create a new iteration thread.
 		 * @param index the index of this thread (just used to identify the thread).
 		 */
-		private IterationThread( final ImmutableGraph g, ImmutableGraph gt, final int index ) {
+		private IterationThread(final ImmutableGraph g, ImmutableGraph gt, final int index ) {
 			this.g = g;
 			this.gt = gt;
 			this.index = index;
@@ -665,8 +669,7 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 		public void run() {
 			try {
 				// Lots of local caching.
-				final int registerSize = HyperBall.this.registerSize;
-				final int counterLongwords = HyperBall.this.counterLongwords;
+				final int counterLongwords = HyperBall.this.workingCounter.counterLongwords;
 				final boolean external = HyperBall.this.external;
 				final ImmutableGraph g = this.g;
 				final boolean doSumOfDistances = HyperBall.this.doSumOfDistances;
@@ -685,14 +688,14 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 				if ( external ) byteBuffer.clear();
 
 				for(;;) {
-					
+
 					if ( synchronize( 0 ) ) return;
 
 					// These variables might change across executions of the loop body.
 					final long granularity = HyperBall.this.adaptiveGranularity;
 					final long arcGranularity = (long)Math.ceil( (double)numArcs * granularity / numNodes );
-					final long bits[][] = HyperBall.this.bits;
-					final long resultBits[][] = HyperBall.this.resultBits;
+					final HyperLogLogCounterArray workingCounter = HyperBall.this.workingCounter;
+					final HyperLogLogCounterArray resultCounter = HyperBall.this.resultCounter;
 					final boolean[][] modifiedCounter = HyperBall.this.modifiedCounter;
 					final boolean[][] modifiedResultCounter = HyperBall.this.modifiedResultCounter;
 					final boolean[][] mustBeChecked = HyperBall.this.mustBeChecked;
@@ -700,10 +703,10 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 					final boolean systolic = HyperBall.this.systolic;
 					final boolean local = HyperBall.this.local;
 					final boolean preLocal = HyperBall.this.preLocal;
-					final int localCheckShift = 6 - log2m;
+					final int localCheckShift = 6 - workingCounter.log2m;
 					final long[] localCheckList = HyperBall.this.localCheckList;
 					final LongSet localNextMustBeChecked = HyperBall.this.localNextMustBeChecked;
-					
+
 					long start = -1;
 					long end = -1;
 					long modified = 0; // The number of registers that have been modified during the computation of the present task.
@@ -711,7 +714,7 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 
 					// In a local computation tasks are based on the content of localCheckList.
 					long upperLimit = local ? localCheckList.length : numNodes;
-					
+
 					/* During standard iterations, cumulates the neighbourhood function for the nodes scanned
 					 * by this thread. During systolic iterations, cumulates the *increase* of the
 					 * neighbourhood function for the nodes scanned by this thread. */
@@ -725,7 +728,7 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 							start = nextNode;
 							if ( local ) {
 								nextNode++;
-								if ( log2m < 6 ) {
+								if ( workingCounter.log2m < 6 ) {
 									/* We cannot split the list unless the boundary crosses a
 									 * multiple of 1 << localCheckShift. Otherwise, we might create
 									 * race conditions with other threads. */
@@ -735,32 +738,32 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 									}
 								}
 							}
-							else { 
+							else {
 								final long target = nextArcs + arcGranularity;
 								if ( target >= numArcs ) nextNode = numNodes;
 								else {
 									nextArcs = cumulativeOutdegrees.skipTo( target );
-									nextNode = cumulativeOutdegrees.currentIndex();										
+									nextNode = cumulativeOutdegrees.currentIndex();
 								}
 							}
 							end = nextNode;
-						}						
-						
-						final NodeIterator nodeIterator = local || systolic ? null : g.nodeIterator( start ); 
+						}
+
+						final NodeIterator nodeIterator = local || systolic ? null : g.nodeIterator( start );
 						long arcs = 0;
-						
+
 						for( long i = start; i < end; i++ ) {
 							final long node = local ? localCheckList[ (int)i ] : i;
 							/* The three cases in which we enumerate successors:
 							 * 1) A non-systolic computation (we don't know anything, so we enumerate).
 							 * 2) A systolic, local computation (the node is by definition to be checked, as it comes from the local check list).
-							 * 3) A systolic, non-local computation in which the node should be checked. 
+							 * 3) A systolic, non-local computation in which the node should be checked.
 							 */
 							if ( ! systolic || local || BooleanBigArrays.get( mustBeChecked, node ) ) {
 								long d;
 								long[][] successor = null;
 								LazyLongIterator successors = null;
-								
+
 								if ( local || systolic ) {
 									d = g.outdegree( node );
 									successors = g.successors( node );
@@ -770,44 +773,43 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 									d = nodeIterator.outdegree();
 									successor = nodeIterator.successorBigArray();
 								}
-								 
-								final int chunk = chunk( node );
-								getCounter( bits[ chunk ], node, t );
+
+								workingCounter.getCounter( node, t );
 								// Caches t's values into prevT
 								System.arraycopy( t, 0, prevT, 0, counterLongwords );
-								
+
 								boolean counterModified = false;
 
 								for( long j = d; j-- != 0; ) {
 									final long s = local || systolic ? successors.nextLong() : LongBigArrays.get( successor, j );
 									/* Neither self-loops nor unmodified counter do influence the computation. */
-									if ( s != node && BooleanBigArrays.get( modifiedCounter, s ) ) { 
+									if ( s != node && BooleanBigArrays.get( modifiedCounter, s ) ) {
 										counterModified = true; // This is just to mark that we entered the loop at least once.
-										getCounter( bits[ chunk( s ) ], s, u );
-										max( t, u, accumulator, mask );
+										workingCounter.getCounter( s, u );
+										workingCounter.max( t, u, accumulator, mask );
 									}
 								}
 
 								arcs += d;
-								
-								if ( ASSERTS )  {
-									LongBigList test = LongArrayBitVector.wrap( t ).asLongBigList( registerSize );
-									for( int rr = 0; rr < m; rr++ ) {
-										int max = (int)registers[ chunk( node ) ].getLong( ( node << log2m ) + rr );
-										if ( local || systolic ) successors = g.successors( node );
-										for( long j = d; j-- != 0; ) {
-											final long s = local || systolic ? successors.nextLong() : LongBigArrays.get( successor, j );
-											max = Math.max( max, (int)registers[ chunk( s ) ].getLong( ( s << log2m ) + rr ) );
-										}
-										assert max == test.getLong( rr ) : max + "!=" + test.getLong( rr ) + " [" + rr + "]";
-									}
-								}
+                                /*
+                                if ( ASSERTS )  {
+                                    LongBigList test = LongArrayBitVector.wrap( t ).asLongBigList( registerSize );
+                                    for( int rr = 0; rr < m; rr++ ) {
+                                        int max = (int)registers[ chunk( node ) ].getLong( ( node << log2m ) + rr );
+                                        if ( local || systolic ) successors = g.successors( node );
+                                        for( long j = d; j-- != 0; ) {
+                                            final long s = local || systolic ? successors.nextLong() : LongBigArrays.get( successor, j );
+                                            max = Math.max( max, (int)registers[ chunk( s ) ].getLong( ( s << log2m ) + rr ) );
+                                        }
+                                        assert max == test.getLong( rr ) : max + "!=" + test.getLong( rr ) + " [" + rr + "]";
+                                    }
+                                }*/
 
 								if ( counterModified ) {
 									/* If we enter this branch, we have maximised with at least one successor.
 									 * We must thus check explicitly whether we have modified the counter. */
 									counterModified = false;
-									for( int p = counterLongwords; p-- != 0; ) 
+									for( int p = counterLongwords; p-- != 0; )
 										if ( prevT[ p ] != t[ p ] ) {
 											counterModified = true;
 											break;
@@ -815,22 +817,22 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 								}
 
 								double post = Double.NaN;
-								
+
 								/* We need the counter value only if the iteration is standard (as we're going to
 								 * compute the neighbourhood function cumulating actual values, and not deltas) or
 								 * if the counter was actually modified (as we're going to cumulate the neighbourhood
 								 * function delta, or at least some centrality). */
-								if ( ! systolic || counterModified ) post = count( t, 0 );
+								if ( ! systolic || counterModified ) post = workingCounter.count( t, 0 );
 								if ( ! systolic ) neighbourhoodFunctionDelta.add( post );
-								
+
 								// Here counterModified is true only if the counter was *actually* modified.
 								if ( counterModified && ( systolic || doCentrality ) ) {
-									final double pre = count( node );
+									final double pre = workingCounter.count( node );
 									if ( systolic ) {
 										neighbourhoodFunctionDelta.add( -pre );
 										neighbourhoodFunctionDelta.add( post );
 									}
-									
+
 									if ( doCentrality ) {
 										final double delta = post - pre;
 										// Note that this code is executed only for distances > 0.
@@ -841,7 +843,7 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 										}
 									}
 								}
-								
+
 								if ( counterModified ) {
 									/* We keep track of modified counters in the result if we are
 									 * not in external mode (in external mode modified counters are
@@ -888,7 +890,8 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 									/* This is slightly subtle: if a counter is not modified, and
 									 * the present value was not a modified value in the first place,
 									 * then we can avoid updating the result altogether. */
-									if ( counterModified || BooleanBigArrays.get( modifiedCounter, node ) ) setCounter( t, resultBits[ chunk ], node );
+									if ( counterModified || BooleanBigArrays.get( modifiedCounter, node ) )
+										resultCounter.setCounter( t, node );
 									else unwritten++;
 								}
 							}
@@ -897,8 +900,7 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 								 * in the result vector might need to be updated because it does not
 								 * reflect our current value. */
 								if ( BooleanBigArrays.get( modifiedCounter, node ) ) {
-									final int chunk = chunk( node );
-									transfer( bits[ chunk ], resultBits[ chunk ], node );
+									resultCounter.transferNodeFrom(node,workingCounter);
 								}
 								else unwritten++;
 							}
@@ -928,9 +930,9 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 					synchronized( HyperBall.this ) {
 						current += neighbourhoodFunctionDelta.value();
 					}
-					
+
 					if ( external ) {
-						synchronize( 1 );						
+						synchronize( 1 );
 						/* Read into memory newly computed counters, updating modifiedCounter.
 						 * Note that if m is less than 64 copyFromLocal(), being unsynchronised, might
 						 * cause race conditions (when maximising each thread writes in a longword-aligned
@@ -938,14 +940,14 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 						 * lead to significant contention (as we cannot synchronise at a level finer than
 						 * a bit vector, and update lists might be quite dense and local), we prefer simply
 						 * to do the update with thread 0 only. */
-						if ( index == 0 || m >= Long.SIZE ) for(;;) {
+						if ( index == 0 || workingCounter.m >= Long.SIZE ) for(;;) {
 							byteBuffer.clear();
 							if ( fileChannel.read( byteBuffer ) <= 0 ) break;
 							byteBuffer.flip();
 							while( byteBuffer.hasRemaining() ) {
 								final long node = byteBuffer.getLong();
 								for( int p = counterLongwords; p-- != 0; ) t[ p ] = byteBuffer.getLong();
-								setCounter( t, bits[ chunk( node ) ], node );
+								workingCounter.setCounter( t, node );
 								BooleanBigArrays.set( modifiedCounter, node, true );
 							}
 						}
@@ -964,45 +966,45 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 				}
 			}
 		}
-		
+
 		public String toString() {
 			return "Thread " + index;
 		}
 	}
-	
+
 	/** Performs a new iteration of HyperBall. */
 	public void iterate() throws IOException {
 		ensureOpen();
 		try {
 			iteration++;
-						
+
 			// Let us record whether the previous computation was systolic or local.
-			final boolean previousWasSystolic = systolic; 
-			final boolean previousWasLocal = local; 
-			
-			/* If less than one fourth of the nodes have been modified, and we have the transpose, 
+			final boolean previousWasSystolic = systolic;
+			final boolean previousWasLocal = local;
+
+			/* If less than one fourth of the nodes have been modified, and we have the transpose,
 			 * it is time to pass to a systolic computation. */
 			systolic = gotTranspose && iteration > 0 && modified.get() < numNodes / 2;
 
-			/* Non-systolic computations add up the value of all counter. 
+			/* Non-systolic computations add up the value of all counter.
 			 * Systolic computations modify the last value by compensating for each modified counter. */
 			current = systolic ? last : 0;
 
 			// If we completed the last iteration in pre-local mode, we MUST run in local mode.
 			local = preLocal;
-			
+
 			// We run in pre-local mode if we are systolic and few nodes where modified.
 			preLocal = systolic && modified.get() < .1 * numNodes * numNodes / numArcs;
 
 			info( "Starting " + ( systolic ? "systolic iteration (local: " + local + "; pre-local: " + preLocal + ")"  : "standard " + ( external ? "external " : "" ) + "iteration" ) );
-			
+
 			if ( ! external ) {
 				if ( previousWasLocal ) for( long x: localCheckList ) BooleanBigArrays.set( modifiedResultCounter, x, false );
 				else BooleanBigArrays.fill( modifiedResultCounter, false );
 			}
-			
+
 			if ( local ) {
-				/* In case of a local computation, we convert the set of must-be-checked for the 
+				/* In case of a local computation, we convert the set of must-be-checked for the
 				 * next iteration into a check list. */
 				localCheckList = localNextMustBeChecked.toLongArray();
 				Arrays.sort( localCheckList );
@@ -1014,7 +1016,7 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 				// If the previous computation wasn't systolic, we must assume that all registers could have changed.
 				if ( ! previousWasSystolic ) BooleanBigArrays.fill( mustBeChecked, true );
 			}
-			
+
 			adaptiveGranularity = granularity;
 			if ( numberOfThreads > 1 && ! local ) {
 				if ( iteration > 0 ) {
@@ -1023,12 +1025,12 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 				}
 				info( "Adaptive granularity for this iteration: " + adaptiveGranularity );
 			}
-			
+
 			modified.set( 0 );
 			totalIoMillis = 0;
 			numberOfWrites = 0;
 			final ProgressLogger npl = pl == null ? null : new ProgressLogger( LOGGER, 1, TimeUnit.MINUTES, "arcs" );
-			
+
 			if ( npl != null ) {
 				arcs.set( 0 );
 				npl.expectedUpdates = systolic || local ? -1 : numArcs;
@@ -1073,7 +1075,7 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 				if ( ! external ) info( "Unwritten counters: " + Util.format( unwritten.longValue() ) + " (" + Util.format( 100.0 * unwritten.longValue() / numNodes ) + "%)" );
 				info( "Unmodified counters: " + Util.format( numNodes - modified.longValue() ) + " (" + Util.format( 100.0 * ( numNodes - modified.longValue() ) / numNodes ) + "%)" );
 			}
-			
+
 
 			if ( external ) {
 				if ( npl != null ) {
@@ -1082,10 +1084,10 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 				}
 
 				// Read into memory the newly computed counters.
-			
+
 				fileChannel.truncate( fileChannel.position() );
 				fileChannel.position( 0 );
-				
+
 				// In pre-local mode, we do not clear modified counters.
 				if ( ! preLocal ) BooleanBigArrays.fill( modifiedCounter, false );
 
@@ -1109,37 +1111,33 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 				}
 			}
 			else {
-				// Switch the bit vectors.
-				for( int i = 0; i < bits.length; i++ ) {
-					if ( npl != null ) npl.update( bits[ i ].length );
-					final LongBigList r = registers[ i ];
-					registers[ i ] = resultRegisters[ i ];
-					resultRegisters[ i ] = r;
-					final long[] b = bits[ i ];
-					bits[ i ] = resultBits[ i ];
-					resultBits[ i ] = b;
-				}
+				// To prevent allocating a completely new HyperLolLolArray we can reuse
+				// previous workingCounter in the resultCounter. As the data in the counter
+				// will be overwritten it doesn't matter what the content is.
+				final HyperLogLogCounterArray temp = workingCounter;
+				workingCounter = resultCounter;
+				resultCounter = temp;
 
 				// Switch modifiedCounters and modifiedResultCounters, and fill with zeroes the latter.
 				final boolean[][] t = modifiedCounter;
 				modifiedCounter = modifiedResultCounter;
 				modifiedResultCounter = t;
 			}
-			
+
 			if ( systolic ) {
 				// Switch mustBeChecked and nextMustBeChecked, and fill with zeroes the latter.
 				final boolean[][] t = mustBeChecked;
 				mustBeChecked = nextMustBeChecked;
 				nextMustBeChecked = t;
 			}
-			
+
 			last = current;
 			/* We enforce monotonicity. Non-monotonicity can only be caused
 			 * by approximation errors. */
 			final double lastOutput = neighbourhoodFunction.getDouble( neighbourhoodFunction.size() - 1 );
-			if ( current < lastOutput ) current = lastOutput; 
+			if ( current < lastOutput ) current = lastOutput;
 			relativeIncrement = current / lastOutput;
-			
+
 			if ( pl != null ) {
 				pl.logger().info( "Pairs: " + current + " (" + current * 100.0 / squareNumNodes + "%)"  );
 				pl.logger().info( "Absolute increment: " + ( current - lastOutput ) );
@@ -1156,20 +1154,20 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 	}
 
 	/** Returns the number of HyperLogLog counters that were modified by the last call to {@link #iterate()}.
-	 * 
+	 *
 	 * @return the number of HyperLogLog counters that were modified by the last call to {@link #iterate()}.
 	 */
 	public long modified() {
 		return modified.get();
 	}
-	
+
 	/** Runs HyperBall. The computation will stop when {@link #modified()} returns false. */
 	public void run() throws IOException {
 		run( Long.MAX_VALUE );
 	}
-	
+
 	/** Runs HyperBall.
-	 * 
+	 *
 	 * @param upperBound an upper bound to the number of iterations.
 	 */
 	public void run( final long upperBound ) throws IOException {
@@ -1177,17 +1175,17 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 	}
 
 	/** Runs HyperBall.
-	 * 
+	 *
 	 * @param upperBound an upper bound to the number of iterations.
 	 * @param threshold a value that will be used to stop the computation by relative increment if the neighbourhood function is being computed; if you specify -1,
 	 * the computation will stop when {@link #modified()} returns false.
 	 */
 	public void run( long upperBound, final double threshold ) throws IOException {
-		run( upperBound, threshold, seed );
+		run( upperBound, threshold, workingCounter.getJenkinsSeed() );
 	}
 
 	/** Runs HyperBall.
-	 * 
+	 *
 	 * @param upperBound an upper bound to the number of iterations.
 	 * @param threshold a value that will be used to stop the computation by relative increment if the neighbourhood function is being computed; if you specify -1,
 	 * the computation will stop when {@link #modified()} returns false.
@@ -1197,7 +1195,7 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 		upperBound = Math.min( upperBound, numNodes );
 
 		init( seed );
-		
+
 		for( long i = 0; i < upperBound; i++ ) {
 			iterate();
 
@@ -1214,43 +1212,43 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 
 		if ( pl != null ) pl.done();
 	}
-	
+
 	/** Throws a {@link NotSerializableException}, as this class implements {@link Serializable}
 	 * because it extends {@link HyperLogLogCounterArray}, but it's not really. */
 	private void writeObject( @SuppressWarnings("unused") final ObjectOutputStream oos ) throws IOException {
-        throw new NotSerializableException();
-    }
+		throw new NotSerializableException();
+	}
 
-	
+
 	public static void main( String arg[] ) throws IOException, JSAPException, IllegalArgumentException, ClassNotFoundException, IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException {
 		SimpleJSAP jsap = new SimpleJSAP( HyperBall.class.getName(), "Runs HyperBall on the given graph, possibly computing positive geometric centralities.\n\nPlease note that to compute negative centralities on directed graphs (which is usually what you want) you have to compute positive centralities on the transpose.",
-			new Parameter[] {
-			new FlaggedOption( "log2m", JSAP.INTEGER_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, 'l', "log2m", "The logarithm of the number of registers." ),
-			new FlaggedOption( "upperBound", JSAP.LONGSIZE_PARSER, Long.toString( Long.MAX_VALUE ), JSAP.NOT_REQUIRED, 'u', "upper-bound", "An upper bound to the number of iterations." ),
-			new FlaggedOption( "threshold", JSAP.DOUBLE_PARSER, "-1", JSAP.NOT_REQUIRED, 't', "threshold", "A threshold that will be used to stop the computation by relative increment. If it is -1, the iteration will stop only when all registers do not change their value (recommended)." ),
-			new FlaggedOption( "threads", JSAP.INTSIZE_PARSER, "0", JSAP.NOT_REQUIRED, 'T', "threads", "The number of threads to be used. If 0, the number will be estimated automatically." ),
-			new FlaggedOption( "granularity", JSAP.INTSIZE_PARSER, Integer.toString( DEFAULT_GRANULARITY ), JSAP.NOT_REQUIRED, 'g',  "granularity", "The number of node per task in a multicore environment." ),
-			new FlaggedOption( "bufferSize", JSAP.INTSIZE_PARSER, Util.formatBinarySize( DEFAULT_BUFFER_SIZE ), JSAP.NOT_REQUIRED, 'b',  "buffer-size", "The size of an I/O buffer in bytes." ),
-			new FlaggedOption( "neighbourhoodFunction", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'n',  "neighbourhood-function", "Store an approximation the neighbourhood function in text format." ),
-			new FlaggedOption( "sumOfDistances", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'd',  "sum-of-distances", "Store an approximation of the sum of distances from each node as a binary list of floats." ),
-			new FlaggedOption( "harmonicCentrality", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'h',  "harmonic-centrality", "Store an approximation of the positive harmonic centrality (the sum of the reciprocals of distances from each node) as a binary list of floats." ),
-			new FlaggedOption( "discountedGainCentrality", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'z',  "discounted-gain-centrality", "A positive discounted gain centrality to be approximated and stored; it is specified as O:F where O is the spec of an object of type Int2DoubleFunction and F is the name of the file where the binary list of floats will be stored. The spec can be either the name of a public field of HyperBall, or a constructor invocation of a class implementing Int2DoubleFunction." ).setAllowMultipleDeclarations( true ),
-			new FlaggedOption( "closenessCentrality", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'c',  "closeness-centrality", "Store an approximation of the positive closeness centrality of each node (the reciprocal of sum of the distances from each node) as a binary list of floats. Terminal nodes will have centrality equal to zero." ),
-			new FlaggedOption( "linCentrality", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'L',  "lin-centrality", "Store an approximation of the positive Lin centrality of each node (the reciprocal of sum of the distances from each node multiplied by the square of the number of nodes reachable from the node) as a binary list of floats. Terminal nodes will have centrality equal to one." ),
-			new FlaggedOption( "nieminenCentrality", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'N',  "nieminen-centrality", "Store an approximation of the positive Nieminen centrality of each node (the square of the number of nodes reachable from each node minus the sum of the distances from the node) as a binary list of floats." ),
-			new FlaggedOption( "reachable", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'r',  "reachable", "Store an approximation of the number of nodes reachable from each node as a binary list of floats." ),
-			new FlaggedOption( "seed", JSAP.LONG_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'S', "seed", "The random seed." ),
-			new Switch( "spec", 's', "spec", "The basename is not a basename but rather a specification of the form <ImmutableGraphImplementation>(arg,arg,...)." ),
-			new Switch( "offline", 'o', "offline", "Do not load the graph in main memory. If this option is used, the graph will be loaded in offline (for one thread) or mapped (for several threads) mode." ),
-			new Switch( "external", 'e', "external", "Use an external dump file instead of core memory to store new counter values. Note that the file might be very large: you might need to set suitably the Java temporary directory (-Djava.io.tmpdir=DIR)." ),
-			new UnflaggedOption( "basename", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The basename of the graph." ),
-			new UnflaggedOption( "basenamet", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The basename of the transpose graph for systolic computations (strongly suggested). If it is equal to <basename>, the graph will be assumed to be symmetric and will be loaded just once." ),
-			}		
+				new Parameter[] {
+						new FlaggedOption( "log2m", JSAP.INTEGER_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, 'l', "log2m", "The logarithm of the number of registers." ),
+						new FlaggedOption( "upperBound", JSAP.LONGSIZE_PARSER, Long.toString( Long.MAX_VALUE ), JSAP.NOT_REQUIRED, 'u', "upper-bound", "An upper bound to the number of iterations." ),
+						new FlaggedOption( "threshold", JSAP.DOUBLE_PARSER, "-1", JSAP.NOT_REQUIRED, 't', "threshold", "A threshold that will be used to stop the computation by relative increment. If it is -1, the iteration will stop only when all registers do not change their value (recommended)." ),
+						new FlaggedOption( "threads", JSAP.INTSIZE_PARSER, "0", JSAP.NOT_REQUIRED, 'T', "threads", "The number of threads to be used. If 0, the number will be estimated automatically." ),
+						new FlaggedOption( "granularity", JSAP.INTSIZE_PARSER, Integer.toString( DEFAULT_GRANULARITY ), JSAP.NOT_REQUIRED, 'g',  "granularity", "The number of node per task in a multicore environment." ),
+						new FlaggedOption( "bufferSize", JSAP.INTSIZE_PARSER, Util.formatBinarySize( DEFAULT_BUFFER_SIZE ), JSAP.NOT_REQUIRED, 'b',  "buffer-size", "The size of an I/O buffer in bytes." ),
+						new FlaggedOption( "neighbourhoodFunction", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'n',  "neighbourhood-function", "Store an approximation the neighbourhood function in text format." ),
+						new FlaggedOption( "sumOfDistances", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'd',  "sum-of-distances", "Store an approximation of the sum of distances from each node as a binary list of floats." ),
+						new FlaggedOption( "harmonicCentrality", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'h',  "harmonic-centrality", "Store an approximation of the positive harmonic centrality (the sum of the reciprocals of distances from each node) as a binary list of floats." ),
+						new FlaggedOption( "discountedGainCentrality", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'z',  "discounted-gain-centrality", "A positive discounted gain centrality to be approximated and stored; it is specified as O:F where O is the spec of an object of type Int2DoubleFunction and F is the name of the file where the binary list of floats will be stored. The spec can be either the name of a public field of HyperBall, or a constructor invocation of a class implementing Int2DoubleFunction." ).setAllowMultipleDeclarations( true ),
+						new FlaggedOption( "closenessCentrality", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'c',  "closeness-centrality", "Store an approximation of the positive closeness centrality of each node (the reciprocal of sum of the distances from each node) as a binary list of floats. Terminal nodes will have centrality equal to zero." ),
+						new FlaggedOption( "linCentrality", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'L',  "lin-centrality", "Store an approximation of the positive Lin centrality of each node (the reciprocal of sum of the distances from each node multiplied by the square of the number of nodes reachable from the node) as a binary list of floats. Terminal nodes will have centrality equal to one." ),
+						new FlaggedOption( "nieminenCentrality", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'N',  "nieminen-centrality", "Store an approximation of the positive Nieminen centrality of each node (the square of the number of nodes reachable from each node minus the sum of the distances from the node) as a binary list of floats." ),
+						new FlaggedOption( "reachable", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'r',  "reachable", "Store an approximation of the number of nodes reachable from each node as a binary list of floats." ),
+						new FlaggedOption( "seed", JSAP.LONG_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'S', "seed", "The random seed." ),
+						new Switch( "spec", 's', "spec", "The basename is not a basename but rather a specification of the form <ImmutableGraphImplementation>(arg,arg,...)." ),
+						new Switch( "offline", 'o', "offline", "Do not load the graph in main memory. If this option is used, the graph will be loaded in offline (for one thread) or mapped (for several threads) mode." ),
+						new Switch( "external", 'e', "external", "Use an external dump file instead of core memory to store new counter values. Note that the file might be very large: you might need to set suitably the Java temporary directory (-Djava.io.tmpdir=DIR)." ),
+						new UnflaggedOption( "basename", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The basename of the graph." ),
+						new UnflaggedOption( "basenamet", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The basename of the transpose graph for systolic computations (strongly suggested). If it is equal to <basename>, the graph will be assumed to be symmetric and will be loaded just once." ),
+				}
 		);
 
 		JSAPResult jsapResult = jsap.parse( arg );
 		if ( jsap.messagePrinted() ) System.exit( 1 );
-		
+
 		final boolean spec = jsapResult.getBoolean( "spec" );
 		final boolean external = jsapResult.getBoolean( "external" );
 		final boolean offline = jsapResult.getBoolean( "offline" );
@@ -1276,7 +1274,7 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 		final int bufferSize = jsapResult.getInt( "bufferSize" );
 		final int granularity = jsapResult.getInt( "granularity" );
 		final long seed = jsapResult.userSpecified( "seed" ) ? jsapResult.getLong( "seed" ) : Util.randomSeed();
-		
+
 		final String[] discountedGainCentralitySpec = jsapResult.getStringArray( "discountedGainCentrality" );
 		final Int2DoubleFunction[] discountFunction = new Int2DoubleFunction[ discountedGainCentralitySpec.length ];
 		final String[] discountedGainCentralityFile = new String[ discountedGainCentralitySpec.length ];
@@ -1300,15 +1298,15 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 			}
 			discountFunction[ i ] = candidateFunction == null? ObjectParser.fromSpec( gainSpec, Int2DoubleFunction.class ) : candidateFunction;
 		}
-		
-		final ImmutableGraph graph = spec 
-				? ObjectParser.fromSpec( basename, ImmutableGraph.class, GraphClassParser.PACKAGE ) 
-				: offline	
-					? ( ( numberOfThreads( threads ) == 1 && basenamet == null ? ImmutableGraph.loadOffline( basename ) : ImmutableGraph.loadMapped( basename, new ProgressLogger() ) ) ) 
-					: ImmutableGraph.load( basename, new ProgressLogger() ); 
 
-		final ImmutableGraph grapht = basenamet == null ? null : basenamet.equals( basename ) ? graph : spec ? ObjectParser.fromSpec( basenamet, ImmutableGraph.class, GraphClassParser.PACKAGE ) : 
-			offline ? ImmutableGraph.loadMapped( basenamet, new ProgressLogger() ) : ImmutableGraph.load( basenamet, new ProgressLogger() ); 
+		final ImmutableGraph graph = spec
+				? ObjectParser.fromSpec( basename, ImmutableGraph.class, GraphClassParser.PACKAGE )
+				: offline
+				? ( ( numberOfThreads( threads ) == 1 && basenamet == null ? ImmutableGraph.loadOffline( basename ) : ImmutableGraph.loadMapped( basename, new ProgressLogger() ) ) )
+				: ImmutableGraph.load( basename, new ProgressLogger() );
+
+		final ImmutableGraph grapht = basenamet == null ? null : basenamet.equals( basename ) ? graph : spec ? ObjectParser.fromSpec( basenamet, ImmutableGraph.class, GraphClassParser.PACKAGE ) :
+				offline ? ImmutableGraph.loadMapped( basenamet, new ProgressLogger() ) : ImmutableGraph.load( basenamet, new ProgressLogger() );
 
 		final HyperBall hyperBall = new HyperBall( graph, grapht, log2m, pl, threads, bufferSize, granularity, external, sumOfDistances || closenessCentrality || linCentrality || nieminenCentrality, harmonicCentrality, discountFunction, seed );
 		hyperBall.run( jsapResult.getLong( "upperBound" ), jsapResult.getDouble( "threshold" ) );
@@ -1316,16 +1314,16 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 
 		if ( neighbourhoodFunction ) {
 			final PrintStream stream = new PrintStream( new FastBufferedOutputStream( new FileOutputStream( neighbourhoodFunctionFile ) ) );
-			for( DoubleIterator i = hyperBall.neighbourhoodFunction.iterator(); i.hasNext(); ) stream.println( BigDecimal.valueOf( i.nextDouble() ).toPlainString() );
+			for(DoubleIterator i = hyperBall.neighbourhoodFunction.iterator(); i.hasNext(); ) stream.println( BigDecimal.valueOf( i.nextDouble() ).toPlainString() );
 			stream.close();
 		}
-		
+
 		if ( sumOfDistances ) BinIO.storeFloats( hyperBall.sumOfDistances, sumOfDistancesFile );
 		if ( harmonicCentrality ) BinIO.storeFloats( hyperBall.sumOfInverseDistances, harmonicCentralityFile );
 		for ( int i = 0; i < discountedGainCentralitySpec.length; i++ ) BinIO.storeFloats( hyperBall.discountedCentrality[ i ], discountedGainCentralityFile[ i ] );
 		if ( closenessCentrality ) {
 			final long n = graph.numNodes();
-			final DataOutputStream dos = new DataOutputStream( new FastBufferedOutputStream( new FileOutputStream( closenessCentralityFile ) ) ); 
+			final DataOutputStream dos = new DataOutputStream( new FastBufferedOutputStream( new FileOutputStream( closenessCentralityFile ) ) );
 			for ( long i = 0; i < n; i++ ) {
 				final float d = FloatBigArrays.get( hyperBall.sumOfDistances, i );
 				dos.writeFloat( d == 0 ? 0 : 1 / d );
@@ -1334,13 +1332,13 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 		}
 		if ( linCentrality ) {
 			final long n = graph.numNodes();
-			final DataOutputStream dos = new DataOutputStream( new FastBufferedOutputStream( new FileOutputStream( linCentralityFile ) ) ); 
+			final DataOutputStream dos = new DataOutputStream( new FastBufferedOutputStream( new FileOutputStream( linCentralityFile ) ) );
 			for ( long i = 0; i < n; i++ ) {
 				// Lin's index for isolated nodes is by (our) definition one (it's smaller than any other node).
 				final float d = FloatBigArrays.get( hyperBall.sumOfDistances, i );
 				if ( d == 0 ) dos.writeFloat( 1 );
 				else {
-					final double count = hyperBall.count( i );
+					final double count = hyperBall.getCounter().count( i );
 					dos.writeFloat( (float)( count * count / d ) );
 				}
 			}
@@ -1348,18 +1346,19 @@ public class HyperBall extends HyperLogLogCounterArray implements SafelyCloseabl
 		}
 		if ( nieminenCentrality ) {
 			final long n = graph.numNodes();
-			final DataOutputStream dos = new DataOutputStream( new FastBufferedOutputStream( new FileOutputStream( nieminenCentralityFile ) ) ); 
+			final DataOutputStream dos = new DataOutputStream( new FastBufferedOutputStream( new FileOutputStream( nieminenCentralityFile ) ) );
 			for ( long i = 0; i < n; i++ ) {
-				final double count = hyperBall.count( i );
+				final double count = hyperBall.getCounter().count( i );
 				dos.writeFloat( (float)( count * count - FloatBigArrays.get( hyperBall.sumOfDistances, i ) ) );
 			}
 			dos.close();
 		}
 		if ( reachable ) {
 			final long n = graph.numNodes();
-			final DataOutputStream dos = new DataOutputStream( new FastBufferedOutputStream( new FileOutputStream( reachableFile ) ) ); 
-			for ( long i = 0; i < n; i++ ) dos.writeFloat( (float)hyperBall.count( i ) );
+			final DataOutputStream dos = new DataOutputStream( new FastBufferedOutputStream( new FileOutputStream( reachableFile ) ) );
+			for ( long i = 0; i < n; i++ ) dos.writeFloat( (float) hyperBall.getCounter().count( i ) );
 			dos.close();
 		}
 	}
 }
+

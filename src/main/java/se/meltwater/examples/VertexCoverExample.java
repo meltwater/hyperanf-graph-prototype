@@ -2,8 +2,8 @@ package se.meltwater.examples;
 
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.logging.ProgressLogger;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 import se.meltwater.vertexcover.DynamicVertexCover;
 
 import java.io.IOException;
@@ -30,7 +30,7 @@ public class VertexCoverExample {
 
     private DynamicVertexCover dvc;
     private long numberOfNodes = 0;
-    final IGraph graph;
+    final MutableGraph graph;
 
     private final ProgressLogger pl;
     private int progress = 0;
@@ -44,9 +44,9 @@ public class VertexCoverExample {
     public VertexCoverExample(String graphFileName) throws IOException {
         pl = new ProgressLogger();
         graph = new ImmutableGraphWrapper(ImmutableGraph.loadMapped( graphFileName, pl ));
-        numberOfNodes = graph.getNumberOfNodes();
+        numberOfNodes = graph.numNodes();
 
-        pl.expectedUpdates = graph.getNumberOfArcs();
+        pl.expectedUpdates = graph.numArcs();
 
         dvc = new DynamicVertexCover(graph);
     }

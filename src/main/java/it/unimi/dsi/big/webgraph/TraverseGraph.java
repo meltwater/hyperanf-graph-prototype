@@ -1,22 +1,23 @@
-package se.meltwater.graph;
+package it.unimi.dsi.big.webgraph;
 
-import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.LazyLongIterators;
-import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
+import se.meltwater.utils.Utils;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ *
+ * A mutable low-level graph with low memory overhead. The graph was designed to
+ * be very quick at traversals. This graph is very fast when the edges added are rare and
+ * in large bulks.
+ *
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
- *         <p>
- *         // TODO Class description
  */
-public class TraverseGraph extends ImmutableGraph {
+public class TraverseGraph extends MutableGraph {
 
     protected long[][] nodes;
     protected Long2LongOpenHashMap nodePoss;
@@ -25,10 +26,17 @@ public class TraverseGraph extends ImmutableGraph {
     protected final static int HEADER_LENGTH = 2;
     protected boolean empty = false;
 
+    /**
+     * creates an empty TraverseGraph
+     */
     public TraverseGraph(){
         empty = true;
     }
 
+    /**
+     * Creates a TraverseGraph with the specified edges
+     * @param edges
+     */
     public TraverseGraph(Edge[] edges){
 
         if(edges.length == 0) {
@@ -40,10 +48,29 @@ public class TraverseGraph extends ImmutableGraph {
 
     }
 
-    public void addEdges(Edge[] edges){
+    /**
+     * TraverseGraph cannot determine which edges that didn't exist
+     * and will always return true.
+     *
+     * @param edge
+     * @return Always true
+     */
+    @Override
+    public boolean addEdge(Edge edge) {
+        return addEdges(edge);
+    }
+
+    /**
+     * TraverseGraph cannot determine which edges that didn't exist
+     * and will always return true.
+     *
+     * @param edges
+     * @return Always true
+     */
+    public boolean addEdges(Edge ... edges){
 
         if (edges.length == 0)
-            return;
+            return true;
 
         EdgesAdder edgesAdder = new EdgesAdder(edges);
         if (empty){
@@ -56,7 +83,21 @@ public class TraverseGraph extends ImmutableGraph {
         numArcs = edgesAdder.getNewNumArcs();
         nodes = edgesAdder.getNewNodes();
         nodePoss = edgesAdder.getNewNodePoss();
+        return true;
 
+    }
+
+    @Override
+    public MutableGraph transpose() {
+        Edge[] edges = new Edge[(int)numArcs];
+        AtomicInteger i = new AtomicInteger(0);
+        iterateAllEdges(edge -> {edges[i.getAndIncrement()] = edge.flip(); return null;});
+        return new TraverseGraph(edges);
+    }
+
+    @Override
+    public long getMemoryUsageBytes() {
+        return LongBigArrays.length(nodes)*Long.BYTES + Utils.getMemoryUsage(nodePoss);
     }
 
     private Comparator<Edge> edgeComparator(){

@@ -5,14 +5,12 @@ import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Test;
-import se.meltwater.bfs.MSBreadthFirst;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.ImmutableGraphWrapper;
-import se.meltwater.graph.SimulatedGraph;
+import it.unimi.dsi.big.webgraph.algo.MSBreadthFirst;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
 import se.meltwater.utils.Utils;
 
@@ -48,7 +46,7 @@ public class TestMSBFS {
         while (iteration++ < maxIterations){
             long numNodes = rand.nextLong(maxGraphSize - 1) + 1; /* Make sure numNodes always positive */
             SimulatedGraph graph = TestUtils.genRandomGraph((int)numNodes);
-            numNodes = graph.getNumberOfNodes();
+            numNodes = graph.numNodes();
             long sources[] = TestUtils.generateRandomNodes(numNodes,(int)numNodes,1);
             MSBreadthFirst.Traveler t = new DummyTraveler();
             MSBreadthFirst.Traveler[] travelers = Utils.repeat(t,sources.length, new MSBreadthFirst.Traveler[0]);
@@ -175,7 +173,7 @@ public class TestMSBFS {
      */
     @Test
     public void testBFSValidity() throws IOException, InterruptedException {
-        IGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
+        MutableGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
         testGraph(graph);
     }
 
@@ -185,8 +183,8 @@ public class TestMSBFS {
      * @param graph
      * @throws InterruptedException
      */
-    public void testGraph(IGraph graph) throws InterruptedException {
-        long[] bfsSources = generateSources(graph.getNumberOfNodes());
+    public void testGraph(MutableGraph graph) throws InterruptedException {
+        long[] bfsSources = generateSources(graph.numNodes());
         MSBreadthFirst msbfs = new MSBreadthFirst(graph);
         BitSet[][] seen = msbfs.breadthFirstSearch(bfsSources);
         msbfs.close();
@@ -199,8 +197,8 @@ public class TestMSBFS {
      */
     @Test
     public void testBFSVisitorOnlySources() throws IOException, InterruptedException {
-        IGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
-        long[] bfsSources = generateSources(graph.getNumberOfNodes());
+        MutableGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
+        long[] bfsSources = generateSources(graph.numNodes());
         ArrayList<AssertionError> errors = new ArrayList<>();
         MSBreadthFirst msbfs = new MSBreadthFirst(graph);
         msbfs.breadthFirstSearch(bfsSources,onlySourcesVisitor(bfsSources, errors));
@@ -239,8 +237,8 @@ public class TestMSBFS {
      */
     @Test
     public void testBFSVisitorNeighborsCorrect() throws IOException, InterruptedException {
-        IGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
-        long[] bfsSources = generateSources( graph.getNumberOfNodes());
+        MutableGraph graph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/noBlocksUk"));
+        long[] bfsSources = generateSources( graph.numNodes());
         ArrayList<AssertionError> errors = new ArrayList<>();
 
         MSBreadthFirst msbfs = new MSBreadthFirst(graph);
@@ -258,11 +256,11 @@ public class TestMSBFS {
      * @param errors
      * @return
      */
-    public MSBreadthFirst.Visitor neighborsCorrect(long[] bfsSources, IGraph graph, ArrayList<AssertionError> errors){
-        BitSet[][] shouldHave = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.getNumberOfNodes());
-        BitSet[][] alreadySeen = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.getNumberOfNodes());
+    public MSBreadthFirst.Visitor neighborsCorrect(long[] bfsSources, MutableGraph graph, ArrayList<AssertionError> errors){
+        BitSet[][] shouldHave = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.numNodes());
+        BitSet[][] alreadySeen = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.numNodes());
 
-        for(long node = 0; node < graph.getNumberOfNodes() ; node++) {
+        for(long node = 0; node < graph.numNodes() ; node++) {
             ObjectBigArrays.set(shouldHave,node,new BitSet(bfsSources.length));
             ObjectBigArrays.set(alreadySeen,node,new BitSet(bfsSources.length));
         }
@@ -279,8 +277,8 @@ public class TestMSBFS {
 
                         visitedBy.clear();
                     } else {
-                        LazyLongIterator succ = graph.getSuccessors(node);
-                        long out = graph.getOutdegree(node), neigh;
+                        LazyLongIterator succ = graph.successors(node);
+                        long out = graph.outdegree(node), neigh;
                         ObjectBigArrays.get(alreadySeen,node).or(visitedBy);
 
                         for (int neighI = 0; neighI < out; neighI++) {
@@ -317,10 +315,10 @@ public class TestMSBFS {
      * @param seen
      * @param graph
      */
-    private void checkValidSeen(long[] sources, BitSet[][] seen, IGraph graph){
-        BitSet[][] originalSeen = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.getNumberOfNodes());
+    private void checkValidSeen(long[] sources, BitSet[][] seen, MutableGraph graph){
+        BitSet[][] originalSeen = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.numNodes());
         BitSet temp;
-        for (long i = 0; i< graph.getNumberOfNodes(); i++) {
+        for (long i = 0; i< graph.numNodes(); i++) {
             temp = ObjectBigArrays.get(seen, i);
             temp = temp == null ? new BitSet(sources.length) : (BitSet)temp.clone();
             ObjectBigArrays.set(originalSeen, i, temp);
@@ -330,7 +328,7 @@ public class TestMSBFS {
         for (int bfs = 0; bfs < sources.length ; bfs++) {
             LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
             queue.enqueue(sources[bfs]);
-            LongArrayBitVector nodesChecked = LongArrayBitVector.ofLength(graph.getNumberOfNodes());
+            LongArrayBitVector nodesChecked = LongArrayBitVector.ofLength(graph.numNodes());
             nodesChecked.set(sources[bfs]);
 
             assertTrue("Source node " + sources[bfs] + " for bfs " + bfs,ObjectBigArrays.get(seen,sources[bfs]).get(bfs));
@@ -340,8 +338,8 @@ public class TestMSBFS {
             /* Do bfs from current node */
             while (!queue.isEmpty()) {
                 long curr = queue.dequeueLong();
-                LazyLongIterator succs = graph.getSuccessors(curr);
-                long d = graph.getOutdegree(curr);
+                LazyLongIterator succs = graph.successors(curr);
+                long d = graph.outdegree(curr);
 
                 /* Visit all neighbors */
                 while (d-- != 0) {

@@ -1,13 +1,10 @@
-package se.meltwater.bfs;
+package it.unimi.dsi.big.webgraph.algo;
 
 import com.javamex.classmexer.MemoryUtil;
-import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
-import it.unimi.dsi.logging.ProgressLogger;
-import se.meltwater.graph.IGraph;
+import it.unimi.dsi.big.webgraph.MutableGraph;
 import se.meltwater.utils.Utils;
 
 import java.util.ArrayList;
@@ -29,7 +26,7 @@ import java.util.function.Function;
  */
 public class MSBreadthFirst {
 
-    private IGraph graph;
+    private MutableGraph graph;
     private int numSources;
     private int threadsLeft;
     private Visitor visitor;
@@ -55,7 +52,7 @@ public class MSBreadthFirst {
      * the Heap due to idle threads.
      * @param graph
      */
-    public MSBreadthFirst(IGraph graph){
+    public MSBreadthFirst(MutableGraph graph){
         this.graph = graph;
         threads = Runtime.getRuntime().availableProcessors() * 2;
         threadManager = Executors.newFixedThreadPool(threads, new MSBreadthFirstThreadFactory(threadFactoryID.getAndIncrement()));
@@ -95,14 +92,14 @@ public class MSBreadthFirst {
     }
 
     private BitSet[][] createBitsets(){
-        BitSet[][] list = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.getNumberOfNodes());
-        /*for(long node = 0; node < graph.getNumberOfNodes() ; node++)
+        BitSet[][] list = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.numNodes());
+        /*for(long node = 0; node < graph.numNodes() ; node++)
             ObjectBigArrays.set(list,node,null);*/
         return list;
     }
 
     private void fillWithNewBitSets(BitSet[][] bsets){
-        for(long node = 0; node < graph.getNumberOfNodes() ; node++)
+        for(long node = 0; node < graph.numNodes() ; node++)
             ObjectBigArrays.set(bsets,node,null);
     }
 
@@ -135,8 +132,8 @@ public class MSBreadthFirst {
             this.travelers = null;
             this.travelersNext = null;
         }else {
-            this.travelers = ObjectBigArrays.newBigArray(new Traveler[0][0], graph.getNumberOfNodes());
-            travelersNext = ObjectBigArrays.newBigArray(new Traveler[0][0], graph.getNumberOfNodes());
+            this.travelers = ObjectBigArrays.newBigArray(new Traveler[0][0], graph.numNodes());
+            travelersNext = ObjectBigArrays.newBigArray(new Traveler[0][0], graph.numNodes());
         }
         threadFailure = false;
         visit = createBitsets();
@@ -179,7 +176,7 @@ public class MSBreadthFirst {
         visitNext = createBitsets();
         visitHadContent = new AtomicBoolean(true);
 
-        long nodesPerProcessor = graph.getNumberOfNodes() / threads;
+        long nodesPerProcessor = graph.numNodes() / threads;
         iteration = 0;
         while(visitHadContent.get()){
 
@@ -206,8 +203,8 @@ public class MSBreadthFirst {
 
         for(long i = 0; i < threads; i++) {
             long start = i*nodesPerProcessor;
-            long end = i == threads-1 ? graph.getNumberOfNodes() : start + nodesPerProcessor;
-            futures.add(threadManager.submit(bothPhasesIterator(start,end, graph.getNodeIterator(start))));
+            long end = i == threads-1 ? graph.numNodes() : start + nodesPerProcessor;
+            futures.add(threadManager.submit(bothPhasesIterator(start,end, graph.nodeIterator(start))));
 
         }
         awaitThreads(futures);

@@ -1,11 +1,9 @@
 package se.meltwater.test.history;
 
 import org.junit.Test;
-import se.meltwater.algo.DANF;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.SimulatedGraph;
-import se.meltwater.hyperlolol.HyperLolLolCounterArray;
+import it.unimi.dsi.big.webgraph.algo.DANF;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
 
 import static org.junit.Assert.*;
@@ -40,18 +38,18 @@ public class TestDanf {
             Edge[] edgesToAdd = graphToAdd.getAllEdges();
 
             danf.addEdges(edgesToAdd);
-            double[] countersAfterFirstInsertion = new double[(int) graph.getNumberOfNodes()];
-            for (int node = 0; node < graph.getNumberOfNodes(); node++) {
+            double[] countersAfterFirstInsertion = new double[(int) graph.numNodes()];
+            for (int node = 0; node < graph.numNodes(); node++) {
                 countersAfterFirstInsertion[node] = danf.count(node, h);
             }
 
             danf.addEdges(edgesToAdd);
-            double[] countersAfterSecondInsertion = new double[(int) graph.getNumberOfNodes()];
-            for (int node = 0; node < graph.getNumberOfNodes(); node++) {
+            double[] countersAfterSecondInsertion = new double[(int) graph.numNodes()];
+            for (int node = 0; node < graph.numNodes(); node++) {
                 countersAfterSecondInsertion[node] = danf.count(node, h);
             }
 
-            for (int node = 0; node < graph.getNumberOfNodes(); node++) {
+            for (int node = 0; node < graph.numNodes(); node++) {
                 assertEquals(countersAfterFirstInsertion[node], countersAfterSecondInsertion[node], epsilon);
             }
             danf.close();
@@ -69,18 +67,18 @@ public class TestDanf {
         DANF danf = new DANF(h, log2m, graph, seed);
         danf.addEdges(new Edge(0, 2), new Edge(0, 6), new Edge(1, 3), new Edge(2, 8), new Edge(3, 2), new Edge(3, 3), new Edge(5, 4), new Edge(7, 2), new Edge(8, 5));
 
-        double[] countersAfterFirstInsertion = new double[(int) graph.getNumberOfNodes()];
-        for (int node = 0; node < graph.getNumberOfNodes(); node++) {
+        double[] countersAfterFirstInsertion = new double[(int) graph.numNodes()];
+        for (int node = 0; node < graph.numNodes(); node++) {
             countersAfterFirstInsertion[node] = danf.count(node, h);
         }
 
         danf.addEdges(new Edge(0, 2), new Edge(0, 6), new Edge(1, 3), new Edge(2, 8), new Edge(3, 2), new Edge(3, 3), new Edge(5, 4), new Edge(7, 2), new Edge(8, 5));
-        double[] countersAfterSecondInsertion = new double[(int) graph.getNumberOfNodes()];
-        for (int node = 0; node < graph.getNumberOfNodes(); node++) {
+        double[] countersAfterSecondInsertion = new double[(int) graph.numNodes()];
+        for (int node = 0; node < graph.numNodes(); node++) {
             countersAfterSecondInsertion[node] = danf.count(node, h);
         }
 
-        for (int node = 0; node < graph.getNumberOfNodes(); node++) {
+        for (int node = 0; node < graph.numNodes(); node++) {
             assertEquals(countersAfterFirstInsertion[node], countersAfterSecondInsertion[node], epsilon);
         }
 

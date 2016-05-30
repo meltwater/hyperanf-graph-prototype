@@ -1,21 +1,18 @@
-package se.meltwater.algo;
+package it.unimi.dsi.big.webgraph.algo;
 
 import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.logging.ProgressLogger;
-import se.meltwater.bfs.MSBreadthFirst;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.hyperlolol.HyperLolLolCounterArray;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.util.HyperLogLogCounterArray;
 import se.meltwater.utils.Utils;
 import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Simon Lindhén
@@ -26,14 +23,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class DANF implements DynamicNeighborhoodFunction{
 
-    private IGraph graph;
-    private IGraph graphTranspose;
+    private MutableGraph graph;
+    private MutableGraph graphTranspose;
     private IDynamicVertexCover vc;
 
     private long[][] counterIndex;
     private long nextFreeCounterIndex = 0;
 
-    private HyperLolLolCounterArray[] history;
+    private HyperLogLogCounterArray[] history;
     private int counterLongWords;
 
     private MSBreadthFirst transposeMSBFS;
@@ -77,7 +74,7 @@ public class DANF implements DynamicNeighborhoodFunction{
                            ". Ratio: " + (float)msbfsBytes/(Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes) +
                            ". Ratio history:" + (float)Utils.getMemoryUsage(history)/((Utils.getMemoryUsage(vc, counterIndex, history) + msbfsBytes)));
 
-        System.out.println("VC Size: " + vc.getVertexCoverSize() + ", Total nodes: " + graph.getNumberOfNodes() + ", ratio: " + vc.getVertexCoverSize() / (float)graph.getNumberOfNodes() );
+        System.out.println("VC Size: " + vc.getVertexCoverSize() + ", Total nodes: " + graph.numNodes() + ", ratio: " + vc.getVertexCoverSize() / (float)graph.numNodes() );
 
         return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes() +
                 Utils.getMemoryUsage(vc, counterIndex, history) +
@@ -85,19 +82,19 @@ public class DANF implements DynamicNeighborhoodFunction{
     }
 
 
-    public DANF(int h, int log2m, IGraph graph){
+    public DANF(int h, int log2m, MutableGraph graph){
         this(new DynamicVertexCover(graph),h,log2m,graph,Util.randomSeed());
     }
 
-    public DANF(int h, int log2m, IGraph graph, long seed){
+    public DANF(int h, int log2m, MutableGraph graph, long seed){
         this(new DynamicVertexCover(graph),h,log2m,graph,seed);
     }
 
-    public DANF(IDynamicVertexCover vertexCover, int h, int log2m, IGraph graph, long seed){
+    public DANF(IDynamicVertexCover vertexCover, int h, int log2m, MutableGraph graph, long seed){
 
         vc = vertexCover;
         this.h = h;
-        history = new HyperLolLolCounterArray[h];
+        history = new HyperLogLogCounterArray[h];
         this.graph = graph;
         this.graphTranspose = graph.transpose();
 
@@ -112,18 +109,18 @@ public class DANF implements DynamicNeighborhoodFunction{
             insertNodeToCounterIndex(node);
         }
 
-        HyperBoll hyperBoll = new HyperBoll(graph,graphTranspose,log2m,seed);
-        hyperBoll.init();
+        HyperBall hyperBall = new HyperBall(graph,graphTranspose,log2m,seed);
+        hyperBall.init();
         try {
             for (int i = 1; i <= h; i++) {
-                hyperBoll.iterate();
-                addHistory(hyperBoll.getCounter(), i);
+                hyperBall.iterate();
+                addHistory(hyperBall.getCounter(), i);
             }
         }catch (IOException e){
             throw new RuntimeException("Something went wrong with the temporary graph files", e);
         }finally {
             try {
-                hyperBoll.close();
+                hyperBall.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -140,7 +137,7 @@ public class DANF implements DynamicNeighborhoodFunction{
         }
     }
 
-    public IGraph getGraph() {
+    public MutableGraph getGraph() {
         return graph;
     }
 
@@ -152,7 +149,7 @@ public class DANF implements DynamicNeighborhoodFunction{
         return vc;
     }
 
-    public HyperLolLolCounterArray getCounter(int h){
+    public HyperLogLogCounterArray getCounter(int h){
         checkH(h);
         return history[h-1];
     }
@@ -199,7 +196,7 @@ public class DANF implements DynamicNeighborhoodFunction{
      */
     private void addNodeToTopLevel(long node) {
         if(!graph.containsNode(node)) {
-            long previousHighestNode = graph.getNumberOfNodes()-1;
+            long previousHighestNode = graph.numNodes()-1;
             long nodesToAdd = node - previousHighestNode;
             history[h-1].addCounters(nodesToAdd);
             for (long n = previousHighestNode+1; n <= node ; n++) {
@@ -254,8 +251,8 @@ public class DANF implements DynamicNeighborhoodFunction{
      */
     private void calculateIncompleteHistory(long node){
 
-        LazyLongIterator successors = graph.getSuccessors(node);
-        long degree = graph.getOutdegree(node);
+        LazyLongIterator successors = graph.successors(node);
+        long degree = graph.outdegree(node);
 
         for (int i = 0; i < h; i++) {
             history[i].add(getNodeIndex(node,i+1),node);
@@ -327,7 +324,7 @@ public class DANF implements DynamicNeighborhoodFunction{
      * @param counter
      * @param h The level to set
      */
-    private void addHistory(HyperLolLolCounterArray counter, int h){
+    private void addHistory(HyperLogLogCounterArray counter, int h){
         checkH(h);
         counterLongWords = counter.counterLongwords;
         if(h == this.h) {
@@ -360,7 +357,7 @@ public class DANF implements DynamicNeighborhoodFunction{
             throw new IllegalArgumentException("Node " + node + " wasn't in the vertex cover.");
         double[] ret = new double[h];
         int i=0;
-        for(HyperLolLolCounterArray counter : history) {
+        for(HyperLogLogCounterArray counter : history) {
             ret[i] = counter.count(getNodeIndex(node, i+1));
             i++;
         }
@@ -384,8 +381,8 @@ public class DANF implements DynamicNeighborhoodFunction{
                 history[i-1].getCounter(getNodeIndex(node, i), historyBits[i]);
             }
         } else {
-            LazyLongIterator successors = graph.getSuccessors(node);
-            long degree = graph.getOutdegree(node);
+            LazyLongIterator successors = graph.successors(node);
+            long degree = graph.outdegree(node);
 
             for (int i = 0; i < h; i++) {
                 history[STATIC_LOLOL].add(node, historyBits[i]);
@@ -421,10 +418,10 @@ public class DANF implements DynamicNeighborhoodFunction{
         LongOpenHashSet otherSourceNodes = new LongOpenHashSet();
         if(edges.length > partitionSize * 1.1) {
 
-            double[] values = new double[(int)graph.getNumberOfNodes()];
+            double[] values = new double[(int)graph.numNodes()];
             for (int i = 0; i < edges.length; i++) {
                 Edge e = edges[i];
-                //values[(int) e.from] = graph.getOutdegree(e.from);
+                //values[(int) e.from] = graph.outdegree(e.from);
                 values[(int) e.from] = count(e.from, h);
             }
 

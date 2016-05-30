@@ -1,4 +1,4 @@
-package se.meltwater.algo;
+package it.unimi.dsi.big.webgraph.algo;
 
 import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
@@ -6,9 +6,9 @@ import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.logging.ProgressLogger;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.hyperlolol.HyperLolLolCounterArray;
+import it.unimi.dsi.util.HyperLogLogCounterArray;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.MutableGraph;
 import se.meltwater.utils.Utils;
 
 import java.io.IOException;
@@ -27,8 +27,8 @@ import java.util.function.BiConsumer;
 public class TrivialDynamicANF implements DynamicNeighborhoodFunction{
 
     private int h;
-    private HyperLolLolCounterArray counters;
-    private IGraph graph, transposeGraph;
+    private HyperLogLogCounterArray counters;
+    private MutableGraph graph, transposeGraph;
 
     /**
      *
@@ -41,7 +41,7 @@ public class TrivialDynamicANF implements DynamicNeighborhoodFunction{
      * @param log2m
      * @param graph
      */
-    public TrivialDynamicANF(int h, int log2m, IGraph graph){
+    public TrivialDynamicANF(int h, int log2m, MutableGraph graph){
         this(h,log2m,graph, Util.randomSeed());
     }
 
@@ -56,13 +56,13 @@ public class TrivialDynamicANF implements DynamicNeighborhoodFunction{
      * @param log2m
      * @param graph
      */
-    public TrivialDynamicANF(int h, int log2m, IGraph graph, long seed){
+    public TrivialDynamicANF(int h, int log2m, MutableGraph graph, long seed){
 
         this.graph = graph;
         transposeGraph = graph.transpose();
         this.h = h;
 
-        HyperBoll hb = new HyperBoll(graph, transposeGraph,log2m,seed);
+        HyperBall hb = new HyperBall(graph, transposeGraph,log2m,seed);
         try {
             hb.run(h);
             hb.close();
@@ -89,7 +89,7 @@ public class TrivialDynamicANF implements DynamicNeighborhoodFunction{
      * @see DANF
      *
      */
-    public IGraph getGraph(){
+    public MutableGraph getGraph(){
         return graph;
     }
 
@@ -127,8 +127,8 @@ public class TrivialDynamicANF implements DynamicNeighborhoodFunction{
             maxNode = Math.max(maxNode,Math.max(edges[i].from, edges[i].to));
         }
         if(!graph.containsNode(maxNode)){
-            counters.addCounters(maxNode+1 - graph.getNumberOfNodes());
-            for(long node = graph.getNumberOfNodes(); node <= maxNode; node++)
+            counters.addCounters(maxNode+1 - graph.numNodes());
+            for(long node = graph.numNodes(); node <= maxNode; node++)
                 counters.add(node,node);
         }
         graph.addEdges(edges);
@@ -169,10 +169,10 @@ public class TrivialDynamicANF implements DynamicNeighborhoodFunction{
         });
     }
 
-    private void bfs(IGraph graph, long source, BiConsumer<Long,Integer> onVisit){
+    private void bfs(MutableGraph graph, long source, BiConsumer<Long,Integer> onVisit){
         LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
         LongArrayFIFOQueue nextQueue = new LongArrayFIFOQueue();
-        LongArrayBitVector seen = LongArrayBitVector.ofLength(graph.getNumberOfNodes());
+        LongArrayBitVector seen = LongArrayBitVector.ofLength(graph.numNodes());
         queue.enqueue(source);
         int i = 0;
         while(i < h){
@@ -181,7 +181,7 @@ public class TrivialDynamicANF implements DynamicNeighborhoodFunction{
                 onVisit.accept(node,i);
 
                 if(i+1 < h) {
-                    NodeIterator nodeIt = graph.getNodeIterator(node);
+                    NodeIterator nodeIt = graph.nodeIterator(node);
                     nodeIt.nextLong();
                     long degree = nodeIt.outdegree();
                     LazyLongIterator successors = nodeIt.successors();

@@ -3,8 +3,8 @@ package se.meltwater.test.graph;
 import com.google.common.collect.Lists;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import org.junit.Test;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 import se.meltwater.test.TestUtils;
 
 import java.io.IOException;
@@ -56,7 +56,7 @@ public class TestImmutableGraphWrapper {
             setupGraph();
             Edge edge = randomEdgeToAdd();
             assertTrue(graph.addEdge(edge));
-            assertEquals(Math.max(edge.to,edge.from)+1,graph.getNumberOfNodes());
+            assertEquals(Math.max(edge.to,edge.from)+1,graph.numNodes());
         }
     }
 
@@ -68,7 +68,7 @@ public class TestImmutableGraphWrapper {
     }
 
     public Edge randomEdgeToAdd(){
-        long numNodes = graph.getNumberOfNodes();
+        long numNodes = graph.numNodes();
         long nodeLessThanNumNodes = ThreadLocalRandom.current().nextLong(numNodes);
         long nodeMoreThanNumNodes = ThreadLocalRandom.current().nextLong(numNodes)+numNodes;
         boolean firstGreaterThanNumNodes = ThreadLocalRandom.current().nextBoolean();

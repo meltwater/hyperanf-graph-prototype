@@ -1,11 +1,7 @@
-package se.meltwater.graph;
+package it.unimi.dsi.big.webgraph;
 
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
-import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
-
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 /**
@@ -14,50 +10,36 @@ import java.util.function.Function;
  *
  * Abstract class that implements functions that
  * are common among all types of graphs.
+ *
+ * IGraphs purpose is to abstract what type of
+ * graph the test suite is testing. In some cases
+ * it is appropriate to use a physical file and in
+ * other cases its not.
  */
-public abstract class AGraph implements IGraph {
+public abstract class MutableGraph extends ImmutableGraph{
 
-    @Override
-    abstract public IGraph copy();
 
-    @Override
-    abstract public LazyLongIterator getSuccessors(long node);
+    public abstract boolean addEdge(Edge edge);
+    public abstract boolean addEdges(Edge ... edges);
 
-    @Override
-    abstract public boolean addEdges(Edge ... edges);
+    public abstract MutableGraph transpose();
 
-    @Override
-    abstract public boolean addEdge(Edge edge);
-
-    @Override
-    abstract public long getOutdegree(long node);
-
-    @Override
-    abstract public NodeIterator getNodeIterator();
-    @Override
-    abstract public NodeIterator getNodeIterator(long node);
-
-    @Override
-    abstract public long getNumberOfNodes();
-    @Override
-    abstract public long getNumberOfArcs();
-
-    @Override
-    public boolean containsNode(long node) {
-        return node < getNumberOfNodes();
+    public void store(String outputFile) throws IOException {
+        BVGraph.store(this,outputFile);
     }
 
-    @Override
-    public void merge(IGraph graph){
-        Edge[][] edges = ObjectBigArrays.newBigArray(new Edge[0][0],graph.getNumberOfArcs());
-        AtomicLong i = new AtomicLong();
-        graph.iterateAllEdges((Edge e) -> {
-            ObjectBigArrays.set(edges,i.getAndIncrement(),e);
-            return null;
-        });
-        for (Edge[] edgeChunk : edges) {
-            addEdges(edgeChunk);
+    static MutableGraph load(String inputFile, boolean memoryMapped) throws IOException {
+        if(memoryMapped) {
+            return new ImmutableGraphWrapper(ImmutableGraph.loadMapped(inputFile));
+        } else {
+            return new ImmutableGraphWrapper(ImmutableGraph.load(inputFile));
         }
+    }
+
+    public abstract long getMemoryUsageBytes();
+
+    public boolean containsNode(long node) {
+        return node < numNodes();
     }
 
     @Override
@@ -66,14 +48,14 @@ public abstract class AGraph implements IGraph {
      * regardless their dynamic type class
      */
     public boolean equals(Object obj) {
-        if(!(obj instanceof IGraph)) {
+        if(!(obj instanceof MutableGraph)) {
             return false;
         }
 
-        IGraph otherGraph = (IGraph) obj;
+        MutableGraph otherGraph = (MutableGraph) obj;
 
-        if(otherGraph.getNumberOfNodes() != this.getNumberOfNodes() ||
-                otherGraph.getNumberOfArcs()  != this.getNumberOfArcs()) {
+        if(otherGraph.numNodes() != this.numNodes() ||
+                otherGraph.numArcs()  != this.numArcs()) {
             return false;
         }
 
@@ -98,10 +80,9 @@ public abstract class AGraph implements IGraph {
      * @param <T> Return type
      * @return null if no error occurred, the error Object otherwise.
      */
-    @Override
     public <T> T iterateAllEdges(Function<Edge, T> function) {
-        NodeIterator nodeIt = getNodeIterator();
-        long numNodes = getNumberOfNodes();
+        NodeIterator nodeIt = nodeIterator();
+        long numNodes = numNodes();
         for(long node = 0; node < numNodes; node++) {
             nodeIt.nextLong();
             long outdegree = nodeIt.outdegree();
@@ -120,7 +101,5 @@ public abstract class AGraph implements IGraph {
         return null;
     }
 
-
-
-
 }
+

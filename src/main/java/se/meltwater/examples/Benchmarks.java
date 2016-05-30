@@ -1,33 +1,22 @@
 package se.meltwater.examples;
 
 
-import com.javamex.classmexer.MemoryUtil;
-import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import it.unimi.dsi.bits.LongArrayBitVector;
-import javafx.util.Pair;
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
-import se.meltwater.algo.*;
-import se.meltwater.bfs.MSBreadthFirst;
-import se.meltwater.bfs.StandardBreadthFirst;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.ImmutableGraphWrapper;
-import se.meltwater.graph.SimulatedGraph;
+import it.unimi.dsi.big.webgraph.*;
+import it.unimi.dsi.big.webgraph.algo.DANF;
+import it.unimi.dsi.big.webgraph.algo.DynamicNeighborhoodFunction;
+import it.unimi.dsi.big.webgraph.algo.TrivialDynamicANF;
+import it.unimi.dsi.big.webgraph.algo.MSBreadthFirst;
+import it.unimi.dsi.big.webgraph.algo.StandardBreadthFirst;
 import se.meltwater.utils.Utils;
 import se.meltwater.vertexcover.DynamicVertexCover;
-import se.meltwater.graph.TraverseGraph;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.instrument.Instrumentation;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.regex.Matcher;
 import java.util.stream.LongStream;
 
 /**
@@ -70,7 +59,7 @@ public class Benchmarks {
             ImmutableGraphWrapper graph  = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile), 999999);
             DANF danf = new DANF(h, log2m, graph , seed);
 
-            generateEdges(graph.getNumberOfNodes(), bulkSize, edges);
+            generateEdges(graph.numNodes(), bulkSize, edges);
 
             System.out.println("Running iteration: " + i);
             System.out.println("Running DANF");
@@ -87,10 +76,10 @@ public class Benchmarks {
 
 
             /*ImmutableGraphWrapper graph2 = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile), 999999);
-            System.out.println("Running HyperBoll");
+            System.out.println("Running HyperBall");
             long beforeHBALL = System.currentTimeMillis();
             graph2.addEdges(edges);
-            HyperBoll hyperBoll = new HyperBoll(graph2, log2m, seed);
+            HyperBall hyperBoll = new HyperBall(graph2, log2m, seed);
             hyperBoll.init();
             for (int j = 1; j < h; j++) {
                 hyperBoll.iterate();
@@ -162,7 +151,7 @@ public class Benchmarks {
      * @param h
      * @return The elapsed time in millis
      */
-    private static long performStandardBfsAndMeasureTime(long[] sources, IGraph graph, int h) {
+    private static long performStandardBfsAndMeasureTime(long[] sources, MutableGraph graph, int h) {
         StandardBreadthFirst bfs = new StandardBreadthFirst();
         long startTime = System.currentTimeMillis();
         bfs.breadthFirstSearch(sources, graph, h);
@@ -178,7 +167,7 @@ public class Benchmarks {
      * @return
      * @throws InterruptedException
      */
-    private static long performMSBfsAndMeasureTime(long[] sources, IGraph graph, final int h) throws InterruptedException {
+    private static long performMSBfsAndMeasureTime(long[] sources, MutableGraph graph, final int h) throws InterruptedException {
 
         MSBreadthFirst.Visitor visitor = (long node, BitSet bfsVisits, BitSet seen, int depth, MSBreadthFirst.Traveler t) -> {
             if(depth == h) {
@@ -324,7 +313,7 @@ public class Benchmarks {
                 long averageTimeSometimesUnionSinceSample = sometimesUnionTimeSinceSample  / numberOfIterationsBetweenSample;
 
 
-                writer.println(addedEdges / bulkSize + " " + bulkSize + " " + ratioThatSometimesReaches + " " + graphStored.getNumberOfNodes() + " " + nrArcs + " " +
+                writer.println(addedEdges / bulkSize + " " + bulkSize + " " + ratioThatSometimesReaches + " " + graphStored.numNodes() + " " + nrArcs + " " +
                         averageTimeAlwaysUnionSinceSample + " " + alwaysUnionGraphSizeGigaBytes + " " + averageTimeSometimesUnionSinceSample + " " + sometimesUnionGraphSizeGigaBytes + " " +
                         averageTimeStoredSinceSample + " " + storedGraphSizeGigaBytes);
                 writer.flush();
@@ -410,7 +399,7 @@ public class Benchmarks {
         final int bulkSize =    10000000;
 
 
-        IGraph graphToInsert = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile));
+        MutableGraph graphToInsert = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile));
         DynamicVertexCover dvc = new DynamicVertexCover(new SimulatedGraph());
 
         PrintWriter writer = new PrintWriter(dataFile);
@@ -430,8 +419,8 @@ public class Benchmarks {
      * @param dvc
      * @param writer
      */
-    private static void insertAllEdgesFromGraphIntoDvc(int bulkSize, IGraph graphToInsert, DynamicVertexCover dvc, PrintWriter writer) {
-        IGraph graph = new SimulatedGraph(); //Mock graph, DVC wont use it
+    private static void insertAllEdgesFromGraphIntoDvc(int bulkSize, MutableGraph graphToInsert, DynamicVertexCover dvc, PrintWriter writer) {
+        MutableGraph graph = new SimulatedGraph(); //Mock graph, DVC wont use it
         // These needs to be global for lambda to work
         added = 0;
         lastTime = System.currentTimeMillis();
@@ -462,13 +451,13 @@ public class Benchmarks {
         final String graphName = "it-2004";
         final String graphFile = graphFolder + graphName;
 
-        IGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
+        MutableGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
 
-        final long edgesToDelete = graph.getNumberOfArcs();
+        final long edgesToDelete = graph.numArcs();
         final int bulkSize =       10000000;
 
         System.out.println("Loading transpose");
-        IGraph graphTranspose = graph.transpose();
+        MutableGraph graphTranspose = graph.transpose();
 
         System.out.println("Inserting into DVC");
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
@@ -492,7 +481,7 @@ public class Benchmarks {
      * @param dvc
      * @param writer
      */
-    private static void deleteAllEdgesFromDvc(IGraph graph, long edgesToDelete, int bulkSize, IGraph graphTranspose, DynamicVertexCover dvc, PrintWriter writer) {
+    private static void deleteAllEdgesFromDvc(MutableGraph graph, long edgesToDelete, int bulkSize, MutableGraph graphTranspose, DynamicVertexCover dvc, PrintWriter writer) {
         // Global for lambda to work
         added = 0;
         System.out.println("Starting deletion");
@@ -534,7 +523,7 @@ public class Benchmarks {
 
         insertRandomEdgesIntoDvc(graph, dvc, maxNode, edgesToAdd, bulkSize, 0, 0, true, null);
 
-        final int edgesToRemove = (int)graph.getNumberOfArcs();
+        final int edgesToRemove = (int)graph.numArcs();
 
         PrintWriter writer = new PrintWriter(dataFile);
         writer.println("#" + dateString + " Simulated Graph; " + edgesToRemove + " edges will be deleted from the dvc in bulks of " +
@@ -625,8 +614,8 @@ public class Benchmarks {
         int bulkSize =      640;
 
         System.out.println("Loading graph");
-        IGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
-        IGraph graph2 = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
+        MutableGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
+        MutableGraph graph2 = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
 
         DANF danf = new DANF(h,log2m,graph);
         TrivialDynamicANF tanf = new TrivialDynamicANF(h,log2m,graph2);
@@ -644,7 +633,7 @@ public class Benchmarks {
         System.out.println("Starting edge insertions");
         while(bulkSize <= maxBulkSize) {
             edges = new Edge[bulkSize];
-            generateEdges(graph.getNumberOfNodes(), bulkSize, edges);
+            generateEdges(graph.numNodes(), bulkSize, edges);
 
             long beforeDanf = System.currentTimeMillis();
             danf.addEdges(edges);
@@ -676,13 +665,13 @@ public class Benchmarks {
 
             writer.println(bulkSize + " " + danfEps + " " + danfGraphGB+ " " + danfCounterGB + " " + danfVCGB + " " + danfMSBFSGB
                     + " " + trivialEps + " " + tanf.getMemoryUsageBytes()/(float)bytesPerGigaByte
-                    + " " + (afterTrivial-start) + " " + added + " " + graph.getNumberOfNodes());
+                    + " " + (afterTrivial-start) + " " + added + " " + graph.numNodes());
             writer.flush();
 
 
             System.out.println(bulkSize + " edges, " + danfEps + " Danf DPS, " +
                     danfTotalMemory + "GB DANF memory, " + trivialEps + " Trivial DPS, " +
-                    tanf.getMemoryUsageBytes()/(float)bytesPerGigaByte + "GB trivial memory, " + totalTimeSeconds + "s total, " + added + " " + graph.getNumberOfNodes());
+                    tanf.getMemoryUsageBytes()/(float)bytesPerGigaByte + "GB trivial memory, " + totalTimeSeconds + "s total, " + added + " " + graph.numNodes());
 
             bulkSize += 640;
         }
@@ -708,7 +697,7 @@ public class Benchmarks {
         final int bulkSize =      10000;
 
         System.out.println("Loading graph");
-        IGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
+        MutableGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
 
         DANF danf = new DANF(h,log2m,graph);
 
@@ -732,7 +721,7 @@ public class Benchmarks {
      * @throws IOException
      * @throws InterruptedException
      */
-    private static void insertEdgesIntoDanf(int edgesToAdd, int bulkSize, IGraph graph, DynamicNeighborhoodFunction danf, PrintWriter writer) throws IOException, InterruptedException {
+    private static void insertEdgesIntoDanf(int edgesToAdd, int bulkSize, MutableGraph graph, DynamicNeighborhoodFunction danf, PrintWriter writer) throws IOException, InterruptedException {
         int  added = 0;
         long lastTime = System.currentTimeMillis();
         long startTime = lastTime;
@@ -741,7 +730,7 @@ public class Benchmarks {
 
         System.out.println("Starting edge insertions");
         while(System.in.available() == 0 && added < edgesToAdd) {
-            generateEdges(graph.getNumberOfNodes(), bulkSize, edges);
+            generateEdges(graph.numNodes(), bulkSize, edges);
 
             danf.addEdges(edges);
             added += bulkSize;
@@ -762,7 +751,7 @@ public class Benchmarks {
 
 
 
-    private static void printAndLogStatistics(PrintWriter writer, int nrModified, long lastTime, long startTime, int bulkSize, long currentTime, IGraph graph, Object objectToMeasureMemory) {
+    private static void printAndLogStatistics(PrintWriter writer, int nrModified, long lastTime, long startTime, int bulkSize, long currentTime, MutableGraph graph, Object objectToMeasureMemory) {
         long elapsedTime = currentTime - lastTime;
         float timePerBulkSeconds = elapsedTime / 1000.0f;
         float dps = bulkSize / timePerBulkSeconds;
@@ -777,11 +766,11 @@ public class Benchmarks {
         System.out.print("Time per bulk: " + timePerBulkSeconds + "s. ");
         System.out.print("DPS: " + dps + ". ");
         System.out.print("Heap size: " + heapSize + " Gb. ");
-        System.out.print("NrArcs: " + 0/*graph.getNumberOfArcs()*/ + " ");
-        System.out.print("NrNodes: " + graph.getNumberOfNodes() + " ");
+        System.out.print("NrArcs: " + 0/*graph.numArcs()*/ + " ");
+        System.out.print("NrNodes: " + graph.numNodes() + " ");
         System.out.println("Total time: " + elapsedTimeSinceStart + "s.");
 
-        writer.println(modifiedInMillions + " " + dps + " " + heapSize + " " + elapsedTimeSinceStart  + " " + /*graph.getNumberOfArcs()*/0 + " " + graph.getNumberOfNodes());
+        writer.println(modifiedInMillions + " " + dps + " " + heapSize + " " + elapsedTimeSinceStart  + " " + /*graph.numArcs()*/0 + " " + graph.numNodes());
         writer.flush();
     }
 

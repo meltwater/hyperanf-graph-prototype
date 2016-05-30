@@ -4,10 +4,10 @@ import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import org.junit.Test;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.ImmutableGraphWrapper;
-import se.meltwater.graph.SimulatedGraph;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.SimulatedGraph;
 
 import java.io.IOException;
 
@@ -24,24 +24,24 @@ public class TestDifferentGraphs {
 
     @Test
     public void testSimulatedEqualsBVGraph() throws IOException {
-        IGraph simGraph = createSimulatedGraph();
-        IGraph bvGraph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/SameAsSimulated"));
+        MutableGraph simGraph = createSimulatedGraph();
+        MutableGraph bvGraph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/SameAsSimulated"));
         assertEquals(simGraph, bvGraph);
     }
 
     @Test
     public void testSimulatedGraphSameAsBVGraph() throws IOException {
-        IGraph simGraph = createSimulatedGraph();
-        IGraph bvGraph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/SameAsSimulated"));
+        MutableGraph simGraph = createSimulatedGraph();
+        MutableGraph bvGraph = new ImmutableGraphWrapper(BVGraph.load("testGraphs/SameAsSimulated"));
         testSameIterators(bvGraph,simGraph);
 
     }
 
     @Test
     public void testSimulatedGraphSameSizeAsBVGraph() throws IOException {
-        IGraph simGraph = createSimulatedGraph();
+        MutableGraph simGraph = createSimulatedGraph();
         BVGraph bv = BVGraph.load("testGraphs/SameAsSimulated");
-        IGraph bvGraph = new ImmutableGraphWrapper(bv);
+        MutableGraph bvGraph = new ImmutableGraphWrapper(bv);
         assertSameSize(bvGraph,simGraph,bv);
     }
 
@@ -88,9 +88,9 @@ public class TestDifferentGraphs {
     }
 
 
-    private void testSameIterators(IGraph bvGraphWrapper, IGraph simulatedGraph){
+    private void testSameIterators(MutableGraph bvGraphWrapper, MutableGraph simulatedGraph){
 
-        for (int i = 0; i < bvGraphWrapper.getNumberOfNodes(); i++) {
+        for (int i = 0; i < bvGraphWrapper.numNodes(); i++) {
             long[] bvNeighborList  = getNeighborList(bvGraphWrapper, i);
             long[] simNeighborList = getNeighborList(simulatedGraph, i);
 
@@ -99,14 +99,14 @@ public class TestDifferentGraphs {
 
     }
 
-    private void assertSameSize(IGraph bvGraphWrapper, IGraph simulatedGraph, BVGraph bvGraph){
+    private void assertSameSize(MutableGraph bvGraphWrapper, MutableGraph simulatedGraph, BVGraph bvGraph){
 
 
-        assertEquals(bvGraphWrapper.getNumberOfNodes(), simulatedGraph.getNumberOfNodes());
-        assertEquals(bvGraphWrapper.getNumberOfNodes(), bvGraph.numNodes());
+        assertEquals(bvGraphWrapper.numNodes(), simulatedGraph.numNodes());
+        assertEquals(bvGraphWrapper.numNodes(), bvGraph.numNodes());
 
-        assertEquals(bvGraphWrapper.getNumberOfArcs(), simulatedGraph.getNumberOfArcs());
-        assertEquals(bvGraphWrapper.getNumberOfArcs(), bvGraph.numArcs());
+        assertEquals(bvGraphWrapper.numArcs(), simulatedGraph.numArcs());
+        assertEquals(bvGraphWrapper.numArcs(), bvGraph.numArcs());
     }
 
     /**
@@ -115,8 +115,8 @@ public class TestDifferentGraphs {
      * @param nodeIndex
      * @return
      */
-    public long[] getNeighborList(IGraph graph, long nodeIndex) {
-        NodeIterator nodeIterator  = graph.getNodeIterator(nodeIndex);
+    public long[] getNeighborList(MutableGraph graph, long nodeIndex) {
+        NodeIterator nodeIterator  = graph.nodeIterator(nodeIndex);
         nodeIterator.nextLong();
 
         long degree = nodeIterator.outdegree();

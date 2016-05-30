@@ -1,15 +1,12 @@
 package se.meltwater.test.history;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import javafx.util.Pair;
 import org.junit.Test;
-import se.meltwater.algo.DANF;
-import se.meltwater.algo.HyperBoll;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.SimulatedGraph;
+import it.unimi.dsi.big.webgraph.algo.DANF;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.big.webgraph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
-import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.io.IOException;
@@ -25,7 +22,7 @@ import static org.junit.Assert.*;
  *
  * Class for testing various aspects of the DANF class
  * such as its connections with a Dynamic Vertex cover and
- * HyperBoll.
+ * HyperBall.
  */
 public class TestRecalculation {
 
@@ -38,7 +35,7 @@ public class TestRecalculation {
     final int edgesToAdd = 100;
 
     /* For some tests its necessary to have a static seed to
-     * make sure we always get the same result from HyperBoll */
+     * make sure we always get the same result from HyperBall */
     final long fixedSeed = 8516942932596937874L;
 
     int log2m;
@@ -169,13 +166,13 @@ public class TestRecalculation {
         LazyLongIterator it = vc.getNodesInVertexCoverIterator();
         for (long i = 0; i < vc.getVertexCoverSize() ; i++) {
             long node = it.nextLong();
-            if(graph.getOutdegree(node) == 0) {
+            if(graph.outdegree(node) == 0) {
                 history = nh.count(node);
                 assertArrayEquals(repeat(1.0,history.length),history,0.05);
                 long neighbor;
 
                 do {
-                    neighbor = rand.nextInt((int)graph.getNumberOfNodes());
+                    neighbor = rand.nextInt((int)graph.numNodes());
                 } while(nh.getCounter(h).hasSameRegisters(node, neighbor));
 
                 nh.addEdges(new Edge(node, neighbor));
@@ -195,7 +192,7 @@ public class TestRecalculation {
         return ret;
     }
 
-    private IGraph createGraphWithCircles(){
+    private MutableGraph createGraphWithCircles(){
         SimulatedGraph g = new SimulatedGraph();
         g.addNode(1);
         g.addNode(4);
@@ -221,7 +218,7 @@ public class TestRecalculation {
         while(iteration++ < nrTestIterations) {
             setupRandomParameters();
 
-            IGraph graph = setupRandomGraph();
+            MutableGraph graph = setupRandomGraph();
             DANF danf = new DANF(h,log2m,graph);
 
             Set<Long> addedNodes = addRandomEdgesWithUniqueFromNodes(graph, danf);
@@ -238,10 +235,10 @@ public class TestRecalculation {
      * @throws InterruptedException
      * @return A list of all new nodes created
      */
-    private Set<Long> addRandomEdgesWithUniqueFromNodes(IGraph graph, DANF danf) throws InterruptedException{
+    private Set<Long> addRandomEdgesWithUniqueFromNodes(MutableGraph graph, DANF danf) throws InterruptedException{
         Set<Long> addedNodes = new HashSet<>();
         int edgesAdded = 0;
-        long n = graph.getNumberOfNodes();
+        long n = graph.numNodes();
         while (edgesAdded++ < edgesToAdd) {
             Random rand = new Random();
 
@@ -273,7 +270,7 @@ public class TestRecalculation {
         }
     }
 
-    private IGraph setupRandomGraph() throws IOException {
+    private MutableGraph setupRandomGraph() throws IOException {
         Random rand = new Random();
         int n = rand.nextInt(maxStartNodes);
         return TestUtils.genRandomGraph(n);

@@ -1,13 +1,11 @@
-package se.meltwater.bfs;
+package it.unimi.dsi.big.webgraph.algo;
 
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
-import se.meltwater.graph.IGraph;
+import it.unimi.dsi.big.webgraph.MutableGraph;
 
-import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -29,7 +27,7 @@ public class StandardBreadthFirst {
 
 
 
-    public void breadthFirstSearch(long[] sources, IGraph graph, int maxSteps) {
+    public void breadthFirstSearch(long[] sources, MutableGraph graph, int maxSteps) {
         threadPool = Executors.newFixedThreadPool(nrThreads);
 
         for (int i = 0; i <  sources.length; i++) {
@@ -40,7 +38,7 @@ public class StandardBreadthFirst {
                 LongArrayFIFOQueue currentQueue = new LongArrayFIFOQueue();
                 LongArrayFIFOQueue nextQueue = new LongArrayFIFOQueue();
                 currentQueue.enqueue(currentNode);
-                LongArrayBitVector nodesChecked = LongArrayBitVector.ofLength(graph.getNumberOfNodes());
+                LongArrayBitVector nodesChecked = LongArrayBitVector.ofLength(graph.numNodes());
                 nodesChecked.set(currentNode);
                 int h = 0;
 
@@ -51,7 +49,7 @@ public class StandardBreadthFirst {
                     long[][] successors;
                     NodeIterator currentNodeIterator;
                     synchronized (StandardBreadthFirst.this) {
-                        currentNodeIterator = graph.getNodeIterator(curr);
+                        currentNodeIterator = graph.nodeIterator(curr);
                     }
                         currentNodeIterator.nextLong();
                         d = currentNodeIterator.outdegree();

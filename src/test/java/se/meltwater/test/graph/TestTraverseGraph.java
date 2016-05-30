@@ -1,14 +1,11 @@
 package se.meltwater.test.graph;
 
 import com.google.common.collect.Lists;
-import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import org.junit.Test;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.ImmutableGraphWrapper;
-import se.meltwater.graph.TraverseGraph;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.TraverseGraph;
 import se.meltwater.test.TestUtils;
 
 import java.io.IOException;

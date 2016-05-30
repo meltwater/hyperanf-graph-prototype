@@ -2,9 +2,9 @@ package se.meltwater.test.graph;
 
 import it.unimi.dsi.big.webgraph.BVGraph;
 import org.junit.Test;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.ImmutableGraphWrapper;
-import se.meltwater.graph.SimulatedGraph;
+import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
 
 import java.io.IOException;
@@ -25,16 +25,16 @@ public class TestUnionGraph {
      */
     @Test
     public void testUnionOutdegree() throws IOException {
-        IGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped("testGraphs/noBlocksUk"));
-        long numArcsAtStart = graph.getNumberOfArcs();
+        MutableGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped("testGraphs/noBlocksUk"));
+        long numArcsAtStart = graph.numArcs();
 
         SimulatedGraph graphToUnion = TestUtils.genRandomGraph(1000);
         graph.addEdges(graphToUnion.getAllEdges()); //Graph will now be unioned internally
 
         long currentNrArcs = 0;
 
-        for (long i = 0; i < graph.getNumberOfNodes(); i++) {
-            currentNrArcs += graph.getOutdegree(i);
+        for (long i = 0; i < graph.numNodes(); i++) {
+            currentNrArcs += graph.outdegree(i);
         }
 
         assertTrue(currentNrArcs > numArcsAtStart);

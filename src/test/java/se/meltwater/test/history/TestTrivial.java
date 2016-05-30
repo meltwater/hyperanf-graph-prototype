@@ -2,10 +2,10 @@ package se.meltwater.test.history;
 
 import it.unimi.dsi.Util;
 import org.junit.Test;
-import se.meltwater.algo.DANF;
-import se.meltwater.algo.TrivialDynamicANF;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.SimulatedGraph;
+import it.unimi.dsi.big.webgraph.algo.DANF;
+import it.unimi.dsi.big.webgraph.algo.TrivialDynamicANF;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
 import static org.junit.Assert.*;
 
@@ -42,7 +42,7 @@ public class TestTrivial {
             assertSame(danf,tanf);
 
             for (int i = 0; i < edgeAdditionsForEachIteration; i++) {
-                Edge[] extraEdges = TestUtils.generateEdges((int)(g1.getNumberOfNodes()*additionalNodes),(int)g1.getNumberOfNodes());
+                Edge[] extraEdges = TestUtils.generateEdges((int)(g1.numNodes()*additionalNodes),(int)g1.numNodes());
                 danf.addEdges(extraEdges);
                 tanf.addEdges(extraEdges);
                 assertSame(danf,tanf);
@@ -52,8 +52,8 @@ public class TestTrivial {
     }
 
     private void assertSame(DANF danf, TrivialDynamicANF tanf) {
-        assertEquals(danf.getGraph().getNumberOfNodes(),tanf.getGraph().getNumberOfNodes());
-        for(long node = 0; node < danf.getGraph().getNumberOfNodes(); node++){
+        assertEquals(danf.getGraph().numNodes(),tanf.getGraph().numNodes());
+        for(long node = 0; node < danf.getGraph().numNodes(); node++){
             assertEquals(danf.count(node,danf.getMaxH()),tanf.count(node),epsilon);
         }
     }

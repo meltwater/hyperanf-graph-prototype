@@ -1,37 +1,26 @@
-package se.meltwater.graph;
+package it.unimi.dsi.big.webgraph;
 
-import com.javamex.classmexer.MemoryUtil;
-import it.unimi.dsi.big.webgraph.*;
-import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongBigArrays;
-import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 import it.unimi.dsi.logging.ProgressLogger;
 import se.meltwater.utils.Utils;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.ConcurrentModificationException;
-import java.util.HashMap;
-import java.util.function.BiFunction;
 
 /**
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
  *
  * Wraps an Immutable graph to be able to use it
- * with the IGraph interface. The IGraph interface
+ * with the MutableGraph interface. The MutableGraph interface
  * is useful in testing as the type of the graph is now
  * abstracted away from the test cases.
  */
-public class ImmutableGraphWrapper extends AGraph{
+public class ImmutableGraphWrapper extends MutableGraph{
 
     private ImmutableGraph graph;
     private ImmutableGraph originalGraph;
     private SimulatedGraph additionalEdges;
-    private long modifications = 0;
     private String oldPath = null;
     private static File tempDir = null;
     private String thisPath = null;
@@ -76,10 +65,10 @@ public class ImmutableGraphWrapper extends AGraph{
      * @param edges The edges to be unioned
      * @return A graph containing the union
      */
-    private ImmutableGraph unionEdges(SimulatedGraph currentAdditions, Edge ... edges) {
+    private ImmutableGraph unionEdges(SimulatedGraph currentAdditions, Edge... edges) {
         try {
             currentAdditions.addEdges(edges);
-            return new UnionImmutableGraph(originalGraph, new SimulatedGraphWrapper(currentAdditions));
+            return new UnionImmutableGraph(originalGraph, currentAdditions);
         }catch (Exception e){
             throw new RuntimeException(e);
         }
@@ -121,12 +110,8 @@ public class ImmutableGraphWrapper extends AGraph{
         }
     }
 
-    public void store(String outputFile) {
-        try {
-            BVGraph.store(graph, outputFile, 0, 0, -1, -1, 0, new ProgressLogger());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void store(String outputFile) throws IOException {
+        BVGraph.store(graph, outputFile, 0, 0, -1, -1, 0, new ProgressLogger());
     }
 
     public void setGraphHeapUsageBytes(long graphHeapUsageBytes) {
@@ -179,19 +164,17 @@ public class ImmutableGraphWrapper extends AGraph{
         if(containsEdge(edge))
             return false;
 
-        modifications++;
-
         SimulatedGraph extraEdge = new SimulatedGraph();
         extraEdge.addEdge(edge);
-        graph = new UnionImmutableGraph(new SimulatedGraphWrapper(extraEdge),graph);
+        graph = new UnionImmutableGraph(extraEdge,graph);
         return true;
 
     }
 
     private boolean containsEdge(Edge edge){
         if(containsNode(edge.from) && containsNode(edge.to)) {
-            LazyLongIterator nodeIt = getSuccessors(edge.from);
-            long degree = getOutdegree(edge.from);
+            LazyLongIterator nodeIt = successors(edge.from);
+            long degree = outdegree(edge.from);
             while (degree-- > 0)
                 if (nodeIt.nextLong() == edge.to)
                     return true;
@@ -200,40 +183,36 @@ public class ImmutableGraphWrapper extends AGraph{
     }
 
     @Override
-    public IGraph copy(){
+    public MutableGraph copy(){
         return new ImmutableGraphWrapper(graph.copy(), unionVsGraphMemoryRatioThreashold);
     }
 
     @Override
-    public long getOutdegree(long node){
+    public long outdegree(long node){
         return graph.outdegree(node);
     }
 
     @Override
-    public LazyLongIterator getSuccessors(long node){
+    public LazyLongIterator successors(long node){
         return graph.successors(node);
     }
 
     @Override
-    public long getNumberOfNodes() {
+    public long numNodes() {
         return graph.numNodes();
     }
 
     @Override
-    public long getNumberOfArcs() { return graph.numArcs(); }
+    public long numArcs() { return graph.numArcs(); }
 
     @Override
-    public NodeIterator getNodeIterator(long node){
-        return new ImmutableGraphIteratorWrapper(graph.nodeIterator(node));
+    public boolean randomAccess() {
+        return graph.randomAccess();
     }
 
     @Override
-    public void merge(IGraph graph){
-        if(graph instanceof ImmutableGraphWrapper){
-            ImmutableGraph copy = ((ImmutableGraphWrapper)graph).graph;
-            this.graph = new UnionImmutableGraph(this.graph,copy);
-        }else
-            super.merge(graph);
+    public NodeIterator nodeIterator(long node){
+        return graph.nodeIterator(node);
     }
 
     @Override
@@ -241,7 +220,7 @@ public class ImmutableGraphWrapper extends AGraph{
      * Transposes the graph and stores it to a memory mapped file.
      * @return The transposed graph
      */
-    public IGraph transpose(){
+    public MutableGraph transpose(){
         try {
             ImmutableGraph transpose = Transform.transposeOffline(graph, (int) graph.numNodes(), null, new ProgressLogger());
 
@@ -262,47 +241,8 @@ public class ImmutableGraphWrapper extends AGraph{
     }
 
     @Override
-    public NodeIterator getNodeIterator(){
-        return getNodeIterator(0);
+    public NodeIterator nodeIterator(){
+        return nodeIterator(0);
     }
 
-    private class ImmutableGraphIteratorWrapper extends NodeIterator {
-
-        private final NodeIterator it;
-        private final long expectedModifications;
-
-        ImmutableGraphIteratorWrapper(NodeIterator iterator){
-            it = iterator;
-            expectedModifications = modifications;
-        }
-
-        @Override
-        public long outdegree() {
-            checkValidState();
-            return it.outdegree();
-        }
-
-        @Override
-        public long nextLong(){
-            checkValidState();
-            return it.nextLong();
-        }
-
-        @Override
-        public boolean hasNext() {
-            checkValidState();
-            return it.hasNext();
-        }
-
-        @Override
-        public LazyLongIterator successors(){
-            checkValidState();
-            return it.successors();
-        }
-
-        private void checkValidState(){
-            if(modifications != expectedModifications)
-                throw new ConcurrentModificationException("Immutable graph wrapper must never be modified during iteration.");
-        }
-    }
 }

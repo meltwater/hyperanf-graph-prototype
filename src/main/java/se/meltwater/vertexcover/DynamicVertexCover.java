@@ -1,13 +1,11 @@
 package se.meltwater.vertexcover;
 
-import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.utils.Utils;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.MutableGraph;
 
 import java.util.*;
 
@@ -30,15 +28,15 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     private long maximalMatchingLength;
 
     private LongArrayBitVector vertexCover;
-    private IGraph graph;
+    private MutableGraph graph;
     private float resizeFactor = 1.1f;
 
-    public DynamicVertexCover(IGraph graph) {
+    public DynamicVertexCover(MutableGraph graph) {
         vertexCover = LongArrayBitVector.ofLength(1);
 
         this.graph = graph;
 
-        long maxNode = graph.getNumberOfNodes();
+        long maxNode = graph.numNodes();
         maximalMatching = LongBigArrays.newBigArray(Math.max(maxNode, 1));
         LongBigArrays.fill(maximalMatching, -1);
         maximalMatchingLength = LongBigArrays.length(maximalMatching);
@@ -77,7 +75,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
      * @param edge The deleted edge
      */
     @Override
-    public Map<Long, AffectedState> deleteEdge(Edge edge, IGraph graphTranspose) {
+    public Map<Long, AffectedState> deleteEdge(Edge edge, MutableGraph graphTranspose) {
         Set<Long> removedNodes = new HashSet<>();
         Set<Long> addedNodes   = new HashSet<>();
 
@@ -154,8 +152,8 @@ public class DynamicVertexCover implements IDynamicVertexCover {
      * @param currentNode A node deleted from the Vertex Cover
      */
     public void checkOutgoingEdgesFromDeletedEndpoint(long currentNode, Set<Long> addedNodes) {
-        LazyLongIterator succ = graph.getSuccessors(currentNode);
-        long degree = graph.getOutdegree(currentNode);
+        LazyLongIterator succ = graph.successors(currentNode);
+        long degree = graph.outdegree(currentNode);
 
         while( degree != 0 ) {
             long successorOfCurrentNode = succ.nextLong();
@@ -182,15 +180,15 @@ public class DynamicVertexCover implements IDynamicVertexCover {
      * edges are uncovered we loop through all edges and test them.
      * @param edge An edge deleted from the Maximal Matching
      */
-    public void checkIncomingEdgesToDeletedEndpoints(Edge edge, Set<Long> addedNodes, IGraph graphTranspose) {
+    public void checkIncomingEdgesToDeletedEndpoints(Edge edge, Set<Long> addedNodes, MutableGraph graphTranspose) {
         checkTransposeFromNode(edge.from, addedNodes, graphTranspose);
         if(edge.from != edge.to) {
             checkTransposeFromNode(edge.to, addedNodes, graphTranspose);
         }
     }
 
-    private void checkTransposeFromNode(Long node, Set<Long> addedNodes, IGraph graphTranspose) {
-        NodeIterator nodeIt = graphTranspose.getNodeIterator(node); // TODO Let danf update tranpose
+    private void checkTransposeFromNode(Long node, Set<Long> addedNodes, MutableGraph graphTranspose) {
+        NodeIterator nodeIt = graphTranspose.nodeIterator(node); // TODO Let danf update tranpose
         nodeIt.nextLong();
         long outdegree = nodeIt.outdegree();
         LazyLongIterator succ = nodeIt.successors();

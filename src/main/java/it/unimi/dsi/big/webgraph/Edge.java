@@ -1,4 +1,4 @@
-package se.meltwater.graph;
+package it.unimi.dsi.big.webgraph;
 
 /**
  * @author Simon Lindhén

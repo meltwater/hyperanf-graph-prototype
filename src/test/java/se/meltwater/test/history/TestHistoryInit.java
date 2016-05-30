@@ -1,13 +1,12 @@
 package se.meltwater.test.history;
 
+import it.unimi.dsi.big.webgraph.algo.HyperBall;
+import it.unimi.dsi.util.HyperLogLogCounterArray;
 import org.junit.Test;
-import se.meltwater.algo.DANF;
-import se.meltwater.algo.HyperBoll;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.SimulatedGraph;
-import se.meltwater.hyperlolol.HyperLolLolCounterArray;
+import it.unimi.dsi.big.webgraph.algo.DANF;
+import it.unimi.dsi.big.webgraph.SimulatedGraph;
+
 import se.meltwater.test.TestUtils;
-import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
 
 import java.io.IOException;
@@ -49,7 +48,7 @@ public class TestHistoryInit {
 
             DANF danf = new DANF(h, log2m, graph);
 
-            HyperLolLolCounterArray[] calculatedHistory = getCorrectCounters(graph, danf);
+            HyperLogLogCounterArray[] calculatedHistory = getCorrectCounters(graph, danf);
             checkNodeCountersCorrect(graph, danf, calculatedHistory);
 
             danf.close();
@@ -58,21 +57,21 @@ public class TestHistoryInit {
     }
 
     /**
-     * Uses HyperBoll to calculate the correct counters for all nodes in all steps.
+     * Uses HyperBall to calculate the correct counters for all nodes in all steps.
      * @param graph
      * @param danf
      * @return
      * @throws IOException
      */
-    private HyperLolLolCounterArray[] getCorrectCounters(SimulatedGraph graph, DANF danf) throws IOException {
-        HyperLolLolCounterArray[] calculatedHistory = new HyperLolLolCounterArray[h];
-        HyperBoll hyperBoll = new HyperBoll(graph,log2m,danf.getCounter(h).getJenkinsSeed());
-        hyperBoll.init();
+    private HyperLogLogCounterArray[] getCorrectCounters(SimulatedGraph graph, DANF danf) throws IOException {
+        HyperLogLogCounterArray[] calculatedHistory = new HyperLogLogCounterArray[h];
+        HyperBall hyperBall = new HyperBall(graph,log2m,danf.getCounter(h).getJenkinsSeed());
+        hyperBall.init();
         for (int i = 1; i <= h ; i++) {
-            hyperBoll.iterate();
-            calculatedHistory[i-1] = (HyperLolLolCounterArray) hyperBoll.getCounter().clone();
+            hyperBall.iterate();
+            calculatedHistory[i-1] = (HyperLogLogCounterArray) hyperBall.getCounter().clone();
         }
-        hyperBoll.close();
+        hyperBall.close();
         return calculatedHistory;
     }
 
@@ -83,11 +82,11 @@ public class TestHistoryInit {
      * @param danf
      * @param calculatedHistory
      */
-    private void checkNodeCountersCorrect(SimulatedGraph graph, DANF danf, HyperLolLolCounterArray[] calculatedHistory) {
+    private void checkNodeCountersCorrect(SimulatedGraph graph, DANF danf, HyperLogLogCounterArray[] calculatedHistory) {
 
         IDynamicVertexCover dvc = danf.getDynamicVertexCover();
         for (int i = 1; i <= h; i++) {
-            for (int node = 0; node < graph.getNumberOfNodes(); node++) {
+            for (int node = 0; node < graph.numNodes(); node++) {
                 if (dvc.isInVertexCover(node) || i == h) {
                     /* For all i != h danf will have the node mapped to another index, so we make sure
                      * we get the same value from that mapped index. For i == h all nodes should be
