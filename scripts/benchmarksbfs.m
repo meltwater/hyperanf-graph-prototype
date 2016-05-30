@@ -1,17 +1,59 @@
-data = load ("../benchmarkdata/bfsVsMsbfs-08-04-2016.data");
+data = sortrows(load ('../files/tmp.data'), 2);
 
-nrBreaks = 1;
+pageWidth  = 426.79135;
+pageHeight = pageWidth / sqrt(2);
 
-h             = data(:,1)';
-nrSources     = data(:,2)';
-stdBfsSeconds = data(:,3)'./1000;
-msbfsSeconds  = data(:,4)'./1000;
+Hfig = figure(1);
 
-H = plot(h, stdBfsSeconds, "-", h, msbfsSeconds, "--");
 
-title("In-2004");
-set(H,'Linewidth', 1.5); 
-xlabel("Max steps BFS");
-ylabel("Elapsed time (Seconds)");
-legend ("Standard", "Multi-source");
+%ADD PLOT
+x  = sort(unique(data(:,1))); % h
+y = data(:,3) ./ data(:,4); 
+
+cmap = hsv;
+
+markers = ['-d';'-s';'-x';'-c';'-p'];
+
+grid on;
+for index = 1:5
+    colorIndex = ceil(index * (length(cmap) / 5));
+    color = cmap(colorIndex,:);
+    
+    yIndex = data(:,2)==(index*1000);
+    yCurrent = y(yIndex,:);
+    
+    HP(index) = semilogy(x, yCurrent, markers(index,:), 'color', color ,'markersize', 6, 'markerfacecolor', color, 'displayname', num2str(index * 1000) );
+    hold on;
+end
+
+semilogy(x, repmat([1], 1, length(x)), '--k');
+hold off;
+
+
+set(HP,'Linewidth', 2);    
+xlabel ('Max steps', 'fontsize', 16);
+ylabel ('BFS/MS-BFS Ratio)', 'fontsize', 16);
+
+title('In-2004' , 'fontsize', 16, 'interpreter', 'latex');
+
+HL = legend (HP);
+set(HL, 'fontsize', 16, 'location', 'northwest');
+
+set(gca, 'fontsize', 14 );
+set(gca, 'ticklength', [0.02, 0.05]);
+
+
+% PRINT PDF
+filename = 'benchmarkBfs.pdf';
+
+set(Hfig , 'units', 'points', 'paperunits', 'points', 'paperposition',  [0, 0, pageWidth, pageHeight], 'papersize', [pageWidth, pageHeight], 'position', [0, 0, pageWidth, pageHeight], 'name', filename, 'filename', filename);
+
+imStyle = hgexport('factorystyle');
+
+imStyle.Format = 'pdf';
+imStyle.Width = pageWidth;
+imStyle.Height = pageHeight;
+imStyle.Units = 'points';
+
+hgexport(gcf, filename, imStyle, 'Format', 'pdf');
 

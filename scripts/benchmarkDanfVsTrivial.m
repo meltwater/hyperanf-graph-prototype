@@ -1,5 +1,5 @@
-data = load ('../benchmarkdata/DANFComparedToTrivial2016-05-24-10:18:44.data'); %h = 3
-%data =load('../benchmarkdata/DANFComparedToTrivial2016-05-17-09:48:41.data'); %h = 8
+%data = load ('../benchmarkdata/DANFComparedToTrivial2016-05-24-10:18:44.data'); %h = 3
+data =load('../benchmarkdata/DANFComparedToTrivial2016-05-17-09:48:41.data'); %h = 8
 
 pageWidth  = 426.79135;
 pageHeight = pageWidth / sqrt(2);
@@ -15,6 +15,7 @@ y2 = data(:,7); %TRIVIAL EPS
 
 sp1 = subplot(1,2,1);
 HP1(1) = plot(x, y1, 'o-', 'color', [0, 0, 0.5],'markersize', 4, 'markerfacecolor', [0, 0, 0.5], 'displayname', 'DANF' );
+grid on;
 hold on;
 HP1(2) = plot(x, y2, 's-', 'color', [0.5, 0, 0],'markersize', 4, 'markerfacecolor', [0.5, 0, 0], 'displayname', 'Trivial' );
 hold off;
@@ -67,6 +68,7 @@ end
     
 hold on;
 HP2(5) = plot(x, y5, 's-', 'color', [0.5, 0, 0],'markersize', 4, 'markerfacecolor', [0.5, 0, 0], 'displayname', 'Trivial' );
+grid on;
 hold off;
 
 set(HP2,'linestyle', 'none'); 

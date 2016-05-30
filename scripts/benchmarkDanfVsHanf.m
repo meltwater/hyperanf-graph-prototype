@@ -38,7 +38,9 @@ yy = betaHat(1) + betaHat(2)*xx;
 
 %HP(1) = semilogy(xx, yy, '-', 'color', [0, 0, 0.5], 'displayname', 'Least square' );
 %hold on
-HP = semilogy(xx, y, '-xr', 'markersize', 8 , 'displayname', 'samples');
+HP = semilogy(xx, y, '-xr', 'markersize', 8 , 'displayname', 'Sampled ratio');
+xlim([-100, 1200]);
+grid on;
 hold off
 
 set(HP,'Linewidth', 2);    
