@@ -1,13 +1,10 @@
-package se.meltwater.graph;
+package it.unimi.dsi.big.webgraph;
 
-import it.unimi.dsi.big.webgraph.*;
-import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.logging.ProgressLogger;
 import se.meltwater.utils.Utils;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Simon Lindhén
@@ -19,7 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * not feasable to create a physical file for
  * each test case.
  */
-public class SimulatedGraph extends AGraph implements  Cloneable {
+public class SimulatedGraph extends MutableGraph implements  Cloneable {
 
     private TreeMap<Long, TreeSet<Long>> iteratorNeighbors = new TreeMap<>();
 
@@ -60,7 +57,7 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
 
 
     @Override
-    public IGraph copy(){
+    public MutableGraph copy(){
         SimulatedGraph copy = new SimulatedGraph();
         copy.iteratorNeighbors = (TreeMap<Long, TreeSet<Long>>) iteratorNeighbors.clone();
         copy.numArcs = numArcs;
@@ -77,7 +74,7 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
     }
 
     @Override
-    public boolean addEdges(Edge ... edges){
+    public boolean addEdges(Edge... edges){
         boolean allInserted = true;
 
         for (int i = 0; i < edges.length; i++) {
@@ -126,38 +123,43 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
     }
 
     @Override
-    public long getNumberOfNodes() {
+    public long numNodes() {
         return numNodes;
     }
 
     @Override
-    public NodeIterator getNodeIterator(long node) {
+    public NodeIterator nodeIterator(long node) {
         return new SimulatedGraphNodeIterator(node,this);
     }
 
     @Override
-    public NodeIterator getNodeIterator(){
-        return getNodeIterator(0);
+    public NodeIterator nodeIterator(){
+        return nodeIterator(0);
     }
 
     @Override
-    public long getOutdegree(long node){
+    public long outdegree(long node){
         Set<Long> neighbors = iteratorNeighbors.get(node);
         return neighbors == null ? 0 : neighbors.size();
     }
 
     @Override
-    public LazyLongIterator getSuccessors(long node){
+    public LazyLongIterator successors(long node){
         return new SimulatedGraphSuccessorsIterator(getLongIterator(node));
     }
 
     @Override
-    public long getNumberOfArcs(){
+    public long numArcs(){
         return numArcs;
     }
 
     @Override
-    public IGraph transpose() {
+    public boolean randomAccess() {
+        return true;
+    }
+
+    @Override
+    public MutableGraph transpose() {
         SimulatedGraph transpose = new SimulatedGraph();
         transpose.addNode(this.numNodes - 1); /* -1 as 0-indexed */
         Edge[] currentEdges = this.getAllEdges();
@@ -172,13 +174,8 @@ public class SimulatedGraph extends AGraph implements  Cloneable {
     }
 
     @Override
-    public void store(String outputFile) {
-        SimulatedGraphWrapper wrapper = new SimulatedGraphWrapper(this);
-        try {
-            BVGraph.store(wrapper, outputFile, 0, 0, -1, -1, 0, new ProgressLogger());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void store(String outputFile) throws IOException {
+        BVGraph.store(this, outputFile, 0, 0, -1, -1, 0, new ProgressLogger());
     }
 
     @Override

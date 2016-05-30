@@ -3,9 +3,9 @@ package se.meltwater;
 import com.martiansoftware.jsap.*;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.UnionImmutableGraph;
-import se.meltwater.bfs.MSBreadthFirst;
+import it.unimi.dsi.big.webgraph.algo.MSBreadthFirst;
 import se.meltwater.examples.VertexCoverExample;
-import se.meltwater.graph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 import se.meltwater.graphEditing.GraphMerger;
 
 import java.io.IOException;

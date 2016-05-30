@@ -2,8 +2,8 @@ package se.meltwater.vertexcover;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.MutableGraph;
 
 import java.util.Map;
 
@@ -18,7 +18,7 @@ public interface IDynamicVertexCover {
     enum AffectedState {Added, Removed};
 
     Map<Long, AffectedState> insertEdge(Edge edge);
-    Map<Long, AffectedState> deleteEdge(Edge edge, IGraph graphTranspose);
+    Map<Long, AffectedState> deleteEdge(Edge edge, MutableGraph graphTranspose);
 
     boolean isInVertexCover(long node);
 

@@ -1,19 +1,16 @@
 package se.meltwater.test.history;
 
-import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.UnionImmutableGraph;
-import javafx.util.Pair;
+import it.unimi.dsi.big.webgraph.algo.HyperBall;
+import it.unimi.dsi.util.HyperLogLogCounterArray;
 import org.junit.Test;
-import se.meltwater.algo.DANF;
-import se.meltwater.algo.HyperBoll;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.ImmutableGraphWrapper;
-import se.meltwater.graph.SimulatedGraph;
-import se.meltwater.hyperlolol.HyperLolLolCounterArray;
+import it.unimi.dsi.big.webgraph.algo.DANF;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
-import se.meltwater.vertexcover.DynamicVertexCover;
 
 import java.io.IOException;
 import java.util.Random;
@@ -31,7 +28,7 @@ import static org.junit.Assert.assertEquals;
 public class TestEffectPropagation {
 
     /* For some tests its necessary to have a static seed to
-     * make sure we always get the same result from HyperBoll */
+     * make sure we always get the same result from HyperBall */
     final long fixedSeed = 8516942932596937874L;
 
     final float epsilon = 0.1f;
@@ -63,25 +60,25 @@ public class TestEffectPropagation {
             return null;
         });
 
-        IGraph merged = new ImmutableGraphWrapper(new UnionImmutableGraph(g1,g2));
+        MutableGraph merged = new ImmutableGraphWrapper(new UnionImmutableGraph(g1,g2));
         ImmutableGraphWrapper g1g = new ImmutableGraphWrapper(g1);
         testDANFSameAsHyperBall(g1g,additionalEdges,merged);
         g1g.close();
     }
 
 
-    private void testDANFSameAsHyperBall(IGraph g1, Edge[] additionalEdges, IGraph mergedGraph) throws IOException, InterruptedException {
+    private void testDANFSameAsHyperBall(MutableGraph g1, Edge[] additionalEdges, MutableGraph mergedGraph) throws IOException, InterruptedException {
 
         long seed = 0L;//Util.randomSeed();
         DANF danf = new DANF(h,log2m,g1,seed);
 
         danf.addEdges(additionalEdges);
 
-        HyperBoll hyperBoll = new HyperBoll(mergedGraph, log2m, seed);
-        hyperBoll.run(h);
-        hyperBoll.close();
-        HyperLolLolCounterArray hll = hyperBoll.getCounter();
-        for (long i = 0; i < mergedGraph.getNumberOfNodes() ; i++) {
+        HyperBall hyperBall = new HyperBall(mergedGraph, log2m, seed);
+        hyperBall.run(h);
+        hyperBall.close();
+        HyperLogLogCounterArray hll = hyperBall.getCounter();
+        for (long i = 0; i < mergedGraph.numNodes() ; i++) {
             assertEquals("Node " + i,hll.count(i),danf.count(i,h),epsilon);
         }
         danf.close();
@@ -128,11 +125,11 @@ public class TestEffectPropagation {
         Edge[] edgesToAdd = {new Edge(1,6),new Edge(2,4)};
         danf.addEdges(edgesToAdd);
 
-        HyperBoll hyperBoll = new HyperBoll(danf.getGraph(),log2m, seed);
-        hyperBoll.run(h);
-        hyperBoll.close();
-        for (long i = 0; i < danf.getGraph().getNumberOfNodes(); i++) {
-            assertEquals("Node " + i, hyperBoll.getCounter().count(i), danf.count(i, h), epsilon);
+        HyperBall hyperBall = new HyperBall(danf.getGraph(),log2m, seed);
+        hyperBall.run(h);
+        hyperBall.close();
+        for (long i = 0; i < danf.getGraph().numNodes(); i++) {
+            assertEquals("Node " + i, hyperBall.getCounter().count(i), danf.count(i, h), epsilon);
         }
     }
 
@@ -199,27 +196,27 @@ public class TestEffectPropagation {
     }
 
     private void compareHyperBollAndDanf(SimulatedGraph graph, Edge ... edgesToAdd) throws IOException, InterruptedException {
-        HyperLolLolCounterArray hll = mergeAndCalculateCounters(graph,edgesToAdd);
+        HyperLogLogCounterArray hll = mergeAndCalculateCounters(graph,edgesToAdd);
 
         DANF danf = new DANF(h,log2m,graph, hll.getJenkinsSeed());
 
         danf.addEdges(edgesToAdd);
 
-        for (long i = 0; i < danf.getGraph().getNumberOfNodes(); i++) {
+        for (long i = 0; i < danf.getGraph().numNodes(); i++) {
             assertEquals("Node " + i, hll.count(i), danf.count(i, h), epsilon);
         }
         danf.close();
     }
 
-    private HyperLolLolCounterArray mergeAndCalculateCounters(SimulatedGraph originalGraph, Edge ... edges) throws IOException {
+    private HyperLogLogCounterArray mergeAndCalculateCounters(SimulatedGraph originalGraph, Edge ... edges) throws IOException {
 
         SimulatedGraph mergedGraph = (SimulatedGraph) originalGraph.clone();
         mergedGraph.addEdges(edges);
 
-        HyperBoll hyperBoll = new HyperBoll(mergedGraph,log2m);
-        hyperBoll.run(h);
-        hyperBoll.close();
-        return hyperBoll.getCounter();
+        HyperBall hyperBall = new HyperBall(mergedGraph,log2m);
+        hyperBall.run(h);
+        hyperBall.close();
+        return hyperBall.getCounter();
     }
 
     /**

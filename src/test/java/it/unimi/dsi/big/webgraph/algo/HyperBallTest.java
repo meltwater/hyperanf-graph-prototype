@@ -83,7 +83,7 @@ public class HyperBallTest extends WebGraphTestCase {
 	@Test
 	public void testClique() throws IOException {
 		for( int log2m: new int[] { 4, 5, 6, 8 } ) {
-			final double rsd = HyperBall.relativeStandardDeviation( log2m );
+			final double rsd = HyperLogLogCounterArray.relativeStandardDeviation( log2m );
 			for( int size: new int[] { 10, 100, 500 } ) {
 				int correct = 0;
 				for( int attempt = 0; attempt < 10; attempt++ ) {
@@ -99,7 +99,7 @@ public class HyperBallTest extends WebGraphTestCase {
 					final double current = hyperBall.neighbourhoodFunction.getDouble( 1 );
 					final double sequentialCurrent = sequentialHyperBall.iterate();
 
-					assertState( size, log2m, sequentialHyperBall.registers(), hyperBall.registers() );
+					assertState( size, log2m, sequentialHyperBall.registers(), hyperBall.getCounter().registers() );
 
 					if ( Math.abs( size * size - current ) <= 2 * rsd * size * size ) correct++;
 
@@ -130,7 +130,7 @@ public class HyperBallTest extends WebGraphTestCase {
 						hyperBall.iterate();
 						final double current = hyperBall.neighbourhoodFunction.getDouble( hyperBall.neighbourhoodFunction.size() - 1 );
 						final double sequentialCurrent = sequentialHyperBall.iterate();
-						assertState( size, log2m, sequentialHyperBall.registers(), hyperBall.registers() );
+						assertState( size, log2m, sequentialHyperBall.registers(), hyperBall.getCounter().registers() );
 						assertRelativeError( sequentialCurrent, current, THRESHOLD );
 					} while( hyperBall.modified() != 0 );
 
@@ -140,7 +140,7 @@ public class HyperBallTest extends WebGraphTestCase {
 						hyperBall.iterate();
 						final double current = hyperBall.neighbourhoodFunction.getDouble( hyperBall.neighbourhoodFunction.size() - 1 );
 						final double sequentialCurrent = sequentialHyperBall.iterate();
-						assertState( size, log2m, sequentialHyperBall.registers(), hyperBall.registers() );
+						assertState( size, log2m, sequentialHyperBall.registers(), hyperBall.getCounter().registers() );
 						assertRelativeError( sequentialCurrent, current, THRESHOLD );
 					} while( hyperBall.modified() != 0 );
 
@@ -154,7 +154,7 @@ public class HyperBallTest extends WebGraphTestCase {
 	@Test
 	public void testCycle() throws IOException {
 		for( int log2m: new int[] { 4, 5, 6 } ) {
-			final double rsd = HyperBall.relativeStandardDeviation( log2m );
+			final double rsd = HyperLogLogCounterArray.relativeStandardDeviation( log2m );
 			for( int size: new int[] { 100, 500, 1000 } ) {
 				final int[] correct = new int[ size + 1 ];
 				for( int attempt = 0; attempt < 10; attempt++ ) {
@@ -170,7 +170,7 @@ public class HyperBallTest extends WebGraphTestCase {
 						hyperBall.iterate();
 						final double current = hyperBall.neighbourhoodFunction.getDouble( hyperBall.neighbourhoodFunction.size() - 1 );
 						final double sequentialCurrent = sequentialHyperBall.iterate();
-						assertState( size, log2m, sequentialHyperBall.registers(), hyperBall.registers() );
+						assertState( size, log2m, sequentialHyperBall.registers(), hyperBall.getCounter().registers() );
 						assertRelativeError( sequentialCurrent, current, THRESHOLD );
 						if ( Math.abs( size * i - current ) <= 2 * rsd * size * i ) correct[ i ]++;
 					}
@@ -186,7 +186,7 @@ public class HyperBallTest extends WebGraphTestCase {
 	@Test
 	public void testLine() throws IOException {
 		for( int log2m: new int[] { 4, 5, 6 } ) {
-			final double rsd = HyperBall.relativeStandardDeviation( log2m );
+			final double rsd = HyperLogLogCounterArray.relativeStandardDeviation( log2m );
 			for( int size: new int[] { 100, 500, 1000 } ) {
 				final int[] correct = new int[ size + 1 ];
 				for( int attempt = 0; attempt < 10; attempt++ ) {
@@ -204,7 +204,7 @@ public class HyperBallTest extends WebGraphTestCase {
 						hyperBall.iterate();
 						final double current = hyperBall.neighbourhoodFunction.getDouble( hyperBall.neighbourhoodFunction.size() - 1 );
 						final double sequentialCurrent = sequentialHyperBall.iterate();
-						assertState( size, log2m, sequentialHyperBall.registers(), hyperBall.registers() );
+						assertState( size, log2m, sequentialHyperBall.registers(), hyperBall.getCounter().registers() );
 						assertRelativeError( sequentialCurrent, current, THRESHOLD );
 						long result = 0;
 						for( int j = 0; j < i; j++ ) result += ( size - j );
@@ -222,7 +222,7 @@ public class HyperBallTest extends WebGraphTestCase {
 	@Test
 	public void testOutdirectedStar() throws IOException {
 		for( int log2m: new int[] { 4, 5, 6 } ) {
-			final double rsd = HyperBall.relativeStandardDeviation( log2m );
+			final double rsd = HyperLogLogCounterArray.relativeStandardDeviation( log2m );
 			for( int size: new int[] { 100, 500, 1000 } ) {
 				int correct = 0;
 				for( int attempt = 0; attempt < 10; attempt++ ) {
@@ -239,7 +239,7 @@ public class HyperBallTest extends WebGraphTestCase {
 					hyperBall.iterate();
 					final double current = hyperBall.neighbourhoodFunction.getDouble( hyperBall.neighbourhoodFunction.size() - 1 );
 					final double sequentialCurrent = sequentialHyperBall.iterate();
-					assertState( size, log2m, sequentialHyperBall.registers(), hyperBall.registers() );
+					assertState( size, log2m, sequentialHyperBall.registers(), hyperBall.getCounter().registers() );
 					assertRelativeError( sequentialCurrent, current, THRESHOLD );
 					if ( Math.abs( size * 2 - 1 - current ) <= 2 * rsd * ( size * 2 - 1 ) ) correct++;
 					hyperBall.close();
@@ -253,7 +253,7 @@ public class HyperBallTest extends WebGraphTestCase {
 	@Test
 	public void testTree() throws IOException {
 		for( int log2m: new int[] { 4, 5, 6, 7, 8, 10, 12 } ) {
-			double rsd = HyperBall.relativeStandardDeviation( log2m );
+			double rsd = HyperLogLogCounterArray.relativeStandardDeviation( log2m );
 			final it.unimi.dsi.webgraph.ImmutableGraph view = ArrayListMutableGraph.newCompleteBinaryIntree( 3 ).immutableView();
 			ImmutableGraph g = ImmutableGraph.wrap( view );
 			ImmutableGraph gt = ImmutableGraph.wrap( it.unimi.dsi.webgraph.Transform.transpose( view ) );
@@ -268,17 +268,17 @@ public class HyperBallTest extends WebGraphTestCase {
 				hyperBall.iterate();
 				if ( Math.abs( hyperBall.neighbourhoodFunction.getDouble( hyperBall.neighbourhoodFunction.size() - 1 ) - 29 ) <= 2 * rsd * 29 ) correct[ 0 ]++;
 				sequentialHyperBall.iterate();
-				assertState( g.numNodes(), log2m, sequentialHyperBall.registers(), hyperBall.registers() );
+				assertState( g.numNodes(), log2m, sequentialHyperBall.registers(), hyperBall.getCounter().registers() );
 				
 				hyperBall.iterate();
 				if ( Math.abs( hyperBall.neighbourhoodFunction.getDouble( hyperBall.neighbourhoodFunction.size() - 1 ) - 41 ) <= 2 * rsd * 41 ) correct[ 1 ]++;
 				sequentialHyperBall.iterate();
-				assertState( g.numNodes(), log2m, sequentialHyperBall.registers(), hyperBall.registers() );
+				assertState( g.numNodes(), log2m, sequentialHyperBall.registers(), hyperBall.getCounter().registers() );
 				
 				hyperBall.iterate();
 				if ( Math.abs( hyperBall.neighbourhoodFunction.getDouble( hyperBall.neighbourhoodFunction.size() - 1 ) - 49 ) <= 2 * rsd * 49 ) correct[ 2 ]++;
 				sequentialHyperBall.iterate();
-				assertState( g.numNodes(), log2m, sequentialHyperBall.registers(), hyperBall.registers() );
+				assertState( g.numNodes(), log2m, sequentialHyperBall.registers(), hyperBall.getCounter().registers() );
 
 				// Test that you can reuse the object
 				
@@ -288,17 +288,17 @@ public class HyperBallTest extends WebGraphTestCase {
 				hyperBall.iterate();
 				if ( Math.abs( hyperBall.neighbourhoodFunction.getDouble( hyperBall.neighbourhoodFunction.size() - 1 ) - 29 ) <= 2 * rsd * 29 ) correct[ 0 ]++;
 				sequentialHyperBall.iterate();
-				assertState( g.numNodes(), log2m, sequentialHyperBall.registers(), hyperBall.registers() );
+				assertState( g.numNodes(), log2m, sequentialHyperBall.registers(), hyperBall.getCounter().registers() );
 				
 				hyperBall.iterate();
 				if ( Math.abs( hyperBall.neighbourhoodFunction.getDouble( hyperBall.neighbourhoodFunction.size() - 1 ) - 41 ) <= 2 * rsd * 41 ) correct[ 1 ]++;
 				sequentialHyperBall.iterate();
-				assertState( g.numNodes(), log2m, sequentialHyperBall.registers(), hyperBall.registers() );
+				assertState( g.numNodes(), log2m, sequentialHyperBall.registers(), hyperBall.getCounter().registers() );
 				
 				hyperBall.iterate();
 				if ( Math.abs( hyperBall.neighbourhoodFunction.getDouble( hyperBall.neighbourhoodFunction.size() - 1 ) - 49 ) <= 2 * rsd * 49 ) correct[ 2 ]++;
 				sequentialHyperBall.iterate();
-				assertState( g.numNodes(), log2m, sequentialHyperBall.registers(), hyperBall.registers() );
+				assertState( g.numNodes(), log2m, sequentialHyperBall.registers(), hyperBall.getCounter().registers() );
 				
 				hyperBall.close();
 				sequentialHyperBall.close();
@@ -382,10 +382,10 @@ public class HyperBallTest extends WebGraphTestCase {
 								reachable++;
 								totDist += dist[ k ];
 							}
-						assertEquals( 1.0, reachable / hyperBall.count( from ), 0.20 );
+						assertEquals( 1.0, reachable / hyperBall.getCounter().count( from ), 0.20 );
 						
 						double expEcc = (double)totDist / reachable;
-						double computedEcc = FloatBigArrays.get( hyperBall.sumOfDistances, from ) / hyperBall.count( from );
+						double computedEcc = FloatBigArrays.get( hyperBall.sumOfDistances, from ) / hyperBall.getCounter().count( from );
 						if ( expEcc == 0 ) assertEquals( 0.0, computedEcc, 1E-3 );
 						else assertEquals( 1.0, expEcc / computedEcc, 0.15 );
 					}

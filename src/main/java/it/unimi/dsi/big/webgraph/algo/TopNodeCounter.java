@@ -1,9 +1,11 @@
-package se.meltwater.algo;
+package it.unimi.dsi.big.webgraph.algo;
 
+import it.unimi.dsi.big.webgraph.algo.DANF;
 import it.unimi.dsi.logging.ProgressLogger;
 import javafx.util.Pair;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.MutableGraph;
+import se.meltwater.algo.BoundedTreeSet;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -77,10 +79,10 @@ public class TopNodeCounter {
      * sorted list of nodes/value pairs.
      * @param graph The graph containing all nodes in DANF
      */
-    private void initNodeSets(IGraph graph) {
+    private void initNodeSets(MutableGraph graph) {
         System.out.println("Initing TopNodes");
         ProgressLogger pl = new ProgressLogger();
-        pl.expectedUpdates = graph.getNumberOfNodes();
+        pl.expectedUpdates = graph.numNodes();
 
         nodesSortedByValue = new BoundedTreeSet<>(counterCapacity ,nodeScoreComparator());
         updatedNodesWithValueBeforeUpdate = new HashMap<>();
@@ -89,7 +91,7 @@ public class TopNodeCounter {
         timeOfLastUpdate = System.currentTimeMillis();
 
         pl.start();
-        for (long node = 0; node < graph.getNumberOfNodes(); node++) {
+        for (long node = 0; node < graph.numNodes(); node++) {
             nodesSortedByValue.add(new Pair<>(danf.count(node, danf.getMaxH()), node));
             pl.update(1);
         }

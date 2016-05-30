@@ -2,13 +2,12 @@ package se.meltwater.test.topNodeCounter;
 
 import javafx.util.Pair;
 import org.junit.Test;
-import se.meltwater.algo.DANF;
-import se.meltwater.algo.TopNodeCounter;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.SimulatedGraph;
+import it.unimi.dsi.big.webgraph.algo.DANF;
+import it.unimi.dsi.big.webgraph.algo.TopNodeCounter;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.big.webgraph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
-import se.meltwater.vertexcover.DynamicVertexCover;
 
 import java.util.HashSet;
 import java.util.TreeSet;
@@ -44,7 +43,7 @@ public class TestTopNodeCounter {
      */
     @Test
     public void testCallbackIsCalled() throws InterruptedException {
-        IGraph graph = new SimulatedGraph();
+        MutableGraph graph = new SimulatedGraph();
         graph.addEdges(new Edge(0,1));
         DANF danf = new DANF(h, log2m, graph);
         TopNodeCounter topNodeCounter = new TopNodeCounter(danf, updateIntervalms, percentageChange, minNodeCount, counterCapacity);

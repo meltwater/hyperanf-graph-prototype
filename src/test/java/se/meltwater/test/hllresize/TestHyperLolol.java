@@ -1,13 +1,12 @@
 package se.meltwater.test.hllresize;
 
 import it.unimi.dsi.big.webgraph.LazyLongIterators;
+import it.unimi.dsi.util.HyperLogLogCounterArray;
 import javafx.util.Pair;
 import org.junit.Test;
-import se.meltwater.hyperlolol.HyperLolLolCounterArray;
 import se.meltwater.test.TestUtils;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
 
@@ -31,7 +30,7 @@ public class TestHyperLolol {
     private int log2m;
     private Random rand;
     private int increaseSize;
-    private HyperLolLolCounterArray counter;
+    private HyperLogLogCounterArray counter;
 
     @Test
     public void testExtract(){
@@ -46,7 +45,7 @@ public class TestHyperLolol {
             if(size == 0)
                 size = 1;
             long[] extracts = generateNonDuplicateList(size);
-            HyperLolLolCounterArray extracted = counter.extract(LazyLongIterators.wrap(extracts), extracts.length);
+            HyperLogLogCounterArray extracted = counter.extract(LazyLongIterators.wrap(extracts), extracts.length);
 
             int i = 0;
             for (long l : extracts) {
@@ -67,33 +66,6 @@ public class TestHyperLolol {
             t[i++] = l;
         }
         return t;
-    }
-
-    /**
-     * Tests if {@link HyperLolLolCounterArray#wouldChange(long, long)} is correct
-     */
-    @Test
-    public void testWouldChange(){
-        int iteration = 0;
-        while(++iteration < nrTestIterations){
-            setupParameters();
-
-            int maxAddedValues = 100;
-            long[] count = new long[counter.counterLongwords];
-            long[] countAfter = new long[counter.counterLongwords];
-            for (int i = 0; i < arraySize; i++) {
-                for(int j = 0; j < maxAddedValues; j++) {
-                    counter.getCounter(i,count);
-                    int addedValue = rand.nextInt();
-                    boolean shouldChange = counter.wouldChange(i,addedValue);
-                    counter.add(i, addedValue);
-                    counter.getCounter(i,countAfter);
-                    assertNotEquals(shouldChange,Arrays.equals(count,countAfter));
-                }
-            }
-
-
-        }
     }
 
     /**
@@ -254,12 +226,12 @@ public class TestHyperLolol {
             final int extraElementsInArray = 5;
             final int newArraySize = arraySize + extraElementsInArray;
 
-            counter  = new HyperLolLolCounterArray(newArraySize,n,log2m);
-            HyperLolLolCounterArray counter2 = new HyperLolLolCounterArray(newArraySize,n,log2m);
+            counter  = new HyperLogLogCounterArray(newArraySize,n,log2m);
+            HyperLogLogCounterArray counter2 = new HyperLogLogCounterArray(newArraySize,n,log2m);
 
             randomlyAddHashesToCounters(newArraySize);
             randomlyAddHashesToCounters(newArraySize, counter2);
-            HyperLolLolCounterArray counterOriginal = (HyperLolLolCounterArray) counter.clone();
+            HyperLogLogCounterArray counterOriginal = (HyperLogLogCounterArray) counter.clone();
 
             Pair<Long,Long> unionedNodes = unionRandomNode(newArraySize, counter, counter2);
 
@@ -272,7 +244,7 @@ public class TestHyperLolol {
      * @param values
      * @param counter
      */
-    public void addValuesToHLL(long[][] values, HyperLolLolCounterArray counter) {
+    public void addValuesToHLL(long[][] values, HyperLogLogCounterArray counter) {
         for(int i=0; i<values.length; i++){
             for(int j=0; j<values[i].length; j++)
                 counter.add(i,values[i][j]);
@@ -287,7 +259,7 @@ public class TestHyperLolol {
      * @param from
      * @return
      */
-    private Pair<Long,Long> unionRandomNode(int newArraySize, HyperLolLolCounterArray to, HyperLolLolCounterArray from) {
+    private Pair<Long,Long> unionRandomNode(int newArraySize, HyperLogLogCounterArray to, HyperLogLogCounterArray from) {
         long unionedNode = (long)rand.nextInt(newArraySize);
         long fromNode = (long)rand.nextInt(newArraySize);
         to.union(unionedNode, from, fromNode);
@@ -304,7 +276,7 @@ public class TestHyperLolol {
      * @param arraySize
      * @param unionedNode
      */
-    private void checkValues(HyperLolLolCounterArray counter1, HyperLolLolCounterArray counter2, HyperLolLolCounterArray counterOriginal,
+    private void checkValues(HyperLogLogCounterArray counter1, HyperLogLogCounterArray counter2, HyperLogLogCounterArray counterOriginal,
                              int arraySize, long unionedNode, long unionFromNode) {
         long[] counter1Bits = new long[counter1.counterLongwords];
         long[] counter2Bits = new long[counter1.counterLongwords];
@@ -393,9 +365,9 @@ public class TestHyperLolol {
             final int newArraySize = arraySize + extraElementsInArray;
 
             /* Init counters */
-            counter = new HyperLolLolCounterArray(newArraySize, n, log2m);
-            HyperLolLolCounterArray counter2 = new HyperLolLolCounterArray(newArraySize, n, log2m);
-            HyperLolLolCounterArray counterOriginal = (HyperLolLolCounterArray) counter.clone();
+            counter = new HyperLogLogCounterArray(newArraySize, n, log2m);
+            HyperLogLogCounterArray counter2 = new HyperLogLogCounterArray(newArraySize, n, log2m);
+            HyperLogLogCounterArray counterOriginal = (HyperLogLogCounterArray) counter.clone();
 
             randomlyAddHashesToCounters(newArraySize, counter);
             randomlyAddHashesToCounters(newArraySize, counter2);
@@ -424,7 +396,7 @@ public class TestHyperLolol {
         n = maxCounters;
         log2m = rand.nextInt(10) + log2mMinSize;
         increaseSize = rand.nextInt(maxCounters - arraySize);
-        counter = new HyperLolLolCounterArray(arraySize, n, log2m);
+        counter = new HyperLogLogCounterArray(arraySize, n, log2m);
     }
 
     private void assertAllCountersLargerThanZero(int arraySize) {
@@ -444,7 +416,7 @@ public class TestHyperLolol {
      * @param counter
      * @return The node values inserted into each node
      */
-    private long[][] randomlyAddHashesToCounters(int numberOfCounters, HyperLolLolCounterArray counter) {
+    private long[][] randomlyAddHashesToCounters(int numberOfCounters, HyperLogLogCounterArray counter) {
         int maxAddedValues = 100;
         long[][] ret = new long[numberOfCounters][maxAddedValues];
         for (int i = 0; i < numberOfCounters; i++) {

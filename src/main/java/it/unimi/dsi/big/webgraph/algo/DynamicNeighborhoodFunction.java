@@ -1,6 +1,6 @@
-package se.meltwater.algo;
+package it.unimi.dsi.big.webgraph.algo;
 
-import se.meltwater.graph.Edge;
+import it.unimi.dsi.big.webgraph.Edge;
 
 /**
  * TODO Class description

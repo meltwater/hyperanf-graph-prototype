@@ -3,10 +3,8 @@ package se.meltwater.test.vertexCover;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import org.junit.Test;
-import se.meltwater.algo.DANF;
-import se.meltwater.bfs.MSBreadthFirst;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.SimulatedGraph;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.SimulatedGraph;
 import se.meltwater.test.TestUtils;
 import se.meltwater.vertexcover.DynamicVertexCover;
 import se.meltwater.vertexcover.IDynamicVertexCover;
@@ -92,7 +90,7 @@ public class TestDynamicVertexCover {
             DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
             SimulatedGraph graphToMerge = TestUtils.genRandomGraph(maxNumNodes);
-            graph.addNode(graphToMerge.getNumberOfNodes());
+            graph.addNode(graphToMerge.numNodes());
 
             Edge[] edges = graphToMerge.getAllEdges();
 
@@ -119,7 +117,7 @@ public class TestDynamicVertexCover {
             DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
             SimulatedGraph graphToMerge = TestUtils.genRandomGraph(maxNumNodes);
-            graph.addNode(graphToMerge.getNumberOfNodes());
+            graph.addNode(graphToMerge.numNodes());
 
             Edge[] edges = graphToMerge.getAllEdges();
 
@@ -160,7 +158,7 @@ public class TestDynamicVertexCover {
 
             SimulatedGraph graphToMerge = TestUtils.genRandomGraph(maxNumNodes);
 
-            graph.addNode(graphToMerge.getNumberOfNodes());
+            graph.addNode(graphToMerge.numNodes());
 
             Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap = new HashMap<>();
             insertEdgesIntoVCAndUpdateAffected(graph, graphToMerge.getAllEdges(), dvc, affectedStateMap);

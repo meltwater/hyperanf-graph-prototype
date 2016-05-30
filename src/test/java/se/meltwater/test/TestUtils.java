@@ -1,14 +1,8 @@
 package se.meltwater.test;
 
-import javafx.util.Pair;
-import se.meltwater.algo.DANF;
-import se.meltwater.algo.HyperBoll;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.SimulatedGraph;
-import se.meltwater.vertexcover.DynamicVertexCover;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.SimulatedGraph;
 
-import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.LongStream;
