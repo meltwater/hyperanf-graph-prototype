@@ -1,10 +1,10 @@
 package se.meltwater.benchmarks;
 
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import se.meltwater.algo.DANF;
-import se.meltwater.algo.HyperBoll;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.algo.DANF;
+import it.unimi.dsi.big.webgraph.algo.HyperBall;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 
 import java.io.IOException;
 
@@ -44,7 +44,7 @@ public class DanfVsHanf {
         for (int i = 0; i < nrSamples; i++) {
             ImmutableGraphWrapper graph  = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile), memoryThreasholdThatNeverReaches);
 
-            Edge[] edges = BenchmarkUtils.generateEdges(graph.getNumberOfNodes(), bulkSize);
+            Edge[] edges = BenchmarkUtils.generateEdges(graph.numNodes(), bulkSize);
 
             danfTotalTime += addEdgesToDanf(graph, edges);
             hBallTotalTime += addEdgesToHyperBall(edges);
@@ -86,16 +86,16 @@ public class DanfVsHanf {
      */
     private long addEdgesToHyperBall(Edge[] edges) throws IOException {
         ImmutableGraphWrapper graph2 = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile), memoryThreasholdThatNeverReaches);
-        System.out.println("Running HyperBoll");
+        System.out.println("Running HyperBall");
         long beforeHBALL = System.currentTimeMillis();
         graph2.addEdges(edges);
 
-        HyperBoll hyperBoll = new HyperBoll(graph2, log2m, seed);
-        hyperBoll.init();
+        HyperBall hyperBall = new HyperBall(graph2, log2m, seed);
+        hyperBall.init();
         for (int j = 1; j < h; j++) {
-            hyperBoll.iterate();
+            hyperBall.iterate();
         }
-        hyperBoll.close();
+        hyperBall.close();
         long afterHBALL = System.currentTimeMillis();
 
         /* Cleanup */

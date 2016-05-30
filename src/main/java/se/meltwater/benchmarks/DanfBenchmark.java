@@ -1,11 +1,11 @@
 package se.meltwater.benchmarks;
 
 import it.unimi.dsi.big.webgraph.BVGraph;
-import se.meltwater.algo.DANF;
-import se.meltwater.algo.DynamicNeighborhoodFunction;
-import se.meltwater.graph.Edge;
-import se.meltwater.graph.IGraph;
-import se.meltwater.graph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.algo.DANF;
+import it.unimi.dsi.big.webgraph.algo.DynamicNeighborhoodFunction;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -40,7 +40,7 @@ public class DanfBenchmark {
 
 
         System.out.println("Loading graph");
-        IGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
+        MutableGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
 
         DANF danf = new DANF(h,log2m,graph);
 
@@ -62,14 +62,14 @@ public class DanfBenchmark {
      * @throws IOException
      * @throws InterruptedException
      */
-    private void insertEdgesIntoDanf(IGraph graph, DynamicNeighborhoodFunction danf, PrintWriter writer) throws IOException, InterruptedException {
+    private void insertEdgesIntoDanf(MutableGraph graph, DynamicNeighborhoodFunction danf, PrintWriter writer) throws IOException, InterruptedException {
         int  added = 0;
         long lastTime = System.currentTimeMillis();
         long startTime = lastTime;
 
         System.out.println("Starting edge insertions");
         while(System.in.available() == 0 && added < edgesToAdd) {
-            Edge[] edges = generateEdges(graph.getNumberOfNodes(), bulkSize);
+            Edge[] edges = generateEdges(graph.numNodes(), bulkSize);
 
             danf.addEdges(edges);
             added += bulkSize;
