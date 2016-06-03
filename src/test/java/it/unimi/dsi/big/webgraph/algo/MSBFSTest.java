@@ -365,6 +365,37 @@ public class MSBFSTest {
         }
     }
 
+
+    @Test
+    public void testMSBFSInHSteps() throws InterruptedException {
+
+        int iteration = 0;
+
+        while(iteration++ < maxIterations) {
+            final int h = 1;//new Random().nextInt(12);
+            final int maxNumNodes = 1000;
+            final int maxSources = new Random().nextInt(maxNumNodes);
+            MutableGraph graph = TestUtils.genRandomGraph(maxNumNodes);
+            long[] sourceNodes = new Random().longs(maxSources, 0, graph.numNodes()).distinct().toArray();
+
+            MSBreadthFirst.Visitor visitor = (long node, BitSet bfsVisits, BitSet seen, int depth, MSBreadthFirst.Traveler t) -> {
+                if (depth == h) {
+                    bfsVisits.clear();
+                }
+            };
+
+            MSBreadthFirst msbfs = new MSBreadthFirst(graph);
+            BitSet[][] msbfsBitsets = msbfs.breadthFirstSearch(sourceNodes, visitor);
+
+            StandardBreadthFirst stdbfs = new StandardBreadthFirst();
+            BitSet[][] stdBitsets = stdbfs.breadthFirstSearch(sourceNodes, graph, h);
+
+            assertArrayEquals(msbfsBitsets, stdBitsets);
+        }
+    }
+
+
+
     /**
      *
      * @param elem
