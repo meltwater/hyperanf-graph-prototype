@@ -5,7 +5,9 @@ import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 
+import java.util.BitSet;
 import java.util.concurrent.*;
 
 /**
@@ -27,7 +29,9 @@ public class StandardBreadthFirst {
 
 
 
-    public void breadthFirstSearch(long[] sources, MutableGraph graph, int maxSteps) {
+    public BitSet[][] breadthFirstSearch(long[] sources, MutableGraph graph, int maxSteps) {
+        BitSet[][] nodesSeenBy = ObjectBigArrays.newBigArray(new BitSet[0][0], graph.numNodes());
+
         threadPool = Executors.newFixedThreadPool(nrThreads);
 
         for (int i = 0; i <  sources.length; i++) {
@@ -40,20 +44,30 @@ public class StandardBreadthFirst {
                 currentQueue.enqueue(currentNode);
                 LongArrayBitVector nodesChecked = LongArrayBitVector.ofLength(graph.numNodes());
                 nodesChecked.set(currentNode);
-                int h = 0;
+
+                synchronized (StandardBreadthFirst.this) {
+                    BitSet nodeBitSet = ObjectBigArrays.get(nodesSeenBy, currentNode);
+                    if (nodeBitSet == null) {
+                        nodeBitSet = new BitSet(sources.length);
+                    }
+                    nodeBitSet.set(sourceIndex);
+                    ObjectBigArrays.set(nodesSeenBy, currentNode, nodeBitSet);
+                }
+
+                int h = 1;
 
                 while (h <= maxSteps) {
-                    long curr = currentQueue.dequeueLong();
 
-                    long d ;
+                    long curr = currentQueue.dequeueLong();
+                    long d;
                     long[][] successors;
                     NodeIterator currentNodeIterator;
                     synchronized (StandardBreadthFirst.this) {
                         currentNodeIterator = graph.nodeIterator(curr);
                     }
-                        currentNodeIterator.nextLong();
-                        d = currentNodeIterator.outdegree();
-                        successors = currentNodeIterator.successorBigArray();
+                    currentNodeIterator.nextLong();
+                    d = currentNodeIterator.outdegree();
+                    successors = currentNodeIterator.successorBigArray();
 
                     /* Visit all neighbors */
                     while (d != 0) {
@@ -62,6 +76,15 @@ public class StandardBreadthFirst {
                         if (!nodesChecked.get(succ)) {
                             nodesChecked.set(succ);
                             nextQueue.enqueue(succ);
+
+                            synchronized (StandardBreadthFirst.this) {
+                                BitSet nodeBitSet = ObjectBigArrays.get(nodesSeenBy, succ);
+                                if (nodeBitSet == null) {
+                                    nodeBitSet = new BitSet(sources.length);
+                                }
+                                nodeBitSet.set(sourceIndex);
+                                ObjectBigArrays.set(nodesSeenBy, succ, nodeBitSet);
+                            }
                         }
                         d--;
                     }
@@ -81,5 +104,7 @@ public class StandardBreadthFirst {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        return nodesSeenBy;
     }
 }
