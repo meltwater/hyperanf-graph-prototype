@@ -279,7 +279,7 @@ public class MSBreadthFirst {
     private Runnable bothPhasesIterator(long startNode, long endNode, NodeIterator nodeIt){
         return () -> {
             try {
-                firstPhaseIterator(startNode,endNode, nodeIt);
+                firstPhaseIterator(startNode, endNode, nodeIt);
                 if(synchronize() && visitHadContent.get())
                     secondPhaseIterator(startNode, endNode);
             }catch (InterruptedException e){
@@ -321,29 +321,29 @@ public class MSBreadthFirst {
             for (long d = 0; d < degree; d++) {
                 neighbor = neighbors.nextLong();
 
-                visitNeigh = ObjectBigArrays.get(visitNext,neighbor);
-                wasNull = visitNeigh == null;
+                BitSet seenSet;
+                synchronized (this){
+                    seenSet = ObjectBigArrays.get(seen,neighbor);
+                    if(seenSet == null) {
+                        seenSet = new BitSet(numSources);
+                        ObjectBigArrays.set(seen, neighbor, seenSet);
+                    }
+                }
 
-                synchronized (wasNull ? this : ObjectBigArrays.get(visitNext,neighbor)) {
-                    if(wasNull) {
-                        visitNeigh = ObjectBigArrays.get(visitNext,neighbor);
-                        if(visitNeigh == null)
-                            visitNeigh = new BitSet(numSources);
-                        else
-                            wasNull = false;
+                synchronized  (seenSet) {
+                    visitNeigh = ObjectBigArrays.get(visitNext,neighbor);
+                    if(visitNeigh == null) {
+                        visitNeigh = new BitSet(numSources);
+                        ObjectBigArrays.set(visitNext, neighbor, visitNeigh);
                     }
 
-                    if(hasTraveler) {
+                    if (hasTraveler) {
                         toSet = nodeTraveler;
                         if (!visitNeigh.isEmpty())
-                            toSet = ObjectBigArrays.get(travelersNext,neighbor).merge(toSet,iteration+1);
-                        ObjectBigArrays.set(travelersNext,neighbor,toSet);
+                            toSet = ObjectBigArrays.get(travelersNext, neighbor).merge(toSet, iteration + 1);
+                        ObjectBigArrays.set(travelersNext, neighbor, toSet);
                     }
                     visitNeigh.or(visitN);
-
-                    if(wasNull) {
-                        ObjectBigArrays.set(visitNext,neighbor,visitNeigh);
-                    }
                 }
             }
             if(hasTraveler)
@@ -358,8 +358,6 @@ public class MSBreadthFirst {
             visitNextBits = ObjectBigArrays.get(visitNext,node);
             if(visitNextBits == null || visitNextBits.isEmpty()) continue;
 
-            if(ObjectBigArrays.get(seen,node) == null)
-                ObjectBigArrays.set(seen,node,new BitSet(numSources));
             visitNextBits.andNot(ObjectBigArrays.get(seen,node));
             ObjectBigArrays.get(seen,node).or(visitNextBits);
         }

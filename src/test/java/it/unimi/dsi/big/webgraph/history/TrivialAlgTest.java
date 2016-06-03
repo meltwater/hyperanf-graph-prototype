@@ -48,6 +48,9 @@ public class TrivialAlgTest {
                 assertSame(danf,tanf);
             }
 
+            danf.close();
+            tanf.close();
+
         }
     }
 
