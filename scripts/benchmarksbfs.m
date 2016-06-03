@@ -1,4 +1,4 @@
-data = sortrows(load ('../files/tmp.data'), 2);
+data = sortrows(load ('../benchmarkdata/benchmarkBfs2016-05-31-16:43:26.data'), 2);
 
 pageWidth  = 426.79135;
 pageHeight = pageWidth / sqrt(2);
@@ -8,6 +8,8 @@ Hfig = figure(1);
 
 %ADD PLOT
 x  = sort(unique(data(:,1))); % h
+
+
 y = data(:,3) ./ data(:,4); 
 
 cmap = hsv;
@@ -32,9 +34,7 @@ hold off;
 
 set(HP,'Linewidth', 2);    
 xlabel ('Max steps', 'fontsize', 16);
-ylabel ('BFS/MS-BFS Ratio)', 'fontsize', 16);
-
-title('In-2004' , 'fontsize', 16, 'interpreter', 'latex');
+ylabel ('BFS/MS-BFS Ratio', 'fontsize', 16);
 
 HL = legend (HP);
 set(HL, 'fontsize', 16, 'location', 'northwest');

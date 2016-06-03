@@ -23,15 +23,17 @@ import static it.unimi.dsi.big.webgraph.benchmarks.BenchmarkUtils.*;
  */
 public class StandardBFSVsMSBFS {
 
-    private final int maxNumberOfSources = 25;
-    private final int sourceBulkSize =4;
+    private final int maxNumberOfSources = 3000;
+    private final int sourceBulkSize = 1000;
     private final int startNode = 0;
-    private final int maxSteps = 8;
+    private final int maxSteps = 3;
     private final String dateString = getDateString();
 
-    private final String graphName = "noBlocksUk";
+    private final String graphName = "in-2004";
     private final String graphFile = graphFolder + graphName;
     private final String dataFile  = dataFolder + "benchmarkBfs" + dateString + ".data";
+
+    private final int nrSamples = 3;
 
     /**
      * Loads a physical graph and performs both a standard bfs and a msbfs on it.
@@ -42,22 +44,39 @@ public class StandardBFSVsMSBFS {
      */
     public void benchmark() throws IOException, InterruptedException {
 
-        ImmutableGraphWrapper graph = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile));
+        ImmutableGraphWrapper graph = new ImmutableGraphWrapper(ImmutableGraph.loadMapped(graphFile));
 
         PrintWriter writer = new PrintWriter(dataFile);
-        writer.println("#" + getDateString() + " " + graphName + "; Comparison between a standard implementation of BFS and the MS-BFS algorithm; "
+        writer.println("%" + getDateString() + " " + graphName + "; Comparison between a standard implementation of BFS and the MS-BFS algorithm; "
                 + " 0 to " + maxNumberOfSources + " sources are used for each bfs with " + sourceBulkSize + " bulk increase;" +
                 " The time measured is the millis to perform a bfs that stops after h steps;");
-        writer.println("#h nrSources stdbfsMillis msbfsMillis");
+        writer.println("%h nrSources stdbfsMillis msbfsMillis");
 
         int nrSources = sourceBulkSize;
+        long[] sources = LongStream.range(startNode, startNode + nrSources).toArray();
+
+        /* WARMUP CPU */
+        for (int i = 0; i < nrSamples; i++) {
+            performMSBfsAndMeasureTime(sources, graph, 2);
+            performStandardBfsAndMeasureTime(sources, graph, 1);
+        }
+
+
         while(nrSources <= maxNumberOfSources) {
-            long[] sources = LongStream.range(startNode, startNode + nrSources).toArray();
+            sources = LongStream.range(startNode, startNode + nrSources).toArray();
 
-            for (int h = 1; h <= maxSteps; h++) {
+            for (int h = 0; h <= maxSteps; h++) {
 
-                long stdTotalTime = performStandardBfsAndMeasureTime(sources, graph, h);
-                long msbfsTotalTime = performMSBfsAndMeasureTime(sources, graph, h);
+                long msbfsTotalTime = 0;
+                long stdTotalTime = 0;
+
+                for (int i = 0; i < nrSamples; i++) {
+                    msbfsTotalTime += performMSBfsAndMeasureTime(sources, graph, h);
+                    stdTotalTime += performStandardBfsAndMeasureTime(sources, graph, h);
+                }
+
+                msbfsTotalTime = msbfsTotalTime / nrSamples;
+                stdTotalTime = stdTotalTime / nrSamples;
 
                 System.out.println("Iteration " + h + " completed with " + nrSources + " sources.");
                 writer.println(h + " " + sources.length + " " + stdTotalTime + " " + msbfsTotalTime);
@@ -106,5 +125,9 @@ public class StandardBFSVsMSBFS {
         msbfs.close();
         long endTime = System.currentTimeMillis();
         return endTime - startTime;
+    }
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+        new StandardBFSVsMSBFS().benchmark();
     }
 }

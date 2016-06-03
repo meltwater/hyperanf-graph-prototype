@@ -20,7 +20,7 @@ public class SimulatedVsTraverseGraph {
     private final int maxNumberOfEdges = 3000000;
     private final int edgesBulkSize = 5000;
     private int maxNode = maxNumberOfEdges;
-    private final int samples = 10;
+    private final int samples = 3;
 
     private TraverseGraph tg = new TraverseGraph();
     private long simulatedAddTotalTime     = 0;
@@ -70,7 +70,7 @@ public class SimulatedVsTraverseGraph {
 
         long traverseIterateStartTime = System.currentTimeMillis();
         iterateAllTraverseEdges(tg);
-        traverseIterateTotalTime += System.currentTimeMillis() - traverseIterateStartTime;
+        traverseIterateTotalTime = System.currentTimeMillis() - traverseIterateStartTime;
     }
 
     private void addAndIterateEdgesSimulated(Edge[] edges) {
@@ -80,7 +80,7 @@ public class SimulatedVsTraverseGraph {
 
         long simulatedIterateStartTime = System.currentTimeMillis();
         sim.iterateAllEdges(e -> null);
-        simulatedIterateTotalTime += System.currentTimeMillis() - simulatedIterateStartTime;
+        simulatedIterateTotalTime = System.currentTimeMillis() - simulatedIterateStartTime;
     }
 
     private static void writeSimulatedVsTraverseStatistics(PrintWriter writer, TraverseGraph tg, long simulatedAddTotalTime, long simulatedIterateTotalTime, SimulatedGraph sim, long traverseAddTotalTime, long traverseIterateTotalTime, int nrAddedEdges) {
@@ -103,4 +103,7 @@ public class SimulatedVsTraverseGraph {
         }
     }
 
+    public static void main(String[] args) throws FileNotFoundException {
+        new SimulatedVsTraverseGraph().benchmark();
+    }
 }

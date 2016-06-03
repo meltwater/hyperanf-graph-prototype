@@ -1,4 +1,4 @@
-data = load ('../files/unionVSStored2016-05-30-10:43:58.data');
+data = load ('../benchmarkdata/unionVSStored2016-05-30-10:43:58.data');
 
 pageWidth  = 426.79135;
 pageHeight = pageWidth / sqrt(2);
@@ -13,7 +13,7 @@ y2 = data(:,7)./1000; %SOMETIMES TIME
 y3 = data(:,9)./1000;%NEVER TIME
 
 subplot(1,2,1);
-HP1(1) = plot(x, y1, 'd-', 'color', [0, 0, 0.5],'markersize', 4, 'markerfacecolor', [0, 0, 0.5], 'displayname', ' r = \infty' );
+HP1(1) = plot(x, y1, 'd-', 'color', [0, 0, 0.5],'markersize', 4, 'markerfacecolor', [0, 0, 0.5], 'displayname', 'r = \infty' );
 grid on;
 hold on;
 HP1(2) = plot(x, y2, 's-', 'color', [0.5, 0, 0],'markersize', 4, 'markerfacecolor', [0.5, 0, 0], 'displayname', 'r = 8.0' );
@@ -48,6 +48,8 @@ HP2(2) = plot(x, y2, 's-', 'color', [0.5, 0, 0],'markersize', 4, 'markerfacecolo
 hold on;
 HP2(3) = plot(x, y3, 'p-', 'color', [0, 0.5, 0],'markersize', 4, 'markerfacecolor', [0, 0.5, 0], 'displayname', 'r = 0.0' );
 hold off;
+
+ylim([0, 230]);
 
 set(HP2,'Linewidth', 2);    
 xlabel ('#Bulk insertions', 'fontsize', 16);

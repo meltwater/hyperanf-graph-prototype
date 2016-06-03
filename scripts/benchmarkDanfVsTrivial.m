@@ -1,4 +1,4 @@
-%data = load ('../benchmarkdata/DANFComparedToTrivial2016-05-24-10:18:44.data'); %h = 3
+data = load ('../benchmarkdata/DANFComparedToTrivial2016-05-24-10:18:44.data'); %h = 3
 data =load('../benchmarkdata/DANFComparedToTrivial2016-05-17-09:48:41.data'); %h = 8
 
 pageWidth  = 426.79135;
@@ -17,11 +17,11 @@ sp1 = subplot(1,2,1);
 HP1(1) = plot(x, y1, 'o-', 'color', [0, 0, 0.5],'markersize', 4, 'markerfacecolor', [0, 0, 0.5], 'displayname', 'DANF' );
 grid on;
 hold on;
-HP1(2) = plot(x, y2, 's-', 'color', [0.5, 0, 0],'markersize', 4, 'markerfacecolor', [0.5, 0, 0], 'displayname', 'Trivial' );
+HP1(2) = plot(x, y2, 's-', 'color', [0.5, 0, 0],'markersize', 4, 'markerfacecolor', [0.5, 0, 0], 'displayname', 'Two-BFS' );
 hold off;
 
 set(HP1,'Linewidth', 2);    
-%ylim([0, 4100]);
+ylim([0, 250]);
 xlim([0,6400]);
 ax = gca;
 ax.XTick = [0, 3200, 6400];
@@ -67,13 +67,13 @@ end
  set(HP2, {'facecolor'}, {color(1,:); color(2,:); color(3,:); color(4,:) } );
     
 hold on;
-HP2(5) = plot(x, y5, 's-', 'color', [0.5, 0, 0],'markersize', 4, 'markerfacecolor', [0.5, 0, 0], 'displayname', 'Trivial' );
+HP2(5) = plot(x, y5, 's-', 'color', [0.5, 0, 0],'markersize', 4, 'markerfacecolor', [0.5, 0, 0], 'displayname', 'Two-BFS' );
 grid on;
 hold off;
 
 set(HP2,'linestyle', 'none'); 
-set(HP2(5), 'linestyle', '-', 'linewidth', 2 );
-%ylim([0, 2.5]);
+set(HP2(5), 'linestyle', '-', 'linewidth', 2);
+ylim([0, 2.8]);
 xlim([0,6400]);
 xlabel('Bulk size');
 ax = gca;

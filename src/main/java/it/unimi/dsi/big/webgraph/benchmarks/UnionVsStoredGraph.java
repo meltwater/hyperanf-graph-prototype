@@ -29,11 +29,12 @@ public class UnionVsStoredGraph {
     private final String dataFile = dataFolder + "unionVSStored" + dateString + ".data";
 
     private long maxNode = 10000000;
-    private final int maxAddedEdges = 1000000;
+
     private int addedEdges = 0;
 
-    private final int nrBenchmarkSamples = 20; /* Make sure that nrBenchmarkSamples * bulkSize * k = maxAddedEdges, for any integer k */
-    private int bulkSize = 5000;
+    private final int nrBenchmarkSamples = 10;
+    private int bulkSize = 50000;
+    private final int maxAddedEdges =  nrBenchmarkSamples * bulkSize;
 
     private final float ratioThatNeverReaches = 20000000.0f;
     private final float ratioThatSometimesReaches = 8.0f;
@@ -44,7 +45,7 @@ public class UnionVsStoredGraph {
     private long sometimesUnionTimeSinceSample = 0;
 
     private int iteration = 1;
-private int iterationOfLastSample = 0;
+    private int iterationOfLastSample = 0;
 
 
     /**

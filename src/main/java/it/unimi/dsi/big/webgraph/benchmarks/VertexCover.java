@@ -56,20 +56,20 @@ public class VertexCover {
      */
     public static void benchmarkDVCInsertionsReal() throws IOException {
         final String dateString = getDateString();
-        final String graphName = "noBlocksUk";
-        final String graphFile = "testGraphs/" + graphName;
+        final String graphName = "it-2004";
+        final String graphFile = graphFolder + graphName;
         final String dataFile = dataFolder + "DvcInsertionsReal" + dateString + ".data";
 
-        final int bulkSize =    10000000;
+        final int bulkSize =    100000000;
 
 
         MutableGraph graphToInsert = new ImmutableGraphWrapper(ImmutableGraph.load(graphFile));
         DynamicVertexCover dvc = new DynamicVertexCover(new SimulatedGraph());
 
         PrintWriter writer = new PrintWriter(dataFile);
-        writer.println("#" + getDateString() + " " + graphName + "; All edges in " + graphName +
+        writer.println("%" + getDateString() + " " + graphName + "; All edges in " + graphName +
                 " is inserted into an empty DVC. The time measured it the time to insert " + bulkSize + " edges.");
-        writer.println("#Modifications DPS HeapSize ElapsedTime nrArcs nrNodes");
+        writer.println("%Modifications DPS HeapSize ElapsedTime nrArcs nrNodes");
 
         insertAllEdgesFromGraphIntoDvc(bulkSize, graphToInsert, dvc, writer );
 
@@ -118,7 +118,7 @@ public class VertexCover {
         MutableGraph graph = new ImmutableGraphWrapper(BVGraph.loadMapped(graphFile));
 
         final long edgesToDelete = graph.numArcs();
-        final int bulkSize =       10000000;
+        final int bulkSize =       100000000;
 
         System.out.println("Loading transpose");
         MutableGraph graphTranspose = graph.transpose();
@@ -127,9 +127,9 @@ public class VertexCover {
         DynamicVertexCover dvc = new DynamicVertexCover(graph);
 
         PrintWriter writer = new PrintWriter(dataFile);
-        writer.println("#" + getDateString() + " " + graphName + "; " + edgesToDelete + " edges will be deleted from the dvc in bulks of " +
+        writer.println("%" + getDateString() + " " + graphName + "; " + edgesToDelete + " edges will be deleted from the dvc in bulks of " +
                 bulkSize + ". The time measured is the time to delete " + bulkSize + " edges.");
-        writer.println("#Modifications DPS HeapSize ElapsedTime nrArcs nrNodes");
+        writer.println("%Modifications DPS HeapSize ElapsedTime nrArcs nrNodes");
 
         deleteAllEdgesFromDvcWithoutRemovingFromGraph(graph, edgesToDelete, bulkSize, graphTranspose, dvc, writer);
 
@@ -241,9 +241,9 @@ public class VertexCover {
         final int edgesToRemove = (int)graph.numArcs();
 
         PrintWriter writer = new PrintWriter(dataFile);
-        writer.println("#" + dateString + " Simulated Graph; " + edgesToRemove + " edges will be deleted from the dvc in bulks of " +
+        writer.println("%" + dateString + " Simulated Graph; " + edgesToRemove + " edges will be deleted from the dvc in bulks of " +
                 bulkSize + ". The time measured is the time to delete " + bulkSize + " edges.");
-        writer.println("#Modifications DPS HeapSize ElapsedTime nrArcs nrNodes");
+        writer.println("%Modifications DPS HeapSize ElapsedTime nrArcs nrNodes");
 
         deleteEdgesFromDvc(graph, dvc, edgesToRemove, bulkSize, writer, true);
 
@@ -286,4 +286,7 @@ public class VertexCover {
     }
 
 
+    public static void main(String[] args) throws IOException {
+        new VertexCover().benchmarkDVCDeletionsReal();
+    }
 }

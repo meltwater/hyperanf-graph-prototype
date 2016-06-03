@@ -50,8 +50,6 @@ ylabel ('Added / Total edges', 'fontsize', 16);
 ax = gca;
 %set(gca, 'YTickLabel', { 0.000001, 0.0001, 0.01, 1, 100});
 
-HL = legend (HP);
-set(HL, 'fontsize', 16, 'location', 'northwest');
 
 set(gca, 'fontsize', 14 );
 set(gca, 'ticklength', [0.02, 0.05]);
