@@ -18,11 +18,7 @@ package it.unimi.dsi.big.webgraph.labelling;
  *
  */
 
-import it.unimi.dsi.big.webgraph.AbstractLazyLongIterator;
-import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.ImmutableGraph;
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
+import it.unimi.dsi.big.webgraph.*;
 import it.unimi.dsi.big.webgraph.labelling.ArcLabelledNodeIterator.LabelledArcIterator;
 import it.unimi.dsi.fastutil.io.BinIO;
 import it.unimi.dsi.fastutil.io.FastMultiByteArrayInputStream;
@@ -35,12 +31,7 @@ import it.unimi.dsi.lang.ObjectParser;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.sux4j.util.EliasFanoMonotoneLongBigList;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Properties;
 
 /** A labelled graph storing its labels as a bit stream.

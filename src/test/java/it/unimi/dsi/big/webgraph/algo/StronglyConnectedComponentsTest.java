@@ -1,6 +1,5 @@
 package it.unimi.dsi.big.webgraph.algo;
 
-import static org.junit.Assert.assertEquals;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.WebGraphTestCase;
 import it.unimi.dsi.bits.LongArrayBitVector;
@@ -10,8 +9,9 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
 import it.unimi.dsi.webgraph.examples.ErdosRenyiGraph;
-
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class StronglyConnectedComponentsTest extends WebGraphTestCase {
 

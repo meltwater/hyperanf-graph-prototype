@@ -18,6 +18,7 @@ package it.unimi.dsi.big.webgraph.test;
  *
  */
 
+import com.martiansoftware.jsap.*;
 import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.ImmutableGraph.LoadMethod;
@@ -30,15 +31,6 @@ import it.unimi.dsi.webgraph.GraphClassParser;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-
-import com.martiansoftware.jsap.FlaggedOption;
-import com.martiansoftware.jsap.JSAP;
-import com.martiansoftware.jsap.JSAPException;
-import com.martiansoftware.jsap.JSAPResult;
-import com.martiansoftware.jsap.Parameter;
-import com.martiansoftware.jsap.SimpleJSAP;
-import com.martiansoftware.jsap.Switch;
-import com.martiansoftware.jsap.UnflaggedOption;
  
 
 public class SpeedTest {

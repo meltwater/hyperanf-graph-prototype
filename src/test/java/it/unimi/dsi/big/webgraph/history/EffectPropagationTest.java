@@ -1,10 +1,10 @@
 package it.unimi.dsi.big.webgraph.history;
 
 import it.unimi.dsi.big.webgraph.*;
+import it.unimi.dsi.big.webgraph.algo.DANF;
 import it.unimi.dsi.big.webgraph.algo.HyperBall;
 import it.unimi.dsi.util.HyperLogLogCounterArray;
 import org.junit.Test;
-import it.unimi.dsi.big.webgraph.algo.DANF;
 
 import java.io.IOException;
 import java.util.Random;
@@ -16,8 +16,6 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
- *         <p>
- *         // TODO Class description
  */
 public class EffectPropagationTest {
 

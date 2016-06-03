@@ -18,11 +18,11 @@ package it.unimi.dsi.big.webgraph.labelling;
  *
  */
 
-import static org.junit.Assert.assertEquals;
 import it.unimi.dsi.big.webgraph.WebGraphTestCase;
 import it.unimi.dsi.big.webgraph.examples.IntegerTriplesArcLabelledImmutableGraph;
-
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class RelabellingTest extends WebGraphTestCase {
 

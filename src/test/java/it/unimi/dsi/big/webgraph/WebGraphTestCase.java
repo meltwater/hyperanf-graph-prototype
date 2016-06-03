@@ -18,8 +18,6 @@ package it.unimi.dsi.big.webgraph;
  *
  */
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import it.unimi.dsi.big.webgraph.labelling.ArcLabelledImmutableGraph;
 import it.unimi.dsi.big.webgraph.labelling.ArcLabelledNodeIterator;
 import it.unimi.dsi.big.webgraph.labelling.ArcLabelledNodeIterator.LabelledArcIterator;
@@ -28,11 +26,10 @@ import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 import it.unimi.dsi.webgraph.BVGraph;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /** A JUnit test case providing additional assertions
  * for {@linkplain it.unimi.dsi.big.webgraph.ImmutableGraph immutable graphs}.

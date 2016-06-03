@@ -2,7 +2,6 @@ package it.unimi.dsi.big.webgraph.examples;
 
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.WebGraphTestCase;
-
 import org.junit.Test;
 
 public class IntegerTriplesArcLabelledImmutableGraphTest extends WebGraphTestCase {

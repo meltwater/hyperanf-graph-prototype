@@ -2,10 +2,10 @@ package it.unimi.dsi.big.webgraph.graph;
 
 import com.google.common.collect.Lists;
 import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.TestUtils;
-import org.junit.Test;
 import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.TestUtils;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,8 +17,6 @@ import static org.junit.Assert.*;
 /**
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
- *         <p>
- *         // TODO Class description
  */
 public class ImmutableGraphWrapperTest {
 

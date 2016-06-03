@@ -18,8 +18,7 @@ package it.unimi.dsi.big.webgraph;
  *
  */
 
-import static it.unimi.dsi.fastutil.HashCommon.bigArraySize;
-import static it.unimi.dsi.fastutil.HashCommon.maxFill;
+import com.martiansoftware.jsap.*;
 import it.unimi.dsi.fastutil.BigArrays;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.Size64;
@@ -31,6 +30,8 @@ import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.fastutil.objects.Object2LongFunction;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.logging.ProgressLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,17 +39,8 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.martiansoftware.jsap.FlaggedOption;
-import com.martiansoftware.jsap.JSAP;
-import com.martiansoftware.jsap.JSAPException;
-import com.martiansoftware.jsap.JSAPResult;
-import com.martiansoftware.jsap.Parameter;
-import com.martiansoftware.jsap.SimpleJSAP;
-import com.martiansoftware.jsap.Switch;
-import com.martiansoftware.jsap.UnflaggedOption;
+import static it.unimi.dsi.fastutil.HashCommon.bigArraySize;
+import static it.unimi.dsi.fastutil.HashCommon.maxFill;
 
 
 /** An {@link ImmutableGraph} that corresponds to a graph stored as a scattered list of arcs.

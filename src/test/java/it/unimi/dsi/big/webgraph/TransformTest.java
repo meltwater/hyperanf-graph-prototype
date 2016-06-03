@@ -18,29 +18,21 @@ package it.unimi.dsi.big.webgraph;
  *
  */
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.examples.IntegerTriplesArcLabelledImmutableGraph;
-import it.unimi.dsi.big.webgraph.labelling.ArcLabelledImmutableGraph;
-import it.unimi.dsi.big.webgraph.labelling.ArcLabelledNodeIterator;
+import it.unimi.dsi.big.webgraph.labelling.*;
 import it.unimi.dsi.big.webgraph.labelling.ArcLabelledNodeIterator.LabelledArcIterator;
-import it.unimi.dsi.big.webgraph.labelling.BitStreamArcLabelledGraphTest;
-import it.unimi.dsi.big.webgraph.labelling.GammaCodedIntLabel;
-import it.unimi.dsi.big.webgraph.labelling.Label;
-import it.unimi.dsi.big.webgraph.labelling.LabelSemiring;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.util.XorShift64StarRandom;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
 import it.unimi.dsi.webgraph.ImmutableSequentialGraph;
 import it.unimi.dsi.webgraph.examples.ErdosRenyiGraph;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.Test;
+import static org.junit.Assert.*;
 
 public class TransformTest extends WebGraphTestCase {
 

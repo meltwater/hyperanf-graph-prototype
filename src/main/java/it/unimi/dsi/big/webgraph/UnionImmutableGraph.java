@@ -19,7 +19,6 @@ package it.unimi.dsi.big.webgraph;
  */
 
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

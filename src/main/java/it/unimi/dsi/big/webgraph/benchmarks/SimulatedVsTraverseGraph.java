@@ -1,7 +1,6 @@
 package it.unimi.dsi.big.webgraph.benchmarks;
 
 import it.unimi.dsi.big.webgraph.*;
-import it.unimi.dsi.big.webgraph.Utils;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;

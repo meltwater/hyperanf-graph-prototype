@@ -19,8 +19,6 @@ package it.unimi.dsi.big.webgraph.algo;
  */
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.WebGraphTestCase;
 import it.unimi.dsi.fastutil.floats.FloatBigArrays;
@@ -31,12 +29,14 @@ import it.unimi.dsi.util.HyperLogLogCounterArray;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
 import it.unimi.dsi.webgraph.Transform;
 import it.unimi.dsi.webgraph.examples.ErdosRenyiGraph;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 public class HyperBallTest extends WebGraphTestCase {

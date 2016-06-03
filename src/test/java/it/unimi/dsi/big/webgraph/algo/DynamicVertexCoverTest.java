@@ -1,11 +1,11 @@
 package it.unimi.dsi.big.webgraph.algo;
 
+import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
+import it.unimi.dsi.big.webgraph.SimulatedGraph;
 import it.unimi.dsi.big.webgraph.TestUtils;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import org.junit.Test;
-import it.unimi.dsi.big.webgraph.Edge;
-import it.unimi.dsi.big.webgraph.SimulatedGraph;
 
 import java.util.*;
 
@@ -38,8 +38,8 @@ public class DynamicVertexCoverTest {
         Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap = dvc.insertEdge(edges[0]);
 
         /* Both endpoints should've been added and none more */
-        assertTrue(affectedStateMap.get(edges[0].from) == IDynamicVertexCover.AffectedState.Added);
-        assertTrue(affectedStateMap.get(edges[0].to)   == IDynamicVertexCover.AffectedState.Added);
+        assertTrue(affectedStateMap.get(edges[0].from) == IDynamicVertexCover.AffectedState.ADDED);
+        assertTrue(affectedStateMap.get(edges[0].to)   == IDynamicVertexCover.AffectedState.ADDED);
         assertTrue(affectedStateMap.size() == 2);
 
         /* The from node of this edge should already be covered => no affected nodes */
@@ -68,10 +68,10 @@ public class DynamicVertexCoverTest {
         Map<Long, IDynamicVertexCover.AffectedState> affectedStateMap = dvc.deleteEdge(removedEdge, graph.transpose());
 
         /* First node dont have any more edges so should be removed from VC */
-        assertTrue(affectedStateMap.get(nodes[0]) == IDynamicVertexCover.AffectedState.Removed);
+        assertTrue(affectedStateMap.get(nodes[0]) == IDynamicVertexCover.AffectedState.REMOVED);
 
         /* Third node are no longer covered by second node so it should be added together with the second */
-        assertTrue(affectedStateMap.get(nodes[2]) == IDynamicVertexCover.AffectedState.Added);
+        assertTrue(affectedStateMap.get(nodes[2]) == IDynamicVertexCover.AffectedState.ADDED);
 
         /* Second node were already in VC so shouldnt be affected */
         assertTrue(affectedStateMap.get(nodes[1]) == null);

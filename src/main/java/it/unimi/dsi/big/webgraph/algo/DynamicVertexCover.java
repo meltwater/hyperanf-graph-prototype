@@ -1,13 +1,16 @@
 package it.unimi.dsi.big.webgraph.algo;
 
+import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
+import it.unimi.dsi.big.webgraph.MutableGraph;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
-import it.unimi.dsi.big.webgraph.Edge;
-import it.unimi.dsi.big.webgraph.MutableGraph;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Simon Lindhén
@@ -63,7 +66,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         addEdgeToMaximalMatching(edge);
         addEdgeToVertexCover(edge);
 
-        updateAffectedNodesFromEdge(edge, AffectedState.Added, affectedNodes);
+        updateAffectedNodesFromEdge(edge, AffectedState.ADDED, affectedNodes);
 
         return affectedNodes;
     }
@@ -103,10 +106,10 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     private Map<Long,AffectedState> createAffectedNodes(Set<Long> removedNodes, Set<Long> addedNodes) {
         Map<Long, AffectedState> affectedNodes = new HashMap<>();
         for(Long removedNode : removedNodes) {
-            updateAffectedNodes(removedNode, AffectedState.Removed, affectedNodes);
+            updateAffectedNodes(removedNode, AffectedState.REMOVED, affectedNodes);
         }
         for(Long addedNode : addedNodes) {
-            updateAffectedNodes(addedNode, AffectedState.Added, affectedNodes);
+            updateAffectedNodes(addedNode, AffectedState.ADDED, affectedNodes);
         }
 
         return affectedNodes;
@@ -188,7 +191,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
     }
 
     private void checkTransposeFromNode(Long node, Set<Long> addedNodes, MutableGraph graphTranspose) {
-        NodeIterator nodeIt = graphTranspose.nodeIterator(node); // TODO Let danf update tranpose
+        NodeIterator nodeIt = graphTranspose.nodeIterator(node);
         nodeIt.nextLong();
         long outdegree = nodeIt.outdegree();
         LazyLongIterator succ = nodeIt.successors();
@@ -207,8 +210,8 @@ public class DynamicVertexCover implements IDynamicVertexCover {
             addEdgeToMaximalMatching(incomingEdge);
             addEdgeToVertexCover(incomingEdge);
 
-            addedNodes.add(Long.valueOf(node));
-            addedNodes.add(Long.valueOf(neighbor));
+            addedNodes.add(node);
+            addedNodes.add(neighbor);
 
             break;
         }
@@ -217,13 +220,13 @@ public class DynamicVertexCover implements IDynamicVertexCover {
 
     @Override
     public boolean isInVertexCover(long node) {
-        if(vertexCover.size64() <= node) {
+        if(vertexCover.length() <= node) {
             return false;
         }
         return vertexCover.getBoolean(node);
     }
 
-    public boolean isInMaximalMatching(Edge edge) {
+    private boolean isInMaximalMatching(Edge edge) {
         if(edge.from >= maximalMatchingLength) {
             return false;
         }
@@ -272,7 +275,7 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         vertexCover.set(edge.to,   false);
     }
 
-    public void checkArrayCapacity(Edge edge) {
+    private void checkArrayCapacity(Edge edge) {
         long largestNode = Math.max(edge.from, edge.to);
         long limit = vertexCover.length();
 
@@ -335,9 +338,9 @@ public class DynamicVertexCover implements IDynamicVertexCover {
         @Override
         public long skip(long l) {
             long num = 0;
-            while (nextLong() != -1 && num < l) num++;
+            while (nextLong() != -1 && num < l)
+                num++;
             return num;
         }
     }
-
 }

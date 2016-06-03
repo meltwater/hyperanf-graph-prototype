@@ -5,10 +5,6 @@ import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 import org.junit.Test;
-import it.unimi.dsi.big.webgraph.Edge;
-import it.unimi.dsi.big.webgraph.MutableGraph;
-import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
-import it.unimi.dsi.big.webgraph.SimulatedGraph;
 
 import java.io.IOException;
 import java.util.ArrayList;

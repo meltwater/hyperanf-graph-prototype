@@ -1,13 +1,7 @@
 package it.unimi.dsi.big.webgraph.graph;
 
-import it.unimi.dsi.big.webgraph.BVGraph;
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
+import it.unimi.dsi.big.webgraph.*;
 import org.junit.Test;
-import it.unimi.dsi.big.webgraph.Edge;
-import it.unimi.dsi.big.webgraph.MutableGraph;
-import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
-import it.unimi.dsi.big.webgraph.SimulatedGraph;
 
 import java.io.IOException;
 
@@ -17,8 +11,6 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
- *         <p>
- *         // TODO Class description
  */
 public class DifferentGraphsTest {
 

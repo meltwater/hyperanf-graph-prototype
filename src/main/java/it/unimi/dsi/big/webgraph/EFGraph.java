@@ -18,9 +18,7 @@ package it.unimi.dsi.big.webgraph;
  *
  */
 
-import static it.unimi.dsi.bits.Fast.MSBS_STEP_8;
-import static it.unimi.dsi.bits.Fast.ONES_STEP_4;
-import static it.unimi.dsi.bits.Fast.ONES_STEP_8;
+import com.martiansoftware.jsap.*;
 import it.unimi.dsi.Util;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.bits.LongArrayBitVector;
@@ -36,14 +34,10 @@ import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.sux4j.util.EliasFanoMonotoneLongBigList;
 import it.unimi.dsi.util.ByteBufferLongBigList;
 import it.unimi.dsi.webgraph.LazyIntSkippableIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -55,17 +49,7 @@ import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.martiansoftware.jsap.FlaggedOption;
-import com.martiansoftware.jsap.JSAP;
-import com.martiansoftware.jsap.JSAPException;
-import com.martiansoftware.jsap.JSAPResult;
-import com.martiansoftware.jsap.Parameter;
-import com.martiansoftware.jsap.SimpleJSAP;
-import com.martiansoftware.jsap.Switch;
-import com.martiansoftware.jsap.UnflaggedOption;
+import static it.unimi.dsi.bits.Fast.*;
 
 /** An immutable graph based on the Elias&ndash;Fano representation of monotone sequences.
  * 

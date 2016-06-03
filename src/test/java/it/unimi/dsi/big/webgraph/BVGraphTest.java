@@ -19,10 +19,10 @@ package it.unimi.dsi.big.webgraph;
  *
  */
 
-import static org.junit.Assert.assertEquals;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,7 +31,7 @@ import java.util.Arrays;
 import java.util.Properties;
 import java.util.zip.GZIPInputStream;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 public class BVGraphTest extends WebGraphTestCase {
 

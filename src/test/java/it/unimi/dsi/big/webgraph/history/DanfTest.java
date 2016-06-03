@@ -1,15 +1,14 @@
 package it.unimi.dsi.big.webgraph.history;
 
-import it.unimi.dsi.big.webgraph.TestUtils;
-import org.junit.Test;
-import it.unimi.dsi.big.webgraph.algo.DANF;
 import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.SimulatedGraph;
+import it.unimi.dsi.big.webgraph.TestUtils;
+import it.unimi.dsi.big.webgraph.algo.DANF;
+import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
- * // TODO Class description
  *
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen

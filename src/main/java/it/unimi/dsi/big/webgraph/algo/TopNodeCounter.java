@@ -1,9 +1,9 @@
 package it.unimi.dsi.big.webgraph.algo;
 
-import it.unimi.dsi.logging.ProgressLogger;
-import javafx.util.Pair;
 import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.logging.ProgressLogger;
+import javafx.util.Pair;
 
 import java.util.*;
 import java.util.function.Consumer;

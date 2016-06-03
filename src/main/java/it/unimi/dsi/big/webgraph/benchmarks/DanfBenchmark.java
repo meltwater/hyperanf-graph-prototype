@@ -1,11 +1,11 @@
 package it.unimi.dsi.big.webgraph.benchmarks;
 
 import it.unimi.dsi.big.webgraph.BVGraph;
+import it.unimi.dsi.big.webgraph.Edge;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.MutableGraph;
 import it.unimi.dsi.big.webgraph.algo.DANF;
 import it.unimi.dsi.big.webgraph.algo.DynamicNeighborhoodFunction;
-import it.unimi.dsi.big.webgraph.Edge;
-import it.unimi.dsi.big.webgraph.MutableGraph;
-import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 
 import java.io.IOException;
 import java.io.PrintWriter;

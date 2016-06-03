@@ -1,25 +1,24 @@
 package it.unimi.dsi.big.webgraph.algo;
 
+import it.unimi.dsi.big.webgraph.MutableGraph;
 import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
-import it.unimi.dsi.big.webgraph.MutableGraph;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 
 import java.util.BitSet;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
- *         <p>
- *         // TODO Class description
  */
 public class StandardBreadthFirst {
 
     private ExecutorService threadPool;
-    private final Integer syncInt = 0;
     private final int nrThreads;
 
 

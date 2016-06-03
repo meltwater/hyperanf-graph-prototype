@@ -18,13 +18,13 @@ package it.unimi.dsi.big.webgraph;
  *
  */
 
-import static org.junit.Assert.assertEquals;
 import it.unimi.dsi.fastutil.longs.LongAVLTreeSet;
 import it.unimi.dsi.fastutil.longs.LongIterator;
+import org.junit.Test;
 
 import java.util.Random;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 public class MergedLongIteratorTest {
 

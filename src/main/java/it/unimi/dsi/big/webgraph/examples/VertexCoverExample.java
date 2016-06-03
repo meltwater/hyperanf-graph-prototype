@@ -1,10 +1,10 @@
 package it.unimi.dsi.big.webgraph.examples;
 
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
+import it.unimi.dsi.big.webgraph.MutableGraph;
 import it.unimi.dsi.big.webgraph.algo.DynamicVertexCover;
 import it.unimi.dsi.logging.ProgressLogger;
-import it.unimi.dsi.big.webgraph.MutableGraph;
-import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 
 import java.io.IOException;
 

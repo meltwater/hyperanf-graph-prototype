@@ -1,15 +1,11 @@
 package it.unimi.dsi.big.webgraph.algo;
 
 import it.unimi.dsi.Util;
-import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
+import it.unimi.dsi.big.webgraph.*;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.util.HyperLogLogCounterArray;
-import it.unimi.dsi.big.webgraph.Edge;
-import it.unimi.dsi.big.webgraph.MutableGraph;
-import it.unimi.dsi.big.webgraph.Utils;
 
 import java.io.IOException;
 import java.util.function.BiConsumer;

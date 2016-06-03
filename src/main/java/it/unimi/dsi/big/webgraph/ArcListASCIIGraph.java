@@ -18,6 +18,8 @@ package it.unimi.dsi.big.webgraph;
  *
  */
 
+import com.google.common.base.Charsets;
+import com.martiansoftware.jsap.*;
 import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
 import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import it.unimi.dsi.fastutil.longs.LongBigArrayBigList;
@@ -25,29 +27,13 @@ import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.io.FastBufferedReader;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
-
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.io.StreamTokenizer;
-import java.lang.reflect.InvocationTargetException;
-import java.util.NoSuchElementException;
-import java.util.concurrent.TimeUnit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Charsets;
-import com.martiansoftware.jsap.FlaggedOption;
-import com.martiansoftware.jsap.JSAP;
-import com.martiansoftware.jsap.JSAPException;
-import com.martiansoftware.jsap.JSAPResult;
-import com.martiansoftware.jsap.Parameter;
-import com.martiansoftware.jsap.SimpleJSAP;
-import com.martiansoftware.jsap.UnflaggedOption;
+import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 
 
 /** An {@link ImmutableGraph} that corresponds to graphs stored in a human-readable

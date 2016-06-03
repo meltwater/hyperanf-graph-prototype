@@ -1,13 +1,13 @@
 package it.unimi.dsi.big.webgraph.algo;
 
-import static org.junit.Assert.assertEquals;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
-
 import org.junit.Test;
 import org.slf4j.helpers.NOPLogger;
+
+import static org.junit.Assert.assertEquals;
 
 /*		 
  * Copyright (C) 2011-2015 Sebastiano Vigna 

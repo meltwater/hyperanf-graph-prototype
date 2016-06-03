@@ -18,13 +18,13 @@ package it.unimi.dsi.big.webgraph;
  *
  */
 
-import static org.junit.Assert.assertEquals;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongIterators;
 import it.unimi.dsi.util.XorShift64StarRandom;
-
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class MaskedLongIteratorTest {
 

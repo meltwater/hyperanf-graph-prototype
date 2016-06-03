@@ -16,6 +16,11 @@ public class BoundedTreeSet<E> extends TreeSet<E>{
 
     private int maxCapacity;
 
+    /**
+     * Creates a BoundedTreeSet that sorts elements
+     * by the default comparator.
+     * @param maxCapacity
+     */
     public BoundedTreeSet(int maxCapacity) {
         super();
         this.maxCapacity = maxCapacity;
@@ -26,6 +31,13 @@ public class BoundedTreeSet<E> extends TreeSet<E>{
         this.maxCapacity = maxCapacity;
     }
 
+    /**
+     * Adds an element to the TreeSet. If the maximum capacity
+     * is reached, the last element (by the comparator) will be thrown
+     * away.
+     * @param elem The element to insert
+     * @return True if inserted.
+     */
     @Override
     public boolean add(E elem) {
         boolean added = super.add(elem);
@@ -39,5 +51,10 @@ public class BoundedTreeSet<E> extends TreeSet<E>{
         }
 
         return added;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj) && obj instanceof BoundedTreeSet;
     }
 }

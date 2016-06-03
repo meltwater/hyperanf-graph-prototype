@@ -18,9 +18,9 @@ package it.unimi.dsi.big.webgraph;
  *
  */
 
-import static org.junit.Assert.assertEquals;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
 import it.unimi.dsi.webgraph.examples.ErdosRenyiGraph;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 public class IncrementalImmutableSequentialGraphTest extends WebGraphTestCase { 
 

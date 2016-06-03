@@ -25,6 +25,8 @@ import it.unimi.dsi.lang.FlyweightPrototype;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.webgraph.AbstractLazyIntIterator;
 import it.unimi.dsi.webgraph.LazyIntIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -32,9 +34,6 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.NoSuchElementException;
 import java.util.Properties;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /** A simple abstract class representing an immutable graph.

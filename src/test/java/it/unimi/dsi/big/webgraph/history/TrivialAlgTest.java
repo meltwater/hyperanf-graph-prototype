@@ -1,19 +1,18 @@
 package it.unimi.dsi.big.webgraph.history;
 
 import it.unimi.dsi.Util;
-import it.unimi.dsi.big.webgraph.TestUtils;
-import org.junit.Test;
-import it.unimi.dsi.big.webgraph.algo.DANF;
-import it.unimi.dsi.big.webgraph.algo.TrivialDynamicANF;
 import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.SimulatedGraph;
-import static org.junit.Assert.*;
+import it.unimi.dsi.big.webgraph.TestUtils;
+import it.unimi.dsi.big.webgraph.algo.DANF;
+import it.unimi.dsi.big.webgraph.algo.TrivialDynamicANF;
+import org.junit.Test;
 
 import java.util.Random;
 
+import static org.junit.Assert.assertEquals;
+
 /**
- * TODO Class description
- *
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
  */

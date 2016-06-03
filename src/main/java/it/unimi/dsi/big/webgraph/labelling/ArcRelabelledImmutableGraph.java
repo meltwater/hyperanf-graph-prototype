@@ -18,6 +18,7 @@ package it.unimi.dsi.big.webgraph.labelling;
  *
  */
 
+import com.martiansoftware.jsap.*;
 import it.unimi.dsi.big.webgraph.AbstractLazyLongIterator;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.GraphClassParser;
@@ -25,22 +26,13 @@ import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.labelling.ArcLabelledNodeIterator.LabelledArcIterator;
 import it.unimi.dsi.lang.ObjectParser;
 import it.unimi.dsi.logging.ProgressLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.martiansoftware.jsap.FlaggedOption;
-import com.martiansoftware.jsap.JSAP;
-import com.martiansoftware.jsap.JSAPException;
-import com.martiansoftware.jsap.JSAPResult;
-import com.martiansoftware.jsap.Parameter;
-import com.martiansoftware.jsap.SimpleJSAP;
-import com.martiansoftware.jsap.UnflaggedOption;
 
 /** Exhibits an arc-labelled immutable graph as another arc-labelled immutable graph changing only
  *  the kind of labels. Labels of the source graphs are mapped to labels

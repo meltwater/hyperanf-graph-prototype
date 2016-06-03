@@ -18,7 +18,6 @@ package it.unimi.dsi.big.webgraph.labelling;
  *
  */
 
-import static org.junit.Assert.assertEquals;
 import it.unimi.dsi.big.webgraph.BVGraphTest;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.LazyLongIterators;
@@ -28,13 +27,14 @@ import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 import it.unimi.dsi.io.OutputBitStream;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 public class CSSerializationTest extends WebGraphTestCase {
 

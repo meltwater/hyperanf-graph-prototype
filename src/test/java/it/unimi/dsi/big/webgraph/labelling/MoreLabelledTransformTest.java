@@ -18,7 +18,6 @@ package it.unimi.dsi.big.webgraph.labelling;
  *
  */
 
-import static org.junit.Assert.assertEquals;
 import it.unimi.dsi.big.webgraph.BVGraph;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.Transform;
@@ -26,15 +25,16 @@ import it.unimi.dsi.big.webgraph.labelling.ArcLabelledNodeIterator.LabelledArcIt
 import it.unimi.dsi.io.OutputBitStream;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.junit.Assert.assertEquals;
 
 
 public class MoreLabelledTransformTest {

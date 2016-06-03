@@ -1,17 +1,20 @@
 package it.unimi.dsi.big.webgraph.algo;
 
 import it.unimi.dsi.Util;
+import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
+import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.big.webgraph.Utils;
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.big.webgraph.Edge;
-import it.unimi.dsi.big.webgraph.MutableGraph;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.util.HyperLogLogCounterArray;
-import it.unimi.dsi.big.webgraph.Utils;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -51,7 +54,7 @@ public class DANF implements DynamicNeighborhoodFunction{
 
     private boolean closed = false;
 
-    private final int STATIC_LOLOL = 0;
+    private static final int STATIC_LOGLOG = 0;
 
     protected ProgressLogger pl = null;
     protected int partitionSize = DEFAULT_PARTITION_SIZE;
@@ -137,7 +140,8 @@ public class DANF implements DynamicNeighborhoodFunction{
         counterIndex = LongBigArrays.newBigArray(vc.getVertexCoverSize());
 
         LazyLongIterator vcIterator = vc.getNodesInVertexCoverIterator();
-        long vcSize = vc.getVertexCoverSize(), node;
+        long vcSize = vc.getVertexCoverSize();
+        long node;
         while(vcSize-- > 0) {
             node = vcIterator.nextLong();
             insertNodeToCounterIndex(node);
@@ -189,6 +193,7 @@ public class DANF implements DynamicNeighborhoodFunction{
     /**
      * Shuts down the MSBreadthFirst threads
      */
+    @Override
     public void close(){
         if(!closed) {
             transposeMSBFS.close();
@@ -221,6 +226,7 @@ public class DANF implements DynamicNeighborhoodFunction{
      * @param edges
      * @throws InterruptedException
      */
+    @Override
     public void addEdges(Edge ... edges)  {
         Map<Long, IDynamicVertexCover.AffectedState> affectedNodes = new HashMap<>();
 
@@ -281,11 +287,11 @@ public class DANF implements DynamicNeighborhoodFunction{
         for(Map.Entry<Long, IDynamicVertexCover.AffectedState> entry : affectedNodes.entrySet()) {
             long node = entry.getKey();
 
-            if (entry.getValue() == IDynamicVertexCover.AffectedState.Added) {
+            if (entry.getValue() == IDynamicVertexCover.AffectedState.ADDED) {
 
                 calculateIncompleteHistory(node);
 
-            } else if (entry.getValue() == IDynamicVertexCover.AffectedState.Removed) {
+            } else if (entry.getValue() == IDynamicVertexCover.AffectedState.REMOVED) {
                 // TODO When deleteEdge is added there should be a case here
                 throw new RuntimeException("Removed nodes not supported in DANF.updateAffectedNodes");
             }
@@ -359,7 +365,6 @@ public class DANF implements DynamicNeighborhoodFunction{
      * @return
      */
     private long getNodeIndex(long node, int h){
-
         checkH(h);
         if (h == this.h) {
             return node;
@@ -418,9 +423,9 @@ public class DANF implements DynamicNeighborhoodFunction{
         if(!vc.isInVertexCover(node))
             throw new IllegalArgumentException("Node " + node + " wasn't in the vertex cover.");
         double[] ret = new double[h];
-        int i=0;
+        int i = 0;
         for(HyperLogLogCounterArray counter : history) {
-            ret[i] = counter.count(getNodeIndex(node, i+1));
+            ret[i] = counter.count(getNodeIndex(node, i + 1));
             i++;
         }
         return ret;
@@ -438,7 +443,7 @@ public class DANF implements DynamicNeighborhoodFunction{
     private long[][] calculateHistory(long node){
         long[][] historyBits = new long[h][counterLongWords];
         if(vc.isInVertexCover(node)) {
-            history[STATIC_LOLOL].add(node, historyBits[0]);
+            history[STATIC_LOGLOG].add(node, historyBits[0]);
             for (int i = 1; i < h; i++) {
                 history[i-1].getCounter(getNodeIndex(node, i), historyBits[i]);
             }
@@ -447,16 +452,16 @@ public class DANF implements DynamicNeighborhoodFunction{
             long degree = graph.outdegree(node);
 
             for (int i = 0; i < h; i++) {
-                history[STATIC_LOLOL].add(node, historyBits[i]);
+                history[STATIC_LOGLOG].add(node, historyBits[i]);
             }
 
             while(degree-- > 0 ) {
                 long neighbor = successors.nextLong();
 
                 if(h > 1)
-                    history[STATIC_LOLOL].add(neighbor, historyBits[1]);
+                    history[STATIC_LOGLOG].add(neighbor, historyBits[1]);
                 for (int i = 1; i < h-1; i++) {
-                    history[STATIC_LOLOL].add(neighbor, historyBits[i + 1]);
+                    history[STATIC_LOGLOG].add(neighbor, historyBits[i + 1]);
 
                     long[] neighborBits = new long[counterLongWords];
                     history[i-1].getCounter(getNodeIndex(neighbor, i), neighborBits);
@@ -468,56 +473,29 @@ public class DANF implements DynamicNeighborhoodFunction{
     }
 
     /**
-     *
      * Propagates the effects of the added edges
      *
      * @param edges
-     * @throws InterruptedException
      */
     private void propagate(Edge ... edges) {
+        sortEdgesByDANFValues(edges);
 
-        LongOpenHashSet otherSourceNodes = new LongOpenHashSet();
-        if(edges.length > partitionSize * 1.1) {
-
-            double[] values = new double[(int)graph.numNodes()];
-            for (int i = 0; i < edges.length; i++) {
-                Edge e = edges[i];
-                values[(int) e.from] = count(e.from, h);
-            }
-
-            Arrays.sort(edges, (e1, e2) -> Double.compare(values[(int)e1.from], values[(int)e2.from]));
-
-            for (int i = 0; i < edges.length; i++) {
-                otherSourceNodes.add(edges[i].from);
-            }
-        }
-
+        /* otherSourceNodes are used to prune BFSs early. If a BFS reach a source node of a later
+         * BFS, the current can be pruned. */
+        LongOpenHashSet otherSourceNodes = getSourceNodesAsHashSet(edges);
 
         try {
-            if(pl != null) {
-                pl.itemsName = "Partitions";
-                pl.expectedUpdates = (int) Math.ceil((float) edges.length / partitionSize);
-                pl.start("Starting insertion of " + edges.length + " edges in " +
-                        (int)Math.ceil((float) edges.length / partitionSize) + " partitions of size " + partitionSize);
-            }
+            initiateLogger(edges);
             PropagationTraveler[] travelers = new PropagationTraveler[Math.min(partitionSize, edges.length)];
             long[] fromNodes = new long[Math.min(partitionSize, edges.length)];
             for (int i = 0, j = 0; i < edges.length; i++, j++) {
 
-                long[][] travelerHistory = calculateHistory(edges[i].to);
-                long[] visitorHistory = new long[counterLongWords];
-
-                if(vc.isInVertexCover(edges[i].from)) {
-                    for (int k = 0; k < h; k++) {
-                        long visitNodeIndex = getNodeIndex(edges[i].from, k + 1);
-                        history[k].getCounter(visitNodeIndex, visitorHistory);
-                        history[k].max(travelerHistory[k], visitorHistory);
-                    }
-                }
-
-                travelers[j] = new PropagationTraveler(travelerHistory);
+                travelers[j] = generateTraveler(edges[i]);
                 fromNodes[j] = edges[i].from;
+
+                /* Remove nodes from the current partition as BFSs should not prune at sources of the current partition. */
                 otherSourceNodes.remove(edges[i].from);
+
                 if (j == partitionSize - 1) {
                     transposeMSBFS.breadthFirstSearch(fromNodes, propagateVisitor(otherSourceNodes), travelers);
                     if(pl != null)
@@ -544,13 +522,108 @@ public class DANF implements DynamicNeighborhoodFunction{
         }
     }
 
+    private void initiateLogger(Edge[] edges) {
+        if(pl != null) {
+            pl.itemsName = "Partitions";
+            pl.expectedUpdates = (int) Math.ceil((float) edges.length / partitionSize);
+            pl.start("Starting insertion of " + edges.length + " edges in " +
+                    (int)Math.ceil((float) edges.length / partitionSize) + " partitions of size " + partitionSize);
+        }
+    }
+
+    /**
+     * Returns a new Traveler using the nodes present in {@code edge}.
+     * @param edge
+     * @return
+     */
+    private PropagationTraveler generateTraveler(Edge edge) {
+         return new PropagationTraveler(getTravelerHistory(edge));
+    }
+
+    /**
+     * Returns the history that should follow the traveler
+     * from the to node of {@code edge}.
+     * @param edge
+     * @return
+     */
+    private long[][] getTravelerHistory(Edge edge) {
+        long[][] travelerHistory = calculateHistory(edge.to);
+
+        if(vc.isInVertexCover(edge.from)) {
+            addNodesHistoryToTravelerHistory(edge.from, travelerHistory);
+        }
+        return travelerHistory;
+    }
+
+    /**
+     * Unions the history of the edge's to node with {@code travelerHistory}.
+     * Only level 1 to h will be merged.
+     *
+     * Used to add the from node's history to the traveler history before propagating.
+     * @param node
+     * @param travelerHistory
+     */
+    private void addNodesHistoryToTravelerHistory(long node, long[][] travelerHistory) {
+        long[] visitorHistory = new long[counterLongWords];
+
+        for (int k = 0; k < h; k++) {
+            long visitNodeIndex = getNodeIndex(node, k + 1);
+            history[k].getCounter(visitNodeIndex, visitorHistory);
+            history[k].max(travelerHistory[k], visitorHistory);
+        }
+    }
+
+    /**
+     * This method is used to speed up the MS-BFS.
+     * Sorting the partitions by DANF values increase
+     * the performance of the MS-BFS by up to
+     * 40%.
+     *
+     * The edges will only be sorted if they will be partitioned.
+     *
+     * The edges will be sorted in the existing array.
+     *
+     * @param edges The edges to sort
+     */
+    private void sortEdgesByDANFValues(Edge[] edges) {
+        if(edges.length > partitionSize * 1.1) {
+            double[] values = new double[(int)graph.numNodes()];
+            for (Edge e : edges) {
+                values[(int) e.from] = count(e.from, h);
+            }
+
+            Arrays.sort(edges, (e1, e2) -> Double.compare(values[(int)e1.from], values[(int)e2.from]));
+        }
+    }
+
+    /**
+     * Returns a hash set of all the source nodes present
+     * in an edge in {@code edges}. This will only be performed
+     * if the edges will be partitioned.
+     *
+     * @param edges The edges
+     * @return A hash set of source nodes or an empty hash set
+     *         if the edges shouldn't be partitioned.
+     */
+    private LongOpenHashSet getSourceNodesAsHashSet(Edge[] edges) {
+        LongOpenHashSet sourceNodes = new LongOpenHashSet();
+
+        if(edges.length > partitionSize * 1.1) {
+            for (Edge edge : edges) {
+                sourceNodes.add(edge.from);
+            }
+        }
+
+        return sourceNodes;
+    }
+
 
     public long getMemoryUsageGraphBytes() {
         return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes();
     }
 
     public long getMemoryUsageCounterBytes() {
-        return Utils.getMemoryUsage(counterIndex) + Utils.getMemoryUsage(history);
+        return Utils.getMemoryUsage(counterIndex, history);
     }
 
     public long getMemoryUsageVCBytes() {
@@ -561,6 +634,7 @@ public class DANF implements DynamicNeighborhoodFunction{
         return transposeMSBFS.getMemoryUsageBytes(trav -> (long)((PropagationTraveler)trav).bits.length*counterLongWords*Long.BYTES);
     }
 
+    @Override
     public long getMemoryUsageBytes() {
         return graph.getMemoryUsageBytes() + graphTranspose.getMemoryUsageBytes() +
                 Utils.getMemoryUsage(vc, counterIndex, history) +
@@ -568,57 +642,46 @@ public class DANF implements DynamicNeighborhoodFunction{
     }
 
     private MSBreadthFirst.Visitor propagateVisitor(LongOpenHashSet otherSourceNodes){
-        boolean needsSync = true;//!history[STATIC_LOLOL].longwordAligned;
+        boolean needsSync = !history[STATIC_LOGLOG].longwordAligned;
+
         return (long visitNode, BitSet bfsVisits, BitSet seen, int d, MSBreadthFirst.Traveler t) -> {
             int depth = d + 1;
-
             PropagationTraveler propTraver = (PropagationTraveler) t;
 
             if (vc.isInVertexCover(visitNode)) {
                 long[] visitNodeBits = new long[counterLongWords];
-                long visitNodeIndex;
-                int index;
                 for (int i = 0; i < h + 1 - depth; i++) {
-                    visitNodeIndex = getNodeIndex(visitNode, i + depth);
-                    index = i + depth - 1;
-                    history[index].getCounter(visitNodeIndex, visitNodeBits);
-
-                    history[index].max(visitNodeBits, propTraver.bits[i]);
-
-                    if(needsSync) {
-                        synchronized (history[index]) {
-                            history[index].setCounter(visitNodeBits, visitNodeIndex);
-                        }
-                    }else
-                        history[i + depth - 1].setCounter(visitNodeBits, visitNodeIndex);
+                    long visitNodeIndex = getNodeIndex(visitNode, i + depth);
+                    int historyIndex = i + depth - 1;
+                    unionVisitNodeWithTraveler(needsSync, propTraver, visitNodeBits, visitNodeIndex, historyIndex, i);
                 }
-            } else {//if(!otherSourceNodes.contains(visitNode)){
+            } else {
                 long[] visitNodeBits = new long[counterLongWords];
-                history[h - 1].getCounter(visitNode, visitNodeBits);
-
-                history[h - 1].max(visitNodeBits, propTraver.bits[h-depth]);
-
-                if(needsSync) {
-                    synchronized (history[h - 1]) {
-                        history[h - 1].setCounter(visitNodeBits, visitNode);
-                    }
-                }else
-                    history[h - 1].setCounter(visitNodeBits, visitNode);
+                unionVisitNodeWithTraveler(needsSync, propTraver, visitNodeBits, visitNode, h - 1, h-depth);
             }
 
-
             if (depth == h || otherSourceNodes.contains(visitNode)) {
-                if(otherSourceNodes.contains(visitNode)) {
-                }
                 bfsVisits.clear();
             }
         };
     }
 
-    private class PropagationTraveler extends MSBreadthFirst.Traveler{
-        public long[][] bits;
+    private void unionVisitNodeWithTraveler(boolean needsSync, PropagationTraveler propTraver, long[] visitNodeBits, long visitNodeIndex, int historyIndex, int bitsIndex) {
+        history[historyIndex].getCounter(visitNodeIndex, visitNodeBits);
+        history[historyIndex].max(visitNodeBits, propTraver.bits[bitsIndex]);
 
-        public PropagationTraveler(long[][] bits){
+        if(needsSync) {
+            synchronized (history[historyIndex]) {
+                history[historyIndex].setCounter(visitNodeBits, visitNodeIndex);
+            }
+        }else
+            history[historyIndex].setCounter(visitNodeBits, visitNodeIndex);
+    }
+
+    private class PropagationTraveler extends MSBreadthFirst.Traveler{
+        long[][] bits;
+
+        PropagationTraveler(long[][] bits){
             this.bits = bits;
         }
 
@@ -632,7 +695,7 @@ public class DANF implements DynamicNeighborhoodFunction{
             for (int i = 0; i < clonedBits.length; i++) {
                 if(shouldClone())
                     clonedBits[i] = bits[i].clone();
-                history[STATIC_LOLOL].max(clonedBits[i], otherTraveler.bits[i]);
+                history[STATIC_LOGLOG].max(clonedBits[i], otherTraveler.bits[i]);
             }
             return shouldClone() ? new PropagationTraveler(clonedBits) : this;
         }

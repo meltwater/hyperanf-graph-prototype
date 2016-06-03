@@ -19,11 +19,10 @@ package it.unimi.dsi.big.webgraph;
  *
  */
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
 import it.unimi.dsi.webgraph.examples.ErdosRenyiGraph;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,7 +30,8 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Properties;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class EFGraphTest extends WebGraphTestCase {
 

@@ -19,6 +19,7 @@ package it.unimi.dsi.big.webgraph.examples;
  */
 
 
+import com.martiansoftware.jsap.*;
 import it.unimi.dsi.big.webgraph.GraphClassParser;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
 import it.unimi.dsi.big.webgraph.NodeIterator;
@@ -28,14 +29,6 @@ import it.unimi.dsi.logging.ProgressLogger;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-
-import com.martiansoftware.jsap.FlaggedOption;
-import com.martiansoftware.jsap.JSAP;
-import com.martiansoftware.jsap.JSAPException;
-import com.martiansoftware.jsap.JSAPResult;
-import com.martiansoftware.jsap.Parameter;
-import com.martiansoftware.jsap.SimpleJSAP;
-import com.martiansoftware.jsap.UnflaggedOption;
 
 /** The main method of this class loads an arbitrary {@link it.unimi.dsi.big.webgraph.ImmutableGraph}
  * and performs a sequential scan to establish the minimum, maximum and average outdegree.

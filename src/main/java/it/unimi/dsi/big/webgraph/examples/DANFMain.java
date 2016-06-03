@@ -2,9 +2,9 @@ package it.unimi.dsi.big.webgraph.examples;
 
 import com.martiansoftware.jsap.*;
 import it.unimi.dsi.big.webgraph.BVGraph;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 import it.unimi.dsi.big.webgraph.UnionImmutableGraph;
 import it.unimi.dsi.big.webgraph.algo.MSBreadthFirst;
-import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;

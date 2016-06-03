@@ -1,9 +1,9 @@
 package it.unimi.dsi.big.webgraph.history;
 
 import it.unimi.dsi.big.webgraph.*;
+import it.unimi.dsi.big.webgraph.algo.DANF;
 import it.unimi.dsi.big.webgraph.algo.IDynamicVertexCover;
 import org.junit.Test;
-import it.unimi.dsi.big.webgraph.algo.DANF;
 
 import java.io.IOException;
 import java.util.HashSet;

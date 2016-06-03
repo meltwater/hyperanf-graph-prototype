@@ -19,6 +19,7 @@ package it.unimi.dsi.big.webgraph.algo;
  */
 
 
+import com.martiansoftware.jsap.*;
 import it.unimi.dsi.Util;
 import it.unimi.dsi.big.webgraph.GraphClassParser;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
@@ -38,21 +39,11 @@ import it.unimi.dsi.fastutil.longs.LongStack;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrayBigList;
 import it.unimi.dsi.lang.ObjectParser;
 import it.unimi.dsi.logging.ProgressLogger;
-
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.martiansoftware.jsap.FlaggedOption;
-import com.martiansoftware.jsap.JSAP;
-import com.martiansoftware.jsap.JSAPException;
-import com.martiansoftware.jsap.JSAPResult;
-import com.martiansoftware.jsap.Parameter;
-import com.martiansoftware.jsap.SimpleJSAP;
-import com.martiansoftware.jsap.Switch;
-import com.martiansoftware.jsap.UnflaggedOption;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /** Computes the strongly connected components (and optionally the buckets) of an immutable graph.
  * 

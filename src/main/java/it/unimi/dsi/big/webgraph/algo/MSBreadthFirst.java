@@ -2,10 +2,10 @@ package it.unimi.dsi.big.webgraph.algo;
 
 import com.javamex.classmexer.MemoryUtil;
 import it.unimi.dsi.big.webgraph.LazyLongIterator;
-import it.unimi.dsi.big.webgraph.NodeIterator;
-import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 import it.unimi.dsi.big.webgraph.MutableGraph;
+import it.unimi.dsi.big.webgraph.NodeIterator;
 import it.unimi.dsi.big.webgraph.Utils;
+import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -62,22 +62,18 @@ public class MSBreadthFirst {
         long bytes = 0;
         bytes += MemoryUtil.memoryUsageOf(travelers)+MemoryUtil.memoryUsageOf(travelersNext) + Utils.getMemoryUsage(visit,seen,visitNext);
         HashSet<Traveler> uniqueTravs = new HashSet<>();
-        long totalTravs = 0;
         if(hasTraveler) {
             for (long i = 0; i < ObjectBigArrays.length(travelers); i++) {
                 if(ObjectBigArrays.get(travelers,i) != null) {
                     uniqueTravs.add(ObjectBigArrays.get(travelers, i));
-                    totalTravs++;
                 }
                 if(ObjectBigArrays.get(travelersNext,i) != null) {
                     uniqueTravs.add(ObjectBigArrays.get(travelersNext, i));
-                    totalTravs++;
                 }
             }
             for (Traveler uniqueTrav : uniqueTravs) {
                 bytes += travelerSize.apply(uniqueTrav);
             }
-            System.out.println(uniqueTravs.size() + " unique travelers out of " + totalTravs + ".");
         }
         return bytes;
     }
@@ -92,15 +88,7 @@ public class MSBreadthFirst {
     }
 
     private BitSet[][] createBitsets(){
-        BitSet[][] list = ObjectBigArrays.newBigArray(new BitSet[0][0],graph.numNodes());
-        /*for(long node = 0; node < graph.numNodes() ; node++)
-            ObjectBigArrays.set(list,node,null);*/
-        return list;
-    }
-
-    private void fillWithNewBitSets(BitSet[][] bsets){
-        for(long node = 0; node < graph.numNodes() ; node++)
-            ObjectBigArrays.set(bsets,node,null);
+        return ObjectBigArrays.newBigArray(new BitSet[0][0],graph.numNodes());
     }
 
     public BitSet[][] breadthFirstSearch(long[] bfsSources, Visitor visitor) throws InterruptedException {
@@ -237,6 +225,7 @@ public class MSBreadthFirst {
                     else
                         throw new RuntimeException("Some of the breadth-first search threads threw an exception", e.getCause());
                 } catch (TimeoutException e) {
+                    // EMPTY ON PURPOSE
                 }
             }
             if(superBreak)
@@ -291,20 +280,27 @@ public class MSBreadthFirst {
 
     private void firstPhaseIterator(long startNode, long endNode, NodeIterator nodeIt){
         //Declaring all local variables to skip unnecessary reallocation
-        long prevNode = startNode, degree, neighbor;
-        Traveler nodeTraveler, toSet;
+        long prevNode = startNode;
+        long degree;
+        long neighbor;
+
+        Traveler nodeTraveler;
         LazyLongIterator neighbors;
-        BitSet visitN, visitNeigh;
-        boolean wasNull;
+        BitSet visitN;
+        BitSet visitNeigh;
+        BitSet seenSet;
+
         if(startNode < endNode)
             nodeIt.nextLong();
         for(long node = startNode; node < endNode; node++) {
             visitN = ObjectBigArrays.get(visit,node);
-            if (visitN == null || visitN.isEmpty()) continue;
+            if (visitN == null || visitN.isEmpty())
+                continue;
 
             if (visitor != null) {
                 visitor.visit(node,visitN, ObjectBigArrays.get(seen,node),iteration, hasTraveler ? ObjectBigArrays.get(travelers,node) : null);
-                if(visitN.isEmpty()) continue;
+                if(visitN.isEmpty())
+                    continue;
             }
 
             nodeIt.skip(node-prevNode);
@@ -321,42 +317,49 @@ public class MSBreadthFirst {
             for (long d = 0; d < degree; d++) {
                 neighbor = neighbors.nextLong();
 
-                BitSet seenSet;
-                synchronized (this){
-                    seenSet = ObjectBigArrays.get(seen,neighbor);
-                    if(seenSet == null) {
-                        seenSet = new BitSet(numSources);
-                        ObjectBigArrays.set(seen, neighbor, seenSet);
-                    }
-                }
+                seenSet = getOrSetBitSetAtomic(neighbor, seen);
 
                 synchronized  (seenSet) {
-                    visitNeigh = ObjectBigArrays.get(visitNext,neighbor);
-                    if(visitNeigh == null) {
-                        visitNeigh = new BitSet(numSources);
-                        ObjectBigArrays.set(visitNext, neighbor, visitNeigh);
-                    }
+                    visitNeigh = getOrSetBitSet(neighbor, visitNext);
 
                     if (hasTraveler) {
-                        toSet = nodeTraveler;
-                        if (!visitNeigh.isEmpty())
-                            toSet = ObjectBigArrays.get(travelersNext, neighbor).merge(toSet, iteration + 1);
-                        ObjectBigArrays.set(travelersNext, neighbor, toSet);
+                        mergeTravelers(neighbor, nodeTraveler, visitNeigh);
                     }
                     visitNeigh.or(visitN);
                 }
             }
             if(hasTraveler)
                 ObjectBigArrays.set(travelers,node,null);
-
         }
+    }
+
+    private void mergeTravelers(long neighbor, Traveler nodeTraveler, BitSet visitNeigh) {
+        Traveler toSet = nodeTraveler;
+        if (!visitNeigh.isEmpty())
+            toSet = ObjectBigArrays.get(travelersNext, neighbor).merge(toSet, iteration + 1);
+        ObjectBigArrays.set(travelersNext, neighbor, toSet);
+    }
+
+    private BitSet getOrSetBitSet(long neighbor, BitSet[][] visitNext) {
+        BitSet visitNeigh;
+        visitNeigh = ObjectBigArrays.get(visitNext, neighbor);
+        if (visitNeigh == null) {
+            visitNeigh = new BitSet(numSources);
+            ObjectBigArrays.set(visitNext, neighbor, visitNeigh);
+        }
+        return visitNeigh;
+    }
+
+    private synchronized BitSet getOrSetBitSetAtomic(long neighbor, BitSet[][] bitset) {
+        return getOrSetBitSet(neighbor, bitset);
     }
 
     private void secondPhaseIterator(long startNode, long endNode){
         BitSet visitNextBits;
         for(long node = startNode; node < endNode ; node++) {
             visitNextBits = ObjectBigArrays.get(visitNext,node);
-            if(visitNextBits == null || visitNextBits.isEmpty()) continue;
+            if(visitNextBits == null || visitNextBits.isEmpty())
+                continue;
 
             visitNextBits.andNot(ObjectBigArrays.get(seen,node));
             ObjectBigArrays.get(seen,node).or(visitNextBits);
@@ -366,6 +369,7 @@ public class MSBreadthFirst {
     /**
      * A visitor can be specified to the Multi-Source Breadth-first search which will be called at every visit
      */
+    @FunctionalInterface
     public interface Visitor{
 
         /**

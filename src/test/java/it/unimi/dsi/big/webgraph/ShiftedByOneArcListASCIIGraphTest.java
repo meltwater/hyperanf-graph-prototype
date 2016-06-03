@@ -18,14 +18,14 @@ package it.unimi.dsi.big.webgraph;
  *
  */
 
-import static org.junit.Assert.assertEquals;
 import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 public class ShiftedByOneArcListASCIIGraphTest extends WebGraphTestCase {
 

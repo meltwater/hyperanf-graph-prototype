@@ -1,13 +1,11 @@
 package it.unimi.dsi.big.webgraph.algo;
 
-import it.unimi.dsi.big.webgraph.TestUtils;
-import javafx.util.Pair;
-import org.junit.Test;
-import it.unimi.dsi.big.webgraph.algo.DANF;
-import it.unimi.dsi.big.webgraph.algo.TopNodeCounter;
 import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.MutableGraph;
 import it.unimi.dsi.big.webgraph.SimulatedGraph;
+import it.unimi.dsi.big.webgraph.TestUtils;
+import javafx.util.Pair;
+import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.TreeSet;
@@ -16,8 +14,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.Assert.*;
 
 /**
- * // TODO Class description
- *
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
  */

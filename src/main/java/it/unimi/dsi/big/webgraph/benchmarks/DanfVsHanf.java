@@ -1,14 +1,14 @@
 package it.unimi.dsi.big.webgraph.benchmarks;
 
+import it.unimi.dsi.big.webgraph.Edge;
 import it.unimi.dsi.big.webgraph.ImmutableGraph;
+import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 import it.unimi.dsi.big.webgraph.algo.DANF;
 import it.unimi.dsi.big.webgraph.algo.HyperBall;
-import it.unimi.dsi.big.webgraph.Edge;
-import it.unimi.dsi.big.webgraph.ImmutableGraphWrapper;
 
 import java.io.IOException;
 
-import static it.unimi.dsi.big.webgraph.benchmarks.BenchmarkUtils.*;
+import static it.unimi.dsi.big.webgraph.benchmarks.BenchmarkUtils.graphFolder;
 
 /**
  *

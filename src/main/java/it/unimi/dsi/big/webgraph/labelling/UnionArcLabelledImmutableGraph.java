@@ -24,7 +24,6 @@ import it.unimi.dsi.big.webgraph.labelling.ArcLabelledNodeIterator.LabelledArcIt
 import it.unimi.dsi.fastutil.longs.LongBigArrays;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
 import it.unimi.dsi.fastutil.objects.ObjectIterators;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

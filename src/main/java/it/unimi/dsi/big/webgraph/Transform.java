@@ -18,17 +18,10 @@ package it.unimi.dsi.big.webgraph;
  *
  */
 
+import com.martiansoftware.jsap.*;
 import it.unimi.dsi.Util;
-import it.unimi.dsi.big.webgraph.labelling.ArcLabelledImmutableGraph;
-import it.unimi.dsi.big.webgraph.labelling.ArcLabelledImmutableSequentialGraph;
-import it.unimi.dsi.big.webgraph.labelling.ArcLabelledNodeIterator;
+import it.unimi.dsi.big.webgraph.labelling.*;
 import it.unimi.dsi.big.webgraph.labelling.ArcLabelledNodeIterator.LabelledArcIterator;
-import it.unimi.dsi.big.webgraph.labelling.BitStreamArcLabelledImmutableGraph;
-import it.unimi.dsi.big.webgraph.labelling.Label;
-import it.unimi.dsi.big.webgraph.labelling.LabelMergeStrategy;
-import it.unimi.dsi.big.webgraph.labelling.LabelSemiring;
-import it.unimi.dsi.big.webgraph.labelling.Labels;
-import it.unimi.dsi.big.webgraph.labelling.UnionArcLabelledImmutableGraph;
 import it.unimi.dsi.fastutil.BigSwapper;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.Swapper;
@@ -36,13 +29,7 @@ import it.unimi.dsi.fastutil.ints.AbstractIntComparator;
 import it.unimi.dsi.fastutil.io.BinIO;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import it.unimi.dsi.fastutil.io.TextIO;
-import it.unimi.dsi.fastutil.longs.AbstractLongComparator;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongArrays;
-import it.unimi.dsi.fastutil.longs.LongBigArrays;
-import it.unimi.dsi.fastutil.longs.LongHeapSemiIndirectPriorityQueue;
-import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.*;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrays;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrays;
@@ -51,6 +38,8 @@ import it.unimi.dsi.io.OutputBitStream;
 import it.unimi.dsi.lang.ObjectParser;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.util.XorShift1024StarRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.DataInput;
 import java.io.File;
@@ -61,18 +50,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.martiansoftware.jsap.FlaggedOption;
-import com.martiansoftware.jsap.JSAP;
-import com.martiansoftware.jsap.JSAPException;
-import com.martiansoftware.jsap.JSAPResult;
-import com.martiansoftware.jsap.Parameter;
-import com.martiansoftware.jsap.SimpleJSAP;
-import com.martiansoftware.jsap.Switch;
-import com.martiansoftware.jsap.UnflaggedOption;
 
 /** Static methods that manipulate immutable graphs. 
  * 

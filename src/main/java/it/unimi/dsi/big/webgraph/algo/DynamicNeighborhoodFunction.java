@@ -3,8 +3,6 @@ package it.unimi.dsi.big.webgraph.algo;
 import it.unimi.dsi.big.webgraph.Edge;
 
 /**
- * TODO Class description
- *
  * @author Simon Lindhén
  * @author Johan Nilsson Hansen
  */

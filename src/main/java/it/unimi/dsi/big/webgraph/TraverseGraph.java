@@ -20,13 +20,14 @@ public class TraverseGraph extends MutableGraph {
 
     protected long[][] nodes;
     protected Long2LongOpenHashMap nodePoss;
-    protected long numNodes = 0, numArcs = 0;
+    protected long numNodes = 0;
+    protected long numArcs = 0;
     protected long length = 0;
-    protected final static int HEADER_LENGTH = 2;
+    protected static final int HEADER_LENGTH = 2;
     protected boolean empty = false;
 
     /**
-     * creates an empty TraverseGraph
+     * Creates an empty TraverseGraph
      */
     public TraverseGraph(){
         empty = true;
@@ -44,7 +45,6 @@ public class TraverseGraph extends MutableGraph {
         }
 
         addEdges(edges);
-
     }
 
     /**
@@ -66,8 +66,8 @@ public class TraverseGraph extends MutableGraph {
      * @param edges
      * @return Always true
      */
+    @Override
     public boolean addEdges(Edge ... edges){
-
         if (edges.length == 0)
             return true;
 
@@ -83,7 +83,6 @@ public class TraverseGraph extends MutableGraph {
         nodes = edgesAdder.getNewNodes();
         nodePoss = edgesAdder.getNewNodePoss();
         return true;
-
     }
 
     @Override
@@ -97,20 +96,6 @@ public class TraverseGraph extends MutableGraph {
     @Override
     public long getMemoryUsageBytes() {
         return LongBigArrays.length(nodes)*Long.BYTES + Utils.getMemoryUsage(nodePoss);
-    }
-
-    private Comparator<Edge> edgeComparator(){
-        return (Edge e1,Edge e2) -> {
-            if(e1.from > e2.from)
-                return 1;
-            if(e1.from < e2.from)
-                return -1;
-            if(e1.to > e2.to)
-                return 1;
-            if(e1.to < e2.to)
-                return -1;
-            return 0;
-        };
     }
 
     @Override
@@ -162,9 +147,10 @@ public class TraverseGraph extends MutableGraph {
 
     private class LongBigArrayIterator implements LazyLongIterator{
 
-        private long pos, left;
+        private long pos;
+        private long left;
 
-        public LongBigArrayIterator(long pos, long out){
+        LongBigArrayIterator(long pos, long out){
             this.pos = pos;
             this.left = out;
         }
@@ -179,7 +165,8 @@ public class TraverseGraph extends MutableGraph {
         @Override
         public long skip(long l) {
             int i = 0;
-            while( i < l && nextLong() != -1) i++;
+            while( i < l && nextLong() != -1)
+                i++;
             return i;
         }
     }
@@ -190,7 +177,7 @@ public class TraverseGraph extends MutableGraph {
         long node = -1;
         long out = 0;
 
-        public TraverseIterator(long from){
+        TraverseIterator(long from){
             if(from != 0)
                 skip(from);
         }
@@ -239,15 +226,19 @@ public class TraverseGraph extends MutableGraph {
         private long[][] newNodes;
         private TraverseIterator curNodes = new TraverseIterator(0);
         private long[] previousNeighbors = new long[0];
-        private int previousNeighborPos = 0, previousNeighborsLength = 0;
+        private int previousNeighborPos = 0;
+        private int previousNeighborsLength = 0;
 
-        private long prevNode = -1, prevToNode = -1;
+        private long prevNode   = -1;
+        private long prevToNode = -1;
         private long i = 0;
         private long edgesLeft;
-        private long outIndex = 0, outDegree = 0;
-        private boolean reachedEnd = false, first = true;
+        private long outIndex = 0;
+        private long outDegree = 0;
+        private boolean reachedEnd = false;
+        private boolean first = true;
 
-        public EdgesAdder(Edge[] edges) {
+        EdgesAdder(Edge[] edges) {
             this.edges = edges;
             this.newNodePoss = new Long2LongOpenHashMap();
             newNodePoss.defaultReturnValue(-2);
@@ -258,23 +249,23 @@ public class TraverseGraph extends MutableGraph {
             edgesLeft = edges.length;
         }
 
-        public long[][] getNewNodes() {
+        long[][] getNewNodes() {
             return newNodes;
         }
 
-        public long getNewNumNodes() {
+        long getNewNumNodes() {
             return newNumNodes;
         }
 
-        public long getNewNumArcs() {
+        long getNewNumArcs() {
             return newNumArcs;
         }
 
-        public Long2LongOpenHashMap getNewNodePoss(){
+        Long2LongOpenHashMap getNewNodePoss(){
             return newNodePoss;
         }
 
-        public void setEdges(){
+        void setEdges(){
 
             for (Edge e : edges){
                 newNumNodes = Math.max(newNumNodes,e.to);
@@ -290,7 +281,6 @@ public class TraverseGraph extends MutableGraph {
             LongBigArrays.set(newNodes,outIndex,outDegree);
             newNumNodes = Math.max(edges[edges.length-1].from,newNumNodes)+1;
             empty = false;
-
         }
 
         public void addEdges() {
@@ -450,6 +440,20 @@ public class TraverseGraph extends MutableGraph {
             }
             return arcsAdded;
 
+        }
+
+        private Comparator<Edge> edgeComparator(){
+            return (Edge e1,Edge e2) -> {
+                if(e1.from > e2.from)
+                    return 1;
+                if(e1.from < e2.from)
+                    return -1;
+                if(e1.to > e2.to)
+                    return 1;
+                if(e1.to < e2.to)
+                    return -1;
+                return 0;
+            };
         }
     }
 }

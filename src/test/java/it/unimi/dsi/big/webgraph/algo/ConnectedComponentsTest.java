@@ -26,7 +26,6 @@ import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
 import it.unimi.dsi.webgraph.Transform;
 import it.unimi.dsi.webgraph.examples.ErdosRenyiGraph;
-
 import org.junit.Test;
 
 
