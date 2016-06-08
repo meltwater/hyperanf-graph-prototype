@@ -1,4 +1,4 @@
-data = sortrows(load ('../benchmarkdata/benchmarkBfs2016-05-31-16:43:26.data'), 2);
+data = load ('../benchmarkdata/benchmarkSimTrav2016-05-19-11:08:29.data');
 
 pageWidth  = 426.79135;
 pageHeight = pageWidth / sqrt(2);
@@ -7,34 +7,21 @@ Hfig = figure(1);
 
 
 %ADD PLOT
-x  = sort(unique(data(:,1))); % h
 
+x  = data(:,1)./1000000; %BULK SIZE
+y1 = data(:,4); %SIMULATED MEM GB
+y2 = data(:,7); %TRAVERSE MEM GB
 
-y = data(:,3) ./ data(:,4); 
-
-cmap = hsv;
-
-markers = ['-d';'-s';'-x';'-c';'-p'];
-
+HP(1) = plot(x, y1, 'd-', 'color', [0.5, 0, 0],'markersize', 6, 'markerfacecolor', [0.5, 0, 0], 'displayname', 'High level' );
 grid on;
-for index = 1:5
-    colorIndex = ceil(index * (length(cmap) / 5));
-    color = cmap(colorIndex,:);
-    
-    yIndex = data(:,2)==(index*1000);
-    yCurrent = y(yIndex,:);
-    
-    HP(index) = semilogy(x, yCurrent, markers(index,:), 'color', color ,'markersize', 6, 'markerfacecolor', color, 'displayname', num2str(index * 1000) );
-    hold on;
-end
-
-semilogy(x, repmat([1], 1, length(x)), '--k');
+hold on;
+HP(2) = plot(x, y2, 'p-', 'color', [0, 0.5, 0],'markersize', 6, 'markerfacecolor', [0, 0.5, 0], 'displayname', 'Byte stream' );
 hold off;
 
-
 set(HP,'Linewidth', 2);    
-xlabel ('Max steps', 'fontsize', 16);
-ylabel ('BFS/MS-BFS Ratio', 'fontsize', 16);
+xlabel ('Edges (Millions)', 'fontsize', 16);
+ylabel ('Memory usage (GB)', 'fontsize', 16);
+ylim([0, 0.5]);
 
 HL = legend (HP);
 set(HL, 'fontsize', 16, 'location', 'northwest');
@@ -44,7 +31,8 @@ set(gca, 'ticklength', [0.02, 0.05]);
 
 
 % PRINT PDF
-filename = 'benchmarkBfs.pdf';
+
+filename = 'benchmarkByteStreamVsHighLevelMemory.pdf';
 
 set(Hfig , 'units', 'points', 'paperunits', 'points', 'paperposition',  [0, 0, pageWidth, pageHeight], 'papersize', [pageWidth, pageHeight], 'position', [0, 0, pageWidth, pageHeight], 'name', filename, 'filename', filename);
 
@@ -54,6 +42,7 @@ imStyle.Format = 'pdf';
 imStyle.Width = pageWidth;
 imStyle.Height = pageHeight;
 imStyle.Units = 'points';
+
 
 hgexport(gcf, filename, imStyle, 'Format', 'pdf');
 
